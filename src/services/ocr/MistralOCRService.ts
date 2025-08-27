@@ -32,7 +32,7 @@ class MistralOCRService {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // Prepare the request with custom JSON schema for bullet journal extraction
+      // First, let's try a simpler request without custom schema to test basic functionality
       const requestBody = {
         model: this.model,
         document: {
@@ -40,11 +40,15 @@ class MistralOCRService {
           image_url: {
             url: `data:image/jpeg;base64,${base64Image}`
           }
-        },
-        document_annotation_format: {
-          type: 'json_schema',
-          json_schema: this.getBulletJournalSchema()
         }
+        // Note: Commenting out custom schema for now to test basic OCR
+        // document_annotation_format: {
+        //   type: 'json_schema',
+        //   json_schema: {
+        //     name: 'bullet_journal_extraction',
+        //     schema: this.getBulletJournalSchema()
+        //   }
+        // }
       };
 
       // Make API request
@@ -160,32 +164,38 @@ class MistralOCRService {
    */
   private parseOCRResponse(response: any): OCRResult {
     try {
-      let parsedData: any = {};
       let rawText = '';
+      let parsedData: any = {};
 
-      // Check if document_annotation contains our structured data
+      console.log('MistralOCR: Raw API response:', JSON.stringify(response, null, 2));
+
+      // Extract text from Mistral OCR response
       if (response.document_annotation) {
-        // Try to parse as JSON if it's a string
         if (typeof response.document_annotation === 'string') {
+          rawText = response.document_annotation;
           try {
             parsedData = JSON.parse(response.document_annotation);
           } catch (e) {
-            // If not JSON, treat as raw text
-            rawText = response.document_annotation;
+            // Not JSON, just use as raw text
           }
         } else {
+          rawText = JSON.stringify(response.document_annotation);
           parsedData = response.document_annotation;
         }
-      }
-
-      // Extract raw text
-      if (parsedData.raw_text) {
-        rawText = parsedData.raw_text;
-      } else if (response.pages && response.pages.length > 0) {
-        // Fallback to pages content if available
-        rawText = response.pages.map((page: any) => 
-          typeof page === 'string' ? page : JSON.stringify(page)
-        ).join('\n');
+      } else if (response.pages && Array.isArray(response.pages)) {
+        // Extract text from pages array
+        rawText = response.pages.map((page: any) => {
+          if (typeof page === 'string') {
+            return page;
+          } else if (page.content) {
+            return page.content;
+          } else {
+            return JSON.stringify(page);
+          }
+        }).join('\n');
+      } else {
+        console.warn('MistralOCR: Unexpected response format');
+        rawText = JSON.stringify(response);
       }
 
       // Convert structured entries to OCR blocks
