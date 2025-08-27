@@ -16,6 +16,38 @@ class MistralOCRService {
   }
 
   /**
+   * Test basic connectivity to Mistral API
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      console.log('MistralOCR: Testing connection to:', this.apiUrl);
+      
+      // Try a simple GET request to test connectivity
+      const response = await fetch('https://api.mistral.ai/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+      });
+      
+      console.log('MistralOCR: Connection test status:', response.status);
+      console.log('MistralOCR: Connection test headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const error = await response.text();
+        console.log('MistralOCR: Connection test error:', error);
+      } else {
+        console.log('MistralOCR: Connection test successful');
+        return true;
+      }
+    } catch (error) {
+      console.error('MistralOCR: Connection test failed:', error);
+    }
+    
+    return false;
+  }
+
+  /**
    * Process image with Mistral OCR and extract bullet journal entries
    */
   async recognizeText(imageUri: string): Promise<OCRResult> {
@@ -41,17 +73,15 @@ class MistralOCRService {
         throw new Error('Image too large for Mistral OCR');
       }
 
-      // Try the format that matches the API documentation you provided
+      // Try a simpler format first - just OCR without custom formatting
       const requestBody = {
         model: this.model,
         document: {
           type: 'image_url',
           image_url: {
-            url: `data:image/jpeg;base64,${base64Image}`
+            url: `data:image/png;base64,${base64Image}`
           }
-        },
-        pages: [0], // Process first page
-        include_image_base64: false
+        }
       };
 
       console.log('MistralOCR: Making request to:', this.apiUrl);
@@ -415,6 +445,8 @@ class MistralOCRService {
       console.warn('MistralOCR: No API key configured. Service will not be available.');
     } else {
       console.log('MistralOCR: Service initialized with API key');
+      // Test connection
+      await this.testConnection();
     }
   }
 
