@@ -17,6 +17,7 @@ import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 // import { mockOCRService } from '../../services/ocr/MockOCRService';
 // import { tesseractService } from '../../services/ocr/TesseractService';
 import { ocrSpaceService } from '../../services/ocr/OCRSpaceService';
+import { mistralOCRService } from '../../services/ocr/MistralOCRService';
 import { BuJoParser } from '../../services/parser/BuJoParser';
 
 interface CaptureScreenProps {
@@ -31,16 +32,35 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
   const { addScan } = useBuJoStore();
   const { canPerformScan, trackScan, triggerPaywall } = useSubscriptionStore();
 
-  // Initialize OCR service on component mount
+  // Initialize OCR services on component mount
   useEffect(() => {
-    ocrSpaceService.initialize().catch(error => {
-      console.error('Failed to initialize OCR:', error);
-    });
+    const initializeOCRServices = async () => {
+      try {
+        // Try to initialize Mistral OCR first
+        await mistralOCRService.initialize();
+        console.log('Mistral OCR initialized');
+      } catch (error) {
+        console.log('Mistral OCR not available:', error);
+      }
+      
+      try {
+        // Always initialize OCR.space as fallback
+        await ocrSpaceService.initialize();
+        console.log('OCR.space initialized as fallback');
+      } catch (error) {
+        console.error('Failed to initialize fallback OCR:', error);
+      }
+    };
+
+    initializeOCRServices();
     
-    // Cleanup on unmount (if needed)
+    // Cleanup on unmount
     return () => {
+      mistralOCRService.cleanup().catch(error => {
+        console.error('Failed to cleanup Mistral OCR:', error);
+      });
       ocrSpaceService.cleanup().catch(error => {
-        console.error('Failed to cleanup OCR:', error);
+        console.error('Failed to cleanup OCR.space:', error);
       });
     };
   }, []);
@@ -112,15 +132,45 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   const processImage = async (imageUri: string) => {
     try {
-      console.log('Starting image processing...');
+      console.log('Starting advanced image processing...');
       
-      // Step 1: Perform OCR with OCRSpace (real text extraction from image)
-      const ocrResult = await ocrSpaceService.recognizeText(imageUri);
-      console.log('OCR completed:', ocrResult.text);
+      let ocrResult: any;
+      let entries: any[] = [];
+      let ocrService = 'Unknown';
+
+      // Step 1: Try Mistral OCR first (if available)
+      if (mistralOCRService.isAvailable()) {
+        try {
+          console.log('Using Mistral OCR for advanced text extraction...');
+          ocrService = 'Mistral AI';
+          ocrResult = await mistralOCRService.recognizeText(imageUri);
+          
+          // If Mistral provided structured entries, use them directly
+          if (ocrResult.parsedEntries && ocrResult.parsedEntries.length > 0) {
+            console.log('Using Mistral structured entries:', ocrResult.parsedEntries.length);
+            entries = await mistralOCRService.parseStructuredEntries(ocrResult);
+          } else {
+            // Fallback to traditional parsing
+            const parser = new BuJoParser();
+            entries = parser.parse(ocrResult.text);
+          }
+        } catch (mistralError) {
+          console.warn('Mistral OCR failed, falling back to OCR.space:', mistralError);
+          ocrService = 'OCR.space (fallback)';
+          ocrResult = await ocrSpaceService.recognizeText(imageUri);
+          const parser = new BuJoParser();
+          entries = parser.parse(ocrResult.text);
+        }
+      } else {
+        // Use OCR.space as primary if Mistral not available
+        console.log('Using OCR.space for text extraction...');
+        ocrService = 'OCR.space';
+        ocrResult = await ocrSpaceService.recognizeText(imageUri);
+        const parser = new BuJoParser();
+        entries = parser.parse(ocrResult.text);
+      }
       
-      // Step 2: Parse bullet journal entries
-      const parser = new BuJoParser();
-      const entries = parser.parse(ocrResult.text);
+      console.log(`OCR completed using ${ocrService}:`, ocrResult.text.substring(0, 100) + '...');
       console.log('Parsed entries:', entries.length);
       
       // Step 3: Add scan record
@@ -161,7 +211,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         // Fallback alert if navigation not available
         Alert.alert(
           'Page Processed!',
-          `Found ${entries.length} bullet journal entries.\n\nConfidence: ${Math.round(ocrResult.confidence * 100)}%`,
+          `Found ${entries.length} bullet journal entries.\n\nProcessed with: ${ocrService}\nConfidence: ${Math.round(ocrResult.confidence * 100)}%`,
           [{ text: 'OK' }]
         );
       }

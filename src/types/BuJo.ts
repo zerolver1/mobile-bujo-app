@@ -53,6 +53,7 @@ export interface OCRResult {
   text: string;
   confidence: number;
   blocks: OCRBlock[];
+  parsedEntries?: any[]; // Structured entries from Mistral OCR
 }
 
 export interface OCRBlock {
