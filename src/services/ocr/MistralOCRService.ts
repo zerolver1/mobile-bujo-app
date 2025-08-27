@@ -32,7 +32,16 @@ class MistralOCRService {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // First, let's try a simpler request without custom schema to test basic functionality
+      console.log('MistralOCR: Image base64 size:', base64Image.length);
+      console.log('MistralOCR: Image base64 preview:', base64Image.substring(0, 100) + '...');
+      
+      // Check if base64 is too large (Mistral has limits)
+      if (base64Image.length > 10000000) { // ~10MB limit
+        console.warn('MistralOCR: Image too large, falling back to OCR.space');
+        throw new Error('Image too large for Mistral OCR');
+      }
+
+      // Try the format that matches the API documentation you provided
       const requestBody = {
         model: this.model,
         document: {
@@ -40,16 +49,13 @@ class MistralOCRService {
           image_url: {
             url: `data:image/jpeg;base64,${base64Image}`
           }
-        }
-        // Note: Commenting out custom schema for now to test basic OCR
-        // document_annotation_format: {
-        //   type: 'json_schema',
-        //   json_schema: {
-        //     name: 'bullet_journal_extraction',
-        //     schema: this.getBulletJournalSchema()
-        //   }
-        // }
+        },
+        pages: [0], // Process first page
+        include_image_base64: false
       };
+
+      console.log('MistralOCR: Making request to:', this.apiUrl);
+      console.log('MistralOCR: Using API key:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'None');
 
       // Make API request
       const response = await fetch(this.apiUrl, {
@@ -60,6 +66,9 @@ class MistralOCRService {
         },
         body: JSON.stringify(requestBody),
       });
+
+      console.log('MistralOCR: Response status:', response.status);
+      console.log('MistralOCR: Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const error = await response.text();
@@ -74,6 +83,16 @@ class MistralOCRService {
       return this.parseOCRResponse(data);
     } catch (error) {
       console.error('MistralOCR: Failed to process image:', error);
+      
+      // Log more details about the error
+      if (error instanceof TypeError && error.message.includes('Network request failed')) {
+        console.error('MistralOCR: Network error - possible causes:');
+        console.error('- Connectivity issues');
+        console.error('- CORS policy blocking request');
+        console.error('- Invalid API endpoint:', this.apiUrl);
+        console.error('- Request too large');
+      }
+      
       throw error;
     }
   }
