@@ -21,7 +21,7 @@
         "NSCalendarsUsageDescription": "This app syncs your bullet journal events with your Calendar app.",
         "NSRemindersUsageDescription": "This app syncs your bullet journal tasks with your Reminders app.",
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": false,
+          "NSAllowsArbitraryLoads": true,
           "NSExceptionDomains": {
             "api.mistral.ai": {
               "NSExceptionAllowsInsecureHTTPLoads": false,

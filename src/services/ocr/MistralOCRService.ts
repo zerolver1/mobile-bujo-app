@@ -1,5 +1,6 @@
 import { OCRResult, OCRBlock, BuJoEntry } from '../../types/BuJo';
 import * as FileSystem from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 /**
  * Mistral AI OCR Service for advanced text extraction from bullet journal images
@@ -20,9 +21,26 @@ class MistralOCRService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('MistralOCR: Testing connection to:', this.apiUrl);
+      console.log('MistralOCR: Testing basic network connectivity...');
       
-      // Try a simple GET request to test connectivity
+      // Test with a simple GET request to a working API
+      const testResponse = await fetch('https://httpbin.org/get', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('MistralOCR: Basic connectivity test:', testResponse.status);
+      
+      if (!testResponse.ok) {
+        console.log('MistralOCR: Basic network test failed');
+        return false;
+      }
+      
+      console.log('MistralOCR: Network connectivity OK, testing Mistral API...');
+      
+      // Try a simple GET request to test Mistral API connectivity
       const response = await fetch('https://api.mistral.ai/v1/models', {
         method: 'GET',
         headers: {
@@ -30,14 +48,14 @@ class MistralOCRService {
         },
       });
       
-      console.log('MistralOCR: Connection test status:', response.status);
-      console.log('MistralOCR: Connection test headers:', Object.fromEntries(response.headers.entries()));
+      console.log('MistralOCR: Mistral API test status:', response.status);
+      console.log('MistralOCR: Mistral API test headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const error = await response.text();
-        console.log('MistralOCR: Connection test error:', error);
+        console.log('MistralOCR: Mistral API test error:', error);
       } else {
-        console.log('MistralOCR: Connection test successful');
+        console.log('MistralOCR: Mistral API test successful');
         return true;
       }
     } catch (error) {
@@ -59,21 +77,54 @@ class MistralOCRService {
         throw new Error('Mistral API key not configured');
       }
 
-      // Read image as base64
-      const base64Image = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      console.log('MistralOCR: Image base64 size:', base64Image.length);
-      console.log('MistralOCR: Image base64 preview:', base64Image.substring(0, 100) + '...');
+      // Compress image to reduce payload size
+      let finalImageUri = imageUri;
+      let base64Image = '';
       
-      // Check if base64 is too large (Mistral has limits)
-      if (base64Image.length > 10000000) { // ~10MB limit
-        console.warn('MistralOCR: Image too large, falling back to OCR.space');
-        throw new Error('Image too large for Mistral OCR');
+      try {
+        // First, get the original image size
+        const originalBase64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        console.log('MistralOCR: Original image base64 size:', originalBase64.length);
+        
+        // If image is too large (>500KB base64), compress it
+        if (originalBase64.length > 500000) {
+          console.log('MistralOCR: Compressing large image...');
+          
+          const compressedImage = await manipulateAsync(
+            imageUri,
+            [{ resize: { width: 1024 } }], // Resize to max 1024px width
+            { 
+              compress: 0.8,
+              format: SaveFormat.JPEG 
+            }
+          );
+          
+          finalImageUri = compressedImage.uri;
+          console.log('MistralOCR: Image compressed, new URI:', finalImageUri);
+        }
+        
+        // Read the final image as base64
+        base64Image = await FileSystem.readAsStringAsync(finalImageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        console.log('MistralOCR: Final image base64 size:', base64Image.length);
+        console.log('MistralOCR: Image base64 preview:', base64Image.substring(0, 100) + '...');
+        
+        // Check if still too large after compression
+        if (base64Image.length > 2000000) { // ~2MB limit after compression
+          console.warn('MistralOCR: Image still too large after compression, falling back to OCR.space');
+          throw new Error('Image too large for Mistral OCR even after compression');
+        }
+      } catch (compressionError) {
+        console.error('MistralOCR: Image compression failed:', compressionError);
+        throw new Error('Failed to prepare image for Mistral OCR');
       }
 
-      // Try a simpler format first - just OCR without custom formatting
+      // Simple OCR request format matching the working Node.js test
       const requestBody = {
         model: this.model,
         document: {
@@ -86,19 +137,41 @@ class MistralOCRService {
 
       console.log('MistralOCR: Making request to:', this.apiUrl);
       console.log('MistralOCR: Using API key:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'None');
+      console.log('MistralOCR: Request body size:', JSON.stringify(requestBody).length, 'characters');
 
-      // Make API request
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      // Make API request with timeout and React Native error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      console.log('MistralOCR: Response status:', response.status);
-      console.log('MistralOCR: Response headers:', Object.fromEntries(response.headers.entries()));
+      let response: Response;
+      try {
+        response = await fetch(this.apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        console.log('MistralOCR: Response status:', response.status);
+        console.log('MistralOCR: Response headers:', Object.fromEntries(response.headers.entries()));
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        // More specific error handling for React Native
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - server took too long to respond');
+        } else if (fetchError.message === 'Network request failed') {
+          throw new Error('Network request failed - check iOS network security settings');
+        } else {
+          throw fetchError;
+        }
+      }
 
       if (!response.ok) {
         const error = await response.text();
@@ -218,8 +291,24 @@ class MistralOCRService {
 
       console.log('MistralOCR: Raw API response:', JSON.stringify(response, null, 2));
 
-      // Extract text from Mistral OCR response
-      if (response.document_annotation) {
+      // Extract text from Mistral OCR response - use pages.markdown format
+      if (response.pages && Array.isArray(response.pages)) {
+        // Extract markdown text from pages (this is the main format)
+        rawText = response.pages.map((page: any) => {
+          if (page.markdown) {
+            return page.markdown;
+          } else if (page.content) {
+            return page.content;
+          } else if (typeof page === 'string') {
+            return page;
+          } else {
+            return JSON.stringify(page);
+          }
+        }).join('\n').trim();
+        
+        console.log('MistralOCR: Extracted from pages.markdown:', rawText);
+      } else if (response.document_annotation) {
+        // Fallback to document_annotation if available
         if (typeof response.document_annotation === 'string') {
           rawText = response.document_annotation;
           try {
@@ -231,19 +320,8 @@ class MistralOCRService {
           rawText = JSON.stringify(response.document_annotation);
           parsedData = response.document_annotation;
         }
-      } else if (response.pages && Array.isArray(response.pages)) {
-        // Extract text from pages array
-        rawText = response.pages.map((page: any) => {
-          if (typeof page === 'string') {
-            return page;
-          } else if (page.content) {
-            return page.content;
-          } else {
-            return JSON.stringify(page);
-          }
-        }).join('\n');
       } else {
-        console.warn('MistralOCR: Unexpected response format');
+        console.warn('MistralOCR: Unexpected response format, using full response');
         rawText = JSON.stringify(response);
       }
 
