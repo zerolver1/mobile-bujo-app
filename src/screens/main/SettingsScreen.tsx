@@ -12,7 +12,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 
-export const SettingsScreen: React.FC = () => {
+interface SettingsScreenProps {
+  navigation: any;
+}
+
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { getSubscriptionTier, usageStats, restorePurchases } = useSubscriptionStore();
 
   const [preferences, setPreferences] = React.useState({
@@ -160,6 +164,13 @@ export const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Support</Text>
           <View style={styles.card}>
+            <SettingRow
+              title="Bullet Journal Guide"
+              subtitle="Learn the methodology & app features"
+              icon="book-outline"
+              onPress={() => navigation.navigate('BuJoGuide')}
+            />
+            <View style={styles.separator} />
             <SettingRow
               title="Help & FAQ"
               subtitle="Get help with bullet journaling"

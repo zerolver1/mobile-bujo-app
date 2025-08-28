@@ -48,7 +48,11 @@ const BuJoEntryItem: React.FC<{ entry: BuJoEntry; onPress: () => void }> = ({ en
   </TouchableOpacity>
 );
 
-export const DailyLogScreen: React.FC = () => {
+interface DailyLogScreenProps {
+  navigation: any;
+}
+
+export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) => {
   const { 
     entries, 
     currentDate, 
@@ -71,31 +75,7 @@ export const DailyLogScreen: React.FC = () => {
   }, [entries, currentDate]);
 
   const handleAddQuickEntry = () => {
-    Alert.prompt(
-      'Quick Entry',
-      'Add a new bullet journal entry:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (text) => {
-            if (text?.trim()) {
-              addEntry({
-                type: 'task',
-                content: text.trim(),
-                status: 'incomplete',
-                priority: 'none',
-                collection: 'daily',
-                collectionDate: currentDate,
-                tags: [],
-                contexts: []
-              });
-            }
-          }
-        }
-      ],
-      'plain-text'
-    );
+    navigation.navigate('QuickCapture');
   };
 
   const handleEntryPress = (entry: BuJoEntry) => {

@@ -11,6 +11,8 @@ import { CaptureScreen } from '../screens/main/CaptureScreen';
 import { CollectionsScreen } from '../screens/main/CollectionsScreen';
 import { SettingsScreen } from '../screens/main/SettingsScreen';
 import { EntryReviewScreen } from '../screens/main/EntryReviewScreen';
+import { QuickCaptureScreen } from '../screens/main/QuickCaptureScreen';
+import { BuJoGuideScreen } from '../screens/settings/BuJoGuideScreen';
 
 // Type definitions
 export type RootTabParamList = {
@@ -27,6 +29,8 @@ export type RootStackParamList = {
     ocrResult: any;
     parsedEntries: any[];
   };
+  QuickCapture: undefined;
+  BuJoGuide: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -87,12 +91,13 @@ const MainTabNavigator: React.FC = () => {
     >
       <Tab.Screen 
         name="DailyLog" 
-        component={DailyLogScreen}
         options={{
           title: 'Today',
           headerTitle: 'Daily Log',
         }}
-      />
+      >
+        {(props) => <DailyLogScreen {...props} />}
+      </Tab.Screen>
       <Tab.Screen 
         name="Capture" 
         options={{
@@ -112,12 +117,13 @@ const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen 
         name="Settings" 
-        component={SettingsScreen}
         options={{
           title: 'Settings',
           headerTitle: 'Settings',
         }}
-      />
+      >
+        {(props) => <SettingsScreen {...props} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 };
@@ -137,6 +143,22 @@ const RootNavigator: React.FC = () => {
           headerShown: true,
           presentation: 'modal',
           headerTitle: 'Review Entries',
+        }}
+      />
+      <Stack.Screen 
+        name="QuickCapture" 
+        component={QuickCaptureScreen}
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen 
+        name="BuJoGuide" 
+        component={BuJoGuideScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
         }}
       />
     </Stack.Navigator>
