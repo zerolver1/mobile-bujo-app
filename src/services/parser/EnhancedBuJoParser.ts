@@ -6,13 +6,13 @@ import { BuJoEntry } from '../../types/BuJo';
  */
 export class EnhancedBuJoParser {
   private readonly patterns = {
-    // Core bullets (traditional)
-    task: /^[•\-\*]\s+(.+)$/,
-    taskComplete: /^[xX✓]\s*[•\-\*]?\s*(.+)$/,
-    taskMigrated: /^[>→]\s*[•\-\*]?\s*(.+)$/,
-    taskScheduled: /^[<←]\s*[•\-\*]?\s*(.+)$/,
-    event: /^[○◦]\s+(.+)$/,
-    note: /^[—–\-]\s+(.+)$/,
+    // Core bullets (traditional) - supporting OCR variations and common misreads
+    task: /^[\•\-\*·∙⋅‧]\s+(.+)$/,  // Bullet, dash, asterisk, and similar dots
+    taskComplete: /^[xX✓✔×]\s*[\•\-\*·∙⋅‧]?\s*(.+)$/,  // x, X, checkmark, cross
+    taskMigrated: /^[>→➜]\s*[\•\-\*·∙⋅‧]?\s*(.+)$/,  // Greater than, arrows
+    taskScheduled: /^[<←⬅]\s*[\•\-\*·∙⋅‧]?\s*(.+)$/,  // Less than, arrows
+    event: /^[○◦oO0Ø]\s+(.+)$/,  // Circle, o, O, zero (common OCR misread)
+    note: /^[—–\-=_]\s+(.+)$/,  // Various dashes and underscores
     
     // Natural language patterns (for OCR without bullets)
     appointment: /(.+)\s+@\s*(\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)?)/,
@@ -116,6 +116,7 @@ export class EnhancedBuJoParser {
       if (['task', 'taskComplete', 'taskMigrated', 'taskScheduled', 'event', 'note'].includes(patternName)) {
         const match = line.match(pattern as RegExp);
         if (match) {
+          console.log(`EnhancedBuJoParser: Found bullet "${patternName}" in:`, line);
           return this.createEntry(patternName, match[1], line, collectionDate, currentDate);
         }
       }
