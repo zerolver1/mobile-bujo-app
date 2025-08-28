@@ -16,9 +16,7 @@ import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 // import { mlKitService } from '../../services/ocr/MLKitService';
 // import { mockOCRService } from '../../services/ocr/MockOCRService';
 // import { tesseractService } from '../../services/ocr/TesseractService';
-import { ocrSpaceService } from '../../services/ocr/OCRSpaceService';
-import { mistralOCRService } from '../../services/ocr/MistralOCRService';
-import { BuJoParser } from '../../services/parser/BuJoParser';
+import { smartOCRService } from '../../services/ocr/SmartOCRService';
 import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
 
 interface CaptureScreenProps {
@@ -33,23 +31,14 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
   const { addScan } = useBuJoStore();
   const { canPerformScan, trackScan, triggerPaywall } = useSubscriptionStore();
 
-  // Initialize OCR services on component mount
+  // Initialize Smart OCR service on component mount
   useEffect(() => {
     const initializeOCRServices = async () => {
       try {
-        // Try to initialize Mistral OCR first
-        await mistralOCRService.initialize();
-        console.log('Mistral OCR initialized');
+        await smartOCRService.initialize();
+        console.log('Smart OCR service initialized with all providers');
       } catch (error) {
-        console.log('Mistral OCR not available:', error);
-      }
-      
-      try {
-        // Always initialize OCR.space as fallback
-        await ocrSpaceService.initialize();
-        console.log('OCR.space initialized as fallback');
-      } catch (error) {
-        console.error('Failed to initialize fallback OCR:', error);
+        console.error('Failed to initialize Smart OCR service:', error);
       }
     };
 
@@ -57,11 +46,8 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
     
     // Cleanup on unmount
     return () => {
-      mistralOCRService.cleanup().catch(error => {
-        console.error('Failed to cleanup Mistral OCR:', error);
-      });
-      ocrSpaceService.cleanup().catch(error => {
-        console.error('Failed to cleanup OCR.space:', error);
+      smartOCRService.cleanup().catch(error => {
+        console.error('Failed to cleanup Smart OCR service:', error);
       });
     };
   }, []);
@@ -133,43 +119,29 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   const processImage = async (imageUri: string) => {
     try {
-      console.log('Starting advanced image processing...');
+      console.log('Starting intelligent OCR processing...');
       
-      let ocrResult: any;
+      // Step 1: Use Smart OCR Service for intelligent provider selection
+      const ocrResult = await smartOCRService.processImage(imageUri, {
+        prioritizeAccuracy: true, // Prioritize accuracy for bullet journal recognition
+        maxCostTier: 'premium' // Allow all services including GPT Vision
+      });
+      
       let entries: any[] = [];
-      let ocrService = 'Unknown';
-
-      // Step 1: Try Mistral OCR first (if available)
-      if (mistralOCRService.isAvailable()) {
-        try {
-          console.log('Using Mistral OCR for advanced text extraction...');
-          ocrService = 'Mistral AI';
-          ocrResult = await mistralOCRService.recognizeText(imageUri);
-          
-          // If Mistral provided structured entries, use them directly
-          if (ocrResult.parsedEntries && ocrResult.parsedEntries.length > 0) {
-            console.log('Using Mistral structured entries:', ocrResult.parsedEntries.length);
-            entries = await mistralOCRService.parseStructuredEntries(ocrResult);
-          } else {
-            // Fallback to enhanced parsing for natural language
-            entries = enhancedBuJoParser.parse(ocrResult.text);
-          }
-        } catch (mistralError) {
-          console.warn('Mistral OCR failed, falling back to OCR.space:', mistralError);
-          ocrService = 'OCR.space (fallback)';
-          ocrResult = await ocrSpaceService.recognizeText(imageUri);
-          entries = enhancedBuJoParser.parse(ocrResult.text);
-        }
+      
+      // Step 2: Extract entries - GPT Vision may provide structured entries
+      if (ocrResult.parsedEntries && ocrResult.parsedEntries.length > 0) {
+        console.log('Using structured entries from smart OCR:', ocrResult.parsedEntries.length);
+        entries = ocrResult.parsedEntries;
       } else {
-        // Use OCR.space as primary if Mistral not available
-        console.log('Using OCR.space for text extraction...');
-        ocrService = 'OCR.space';
-        ocrResult = await ocrSpaceService.recognizeText(imageUri);
+        // Fallback to enhanced parsing for services that return text only
+        console.log('Parsing OCR text with enhanced BuJo parser...');
         entries = enhancedBuJoParser.parse(ocrResult.text);
       }
       
-      console.log(`OCR completed using ${ocrService}:`, ocrResult.text.substring(0, 100) + '...');
-      console.log('Parsed entries:', entries.length);
+      console.log('Smart OCR completed. Text preview:', ocrResult.text.substring(0, 100) + '...');
+      console.log('Extracted entries:', entries.length);
+      console.log('Average confidence:', (ocrResult.confidence * 100).toFixed(1) + '%');
       
       // Step 3: Add scan record
       const scanHash = await generateImageHash(imageUri);
@@ -206,10 +178,10 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
           parsedEntries: entries
         });
       } else {
-        // Fallback alert if navigation not available
+        // Fallback alert if navigation not available  
         Alert.alert(
           'Page Processed!',
-          `Found ${entries.length} bullet journal entries.\n\nProcessed with: ${ocrService}\nConfidence: ${Math.round(ocrResult.confidence * 100)}%`,
+          `Found ${entries.length} bullet journal entries.\n\nProcessed with Smart OCR\nConfidence: ${Math.round(ocrResult.confidence * 100)}%`,
           [{ text: 'OK' }]
         );
       }

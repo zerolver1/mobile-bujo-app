@@ -96,3 +96,4 @@ export class RateLimiter {
 // Singleton instances for different services
 export const ocrRateLimiter = new RateLimiter(5, 60000); // 5 requests per minute
 export const apiRateLimiter = new RateLimiter(20, 60000); // 20 requests per minute
+export const gptVisionRateLimiter = new RateLimiter(20, 60000); // 20 requests per minute (GPT-4o limit)
