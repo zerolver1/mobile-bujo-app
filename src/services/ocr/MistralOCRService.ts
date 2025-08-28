@@ -1,6 +1,8 @@
 import { OCRResult, OCRBlock, BuJoEntry } from '../../types/BuJo';
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 
 /**
  * Mistral AI OCR Service for advanced text extraction from bullet journal images
@@ -139,7 +141,49 @@ class MistralOCRService {
       console.log('MistralOCR: Using API key:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'None');
       console.log('MistralOCR: Request body size:', JSON.stringify(requestBody).length, 'characters');
 
-      // Make API request with timeout and React Native error handling
+      // Check if running in iOS Simulator
+      const isSimulator = Platform.OS === 'ios' && !Device.isDevice;
+      
+      if (isSimulator) {
+        console.log('MistralOCR: Running in iOS Simulator - using FileSystem.uploadAsync workaround');
+        
+        // Use Expo FileSystem for iOS Simulator as a workaround
+        try {
+          const uploadResult = await FileSystem.uploadAsync(
+            this.apiUrl,
+            finalImageUri,
+            {
+              httpMethod: 'POST',
+              uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+              fieldName: 'document',
+              headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
+                'Accept': 'application/json',
+              },
+              parameters: {
+                model: this.model,
+                document_type: 'image_url'
+              }
+            }
+          );
+          
+          console.log('MistralOCR: Upload result status:', uploadResult.status);
+          
+          if (uploadResult.status !== 200) {
+            throw new Error(`Mistral OCR API error: ${uploadResult.status}`);
+          }
+          
+          const data = JSON.parse(uploadResult.body);
+          console.log('MistralOCR: Raw response:', JSON.stringify(data, null, 2));
+          return this.parseOCRResponse(data);
+          
+        } catch (uploadError) {
+          console.error('MistralOCR: FileSystem upload failed:', uploadError);
+          // Fall back to regular fetch
+        }
+      }
+      
+      // Regular fetch for physical devices
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -167,7 +211,7 @@ class MistralOCRService {
         if (fetchError.name === 'AbortError') {
           throw new Error('Request timeout - server took too long to respond');
         } else if (fetchError.message === 'Network request failed') {
-          throw new Error('Network request failed - check iOS network security settings');
+          throw new Error('Network request failed - iOS Simulator limitation');
         } else {
           throw fetchError;
         }

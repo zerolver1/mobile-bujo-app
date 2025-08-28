@@ -22,11 +22,21 @@
         "NSRemindersUsageDescription": "This app syncs your bullet journal tasks with your Reminders app.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsInWebContent": true,
+          "NSAllowsLocalNetworking": true,
           "NSExceptionDomains": {
             "api.mistral.ai": {
               "NSExceptionAllowsInsecureHTTPLoads": false,
-              "NSExceptionMinimumTLSVersion": "1.2",
-              "NSIncludesSubdomains": true
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": false
+            },
+            "mistral.ai": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false
             }
           }
         }

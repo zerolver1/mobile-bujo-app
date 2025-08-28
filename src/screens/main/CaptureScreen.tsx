@@ -19,6 +19,7 @@ import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 import { ocrSpaceService } from '../../services/ocr/OCRSpaceService';
 import { mistralOCRService } from '../../services/ocr/MistralOCRService';
 import { BuJoParser } from '../../services/parser/BuJoParser';
+import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
 
 interface CaptureScreenProps {
   navigation?: any;
@@ -150,24 +151,21 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
             console.log('Using Mistral structured entries:', ocrResult.parsedEntries.length);
             entries = await mistralOCRService.parseStructuredEntries(ocrResult);
           } else {
-            // Fallback to traditional parsing
-            const parser = new BuJoParser();
-            entries = parser.parse(ocrResult.text);
+            // Fallback to enhanced parsing for natural language
+            entries = enhancedBuJoParser.parse(ocrResult.text);
           }
         } catch (mistralError) {
           console.warn('Mistral OCR failed, falling back to OCR.space:', mistralError);
           ocrService = 'OCR.space (fallback)';
           ocrResult = await ocrSpaceService.recognizeText(imageUri);
-          const parser = new BuJoParser();
-          entries = parser.parse(ocrResult.text);
+          entries = enhancedBuJoParser.parse(ocrResult.text);
         }
       } else {
         // Use OCR.space as primary if Mistral not available
         console.log('Using OCR.space for text extraction...');
         ocrService = 'OCR.space';
         ocrResult = await ocrSpaceService.recognizeText(imageUri);
-        const parser = new BuJoParser();
-        entries = parser.parse(ocrResult.text);
+        entries = enhancedBuJoParser.parse(ocrResult.text);
       }
       
       console.log(`OCR completed using ${ocrService}:`, ocrResult.text.substring(0, 100) + '...');
