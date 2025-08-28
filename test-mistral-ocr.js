@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuration
-const API_KEY = 'Py9aU8TjMtlKnYcjuB1IMTy8Is2nOx6n';
+const API_KEY = process.env.MISTRAL_API_KEY || 'YOUR_MISTRAL_API_KEY_HERE';
 const API_URL = 'https://api.mistral.ai/v1/ocr';
 
 // Test image - create a simple test image or use existing one
@@ -197,6 +197,13 @@ async function testWithSampleImage() {
 // Run the tests
 async function main() {
   console.log('🚀 Mistral OCR API Test Suite\n');
+  
+  if (API_KEY === 'YOUR_MISTRAL_API_KEY_HERE') {
+    console.error('❌ ERROR: Please set MISTRAL_API_KEY environment variable');
+    console.log('Usage: MISTRAL_API_KEY=your_key_here node test-mistral-ocr.js');
+    process.exit(1);
+  }
+  
   console.log(`API Key: ${API_KEY.substring(0, 10)}...`);
   console.log(`API URL: ${API_URL}\n`);
   

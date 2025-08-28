@@ -66,3 +66,7 @@ android/
 .parcel-cache
 .turbo
 *.tsbuildinfo
+
+# Security - Test files with API keys
+test-mistral-ocr.js
+test-*.js

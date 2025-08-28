@@ -122,11 +122,32 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
         }
       }
 
-      navigation.goBack();
+      // Smart routing based on entry dates
+      const today = new Date().toISOString().split('T')[0];
+      const hasToday = entries.some(e => e.collectionDate === today);
+      const hasFuture = entries.some(e => e.collectionDate > today);
       
-      // Show success message with sync status
+      // Navigate intelligently based on content
+      if (hasToday) {
+        // If entries are for today, go to DailyLog
+        navigation.navigate('MainTabs', { screen: 'DailyLog' });
+      } else if (hasFuture) {
+        // If entries are future-dated, go to Collections
+        navigation.navigate('MainTabs', { screen: 'Collections' });
+      } else {
+        // Default: go back to previous screen
+        navigation.goBack();
+      }
+      
+      // Show success message with sync status and routing info
       const totalEntries = entries.filter(e => e.content.trim()).length;
       let message = `Added ${totalEntries} entries to your journal.`;
+      
+      if (hasToday) {
+        message += '\n\n📅 Navigated to Daily Log to see your entries.';
+      } else if (hasFuture) {
+        message += '\n\n🗂️ Navigated to Collections to organize future entries.';
+      }
       
       if (appleIntegrationService.isAvailable()) {
         if (syncedCount > 0) {

@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { EntryReviewParams } from '../types/BuJo';
 
 // Screens
 import { DailyLogScreen } from '../screens/main/DailyLogScreen';
@@ -24,11 +25,7 @@ export type RootTabParamList = {
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  EntryReview: {
-    imageUri: string;
-    ocrResult: any;
-    parsedEntries: any[];
-  };
+  EntryReview: EntryReviewParams;
   QuickCapture: undefined;
   BuJoGuide: undefined;
 };

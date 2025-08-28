@@ -33,10 +33,12 @@ export class EnhancedBuJoParser {
     actionVerb: /^(pick up|make|finish|complete|start|buy|call|email|send|write|read|review|prepare|organize|clean|fix|schedule|book|cancel|confirm|check|update|submit|download|upload|print|scan|pay|order|return|collect|deliver|setup|install|configure|test|debug|deploy|publish|merge|push|pull|commit)\s+(.+)/i,
     watchingReading: /^(started|finished|completed|watching|reading|listening to)\s+(.+)/i,
     
-    // Date headers
+    // Date headers - enhanced with more patterns
     dateHeader: /^(\d{1,2})(st|nd|rd|th)?$/,
-    monthDateHeader: /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(st|nd|rd|th)?/i,
+    monthDateHeader: /^(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(st|nd|rd|th)?(\s*,?\s*(\d{2,4}))?/i,
     fullDateHeader: /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/,
+    relativeDate: /^(today|tomorrow|yesterday|next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|week|month))\b/i,
+    weekdayHeader: /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\s*,?\s*(.+)?/i,
     
     // Context & tags
     context: /@([a-zA-Z0-9_]+)/g,
@@ -99,6 +101,51 @@ export class EnhancedBuJoParser {
   }
 
   private parseDateHeader(line: string, year: number, month: number): Date | null {
+    // Check for relative dates first (e.g., "today", "tomorrow", "next monday")
+    const relativeDateMatch = line.match(this.patterns.relativeDate);
+    if (relativeDateMatch) {
+      const today = new Date();
+      const relativeTerm = relativeDateMatch[1].toLowerCase();
+      
+      if (relativeTerm === 'today') {
+        return today;
+      } else if (relativeTerm === 'tomorrow') {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow;
+      } else if (relativeTerm === 'yesterday') {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return yesterday;
+      } else if (relativeTerm.startsWith('next')) {
+        return this.getNextWeekday(relativeTerm, today);
+      }
+    }
+    
+    // Check for weekday headers (e.g., "Monday", "Tuesday, March 15")
+    const weekdayMatch = line.match(this.patterns.weekdayHeader);
+    if (weekdayMatch) {
+      const weekdayName = weekdayMatch[1];
+      const extraInfo = weekdayMatch[2];
+      
+      // If there's extra date info, try to parse it
+      if (extraInfo) {
+        const monthDayMatch = extraInfo.match(this.patterns.monthDateHeader);
+        if (monthDayMatch) {
+          const monthName = monthDayMatch[1];
+          const day = parseInt(monthDayMatch[2]);
+          const providedYear = monthDayMatch[4] ? parseInt(monthDayMatch[4]) : year;
+          const monthIndex = this.getMonthIndex(monthName);
+          if (monthIndex !== -1 && day >= 1 && day <= 31) {
+            return new Date(providedYear, monthIndex, day);
+          }
+        }
+      }
+      
+      // Otherwise find the next occurrence of this weekday
+      return this.getNextWeekday(`next ${weekdayName}`, new Date());
+    }
+
     // Check for simple day number (e.g., "15th", "16th")
     const dayMatch = line.match(this.patterns.dateHeader);
     if (dayMatch) {
@@ -108,14 +155,15 @@ export class EnhancedBuJoParser {
       }
     }
 
-    // Check for month + day (e.g., "March 15th")
+    // Check for month + day (e.g., "March 15th", "Mar 15, 2025")
     const monthDayMatch = line.match(this.patterns.monthDateHeader);
     if (monthDayMatch) {
       const monthName = monthDayMatch[1];
       const day = parseInt(monthDayMatch[2]);
+      const providedYear = monthDayMatch[4] ? parseInt(monthDayMatch[4]) : year;
       const monthIndex = this.getMonthIndex(monthName);
       if (monthIndex !== -1 && day >= 1 && day <= 31) {
-        return new Date(year, monthIndex, day);
+        return new Date(providedYear, monthIndex, day);
       }
     }
 
@@ -130,6 +178,27 @@ export class EnhancedBuJoParser {
     }
 
     return null;
+  }
+  
+  private getNextWeekday(relativeTerm: string, today: Date): Date {
+    const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const targetWeekday = relativeTerm.split(' ')[1]?.toLowerCase();
+    
+    if (!targetWeekday || !weekdays.includes(targetWeekday)) {
+      return today; // fallback
+    }
+    
+    const targetDayIndex = weekdays.indexOf(targetWeekday);
+    const todayIndex = today.getDay();
+    
+    let daysToAdd = targetDayIndex - todayIndex;
+    if (daysToAdd <= 0) {
+      daysToAdd += 7; // Next week
+    }
+    
+    const targetDate = new Date(today);
+    targetDate.setDate(targetDate.getDate() + daysToAdd);
+    return targetDate;
   }
 
   private parseLine(line: string, currentDate: Date): BuJoEntry | null {

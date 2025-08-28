@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import { ocrRateLimiter } from '../utils/RateLimiter';
 
 /**
  * Mistral AI OCR Service for advanced text extraction from bullet journal images
@@ -77,6 +78,13 @@ class MistralOCRService {
       if (!this.apiKey) {
         console.warn('MistralOCR: No API key configured, falling back to basic OCR');
         throw new Error('Mistral API key not configured');
+      }
+
+      // Check rate limits
+      if (!ocrRateLimiter.isAllowed('mistral-ocr')) {
+        const status = ocrRateLimiter.getStatus('mistral-ocr');
+        const minutesUntilReset = Math.ceil(status.timeUntilReset / 60000);
+        throw new Error(`Rate limit exceeded (${status.requestsInWindow}/5 requests). Please wait ${minutesUntilReset} minute(s) before trying again.`);
       }
 
       // Compress image to reduce payload size
@@ -241,6 +249,16 @@ class MistralOCRService {
       }
       
       throw error;
+    } finally {
+      // Memory cleanup - remove temporary compressed image
+      try {
+        if (finalImageUri !== imageUri && finalImageUri.startsWith('file://')) {
+          await FileSystem.deleteAsync(finalImageUri, { idempotent: true });
+          console.log('MistralOCR: Cleaned up temporary compressed image');
+        }
+      } catch (cleanupError) {
+        console.warn('MistralOCR: Failed to cleanup temporary image:', cleanupError);
+      }
     }
   }
 
