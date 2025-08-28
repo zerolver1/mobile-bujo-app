@@ -19,7 +19,27 @@
         "NSCameraUsageDescription": "This app uses the camera to scan your bullet journal pages and extract tasks and events.",
         "NSPhotoLibraryUsageDescription": "This app accesses your photo library to process bullet journal images you've already captured.",
         "NSCalendarsUsageDescription": "This app syncs your bullet journal events with your Calendar app.",
-        "NSRemindersUsageDescription": "This app syncs your bullet journal tasks with your Reminders app."
+        "NSRemindersUsageDescription": "This app syncs your bullet journal tasks with your Reminders app.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsInWebContent": true,
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "api.mistral.ai": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": false
+            },
+            "mistral.ai": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false
+            }
+          }
+        }
       }
     },
     "android": {

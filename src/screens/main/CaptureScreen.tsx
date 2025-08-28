@@ -16,8 +16,8 @@ import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 // import { mlKitService } from '../../services/ocr/MLKitService';
 // import { mockOCRService } from '../../services/ocr/MockOCRService';
 // import { tesseractService } from '../../services/ocr/TesseractService';
-import { ocrSpaceService } from '../../services/ocr/OCRSpaceService';
-import { BuJoParser } from '../../services/parser/BuJoParser';
+import { smartOCRService } from '../../services/ocr/SmartOCRService';
+import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
 
 interface CaptureScreenProps {
   navigation?: any;
@@ -31,16 +31,23 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
   const { addScan } = useBuJoStore();
   const { canPerformScan, trackScan, triggerPaywall } = useSubscriptionStore();
 
-  // Initialize OCR service on component mount
+  // Initialize Smart OCR service on component mount
   useEffect(() => {
-    ocrSpaceService.initialize().catch(error => {
-      console.error('Failed to initialize OCR:', error);
-    });
+    const initializeOCRServices = async () => {
+      try {
+        await smartOCRService.initialize();
+        console.log('Smart OCR service initialized with all providers');
+      } catch (error) {
+        console.error('Failed to initialize Smart OCR service:', error);
+      }
+    };
+
+    initializeOCRServices();
     
-    // Cleanup on unmount (if needed)
+    // Cleanup on unmount
     return () => {
-      ocrSpaceService.cleanup().catch(error => {
-        console.error('Failed to cleanup OCR:', error);
+      smartOCRService.cleanup().catch(error => {
+        console.error('Failed to cleanup Smart OCR service:', error);
       });
     };
   }, []);
@@ -112,16 +119,29 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   const processImage = async (imageUri: string) => {
     try {
-      console.log('Starting image processing...');
+      console.log('Starting intelligent OCR processing...');
       
-      // Step 1: Perform OCR with OCRSpace (real text extraction from image)
-      const ocrResult = await ocrSpaceService.recognizeText(imageUri);
-      console.log('OCR completed:', ocrResult.text);
+      // Step 1: Use Smart OCR Service for intelligent provider selection
+      const ocrResult = await smartOCRService.processImage(imageUri, {
+        prioritizeAccuracy: true, // Prioritize accuracy for bullet journal recognition
+        maxCostTier: 'premium' // Allow all services including GPT Vision
+      });
       
-      // Step 2: Parse bullet journal entries
-      const parser = new BuJoParser();
-      const entries = parser.parse(ocrResult.text);
-      console.log('Parsed entries:', entries.length);
+      let entries: any[] = [];
+      
+      // Step 2: Extract entries - GPT Vision may provide structured entries
+      if (ocrResult.parsedEntries && ocrResult.parsedEntries.length > 0) {
+        console.log('Using structured entries from smart OCR:', ocrResult.parsedEntries.length);
+        entries = ocrResult.parsedEntries;
+      } else {
+        // Fallback to enhanced parsing for services that return text only
+        console.log('Parsing OCR text with enhanced BuJo parser...');
+        entries = enhancedBuJoParser.parse(ocrResult.text);
+      }
+      
+      console.log('Smart OCR completed. Text preview:', ocrResult.text.substring(0, 100) + '...');
+      console.log('Extracted entries:', entries.length);
+      console.log('Average confidence:', (ocrResult.confidence * 100).toFixed(1) + '%');
       
       // Step 3: Add scan record
       const scanHash = await generateImageHash(imageUri);
@@ -158,10 +178,10 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
           parsedEntries: entries
         });
       } else {
-        // Fallback alert if navigation not available
+        // Fallback alert if navigation not available  
         Alert.alert(
           'Page Processed!',
-          `Found ${entries.length} bullet journal entries.\n\nConfidence: ${Math.round(ocrResult.confidence * 100)}%`,
+          `Found ${entries.length} bullet journal entries.\n\nProcessed with Smart OCR\nConfidence: ${Math.round(ocrResult.confidence * 100)}%`,
           [{ text: 'OK' }]
         );
       }

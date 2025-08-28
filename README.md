@@ -47,12 +47,16 @@ npm install
 cp .env.example .env.development
 ```
 
-4. Start the development server:
+4. Configure OCR services:
+   - **Mistral AI (Recommended)**: Sign up at [console.mistral.ai](https://console.mistral.ai) and add your API key to `.env.development`
+   - **OCR.space (Fallback)**: Included with demo key, get your own at [ocr.space](https://ocr.space/ocrapi)
+
+5. Start the development server:
 ```bash
 npm start
 ```
 
-5. Run on iOS Simulator:
+6. Run on iOS Simulator:
 ```bash
 npm run ios
 ```
@@ -85,12 +89,22 @@ src/
 └── navigation/      # React Navigation setup
 ```
 
-## OCR Service
+## OCR Services
 
-The app uses OCR.space API for text extraction:
+The app supports multiple OCR providers for maximum accuracy:
+
+### Primary: Mistral AI OCR
+- **99%+ accuracy** for handwritten text
+- **AI-powered** bullet journal understanding
+- **Structured extraction** - directly parses BuJo notation
+- **Cost**: $0.001 per page
+- **Setup**: Add `EXPO_PUBLIC_MISTRAL_API_KEY` to your environment
+
+### Fallback: OCR.space API
 - Free tier: 25,000 requests/month
-- Supports handwriting recognition
+- Basic handwriting recognition
 - Works with Expo managed workflow
+- Automatically used if Mistral OCR is unavailable
 
 ## Apple Integration
 

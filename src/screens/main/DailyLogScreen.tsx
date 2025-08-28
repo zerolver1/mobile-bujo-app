@@ -48,7 +48,11 @@ const BuJoEntryItem: React.FC<{ entry: BuJoEntry; onPress: () => void }> = ({ en
   </TouchableOpacity>
 );
 
-export const DailyLogScreen: React.FC = () => {
+interface DailyLogScreenProps {
+  navigation: any;
+}
+
+export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) => {
   const { 
     entries, 
     currentDate, 
@@ -71,32 +75,30 @@ export const DailyLogScreen: React.FC = () => {
   }, [entries, currentDate]);
 
   const handleAddQuickEntry = () => {
-    Alert.prompt(
-      'Quick Entry',
-      'Add a new bullet journal entry:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (text) => {
-            if (text?.trim()) {
-              addEntry({
-                type: 'task',
-                content: text.trim(),
-                status: 'incomplete',
-                priority: 'none',
-                collection: 'daily',
-                collectionDate: currentDate,
-                tags: [],
-                contexts: []
-              });
-            }
-          }
-        }
-      ],
-      'plain-text'
-    );
+    navigation.navigate('QuickCapture');
   };
+
+  const handleQuickScan = () => {
+    navigation.navigate('Capture');
+  };
+
+  const getEntryStats = () => {
+    const tasks = todaysEntries.filter(e => e.type === 'task');
+    const completedTasks = tasks.filter(e => e.status === 'complete');
+    const events = todaysEntries.filter(e => e.type === 'event');
+    const notes = todaysEntries.filter(e => e.type === 'note');
+    
+    return {
+      total: todaysEntries.length,
+      tasks: tasks.length,
+      completed: completedTasks.length,
+      events: events.length,
+      notes: notes.length,
+      completionRate: tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0
+    };
+  };
+
+  const stats = getEntryStats();
 
   const handleEntryPress = (entry: BuJoEntry) => {
     if (entry.type === 'task' && entry.status === 'incomplete') {
@@ -118,11 +120,47 @@ export const DailyLogScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.dateText}>{formatDate(currentDate)}</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddQuickEntry}>
-          <Ionicons name="add" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.dateText}>{formatDate(currentDate)}</Text>
+          {stats.total > 0 && (
+            <Text style={styles.statsText}>
+              {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
+            </Text>
+          )}
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleQuickScan}>
+            <Ionicons name="camera-outline" size={20} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddQuickEntry}>
+            <Ionicons name="add" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
       </View>
+      
+      {/* Quick Stats Summary */}
+      {stats.total > 0 && (
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{stats.tasks}</Text>
+            <Text style={styles.statLabel}>Tasks</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{stats.events}</Text>
+            <Text style={styles.statLabel}>Events</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{stats.notes}</Text>
+            <Text style={styles.statLabel}>Notes</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statNumber, { color: stats.completionRate > 50 ? '#34C759' : '#FF9500' }]}>
+              {stats.completionRate}%
+            </Text>
+            <Text style={styles.statLabel}>Done</Text>
+          </View>
+        </View>
+      )}
 
       {/* Entries List */}
       {todaysEntries.length > 0 ? (
@@ -168,13 +206,58 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E7',
   },
+  headerContent: {
+    flex: 1,
+  },
   dateText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1C1C1E',
   },
+  statsText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: 8,
+    marginRight: 8,
+  },
   addButton: {
     padding: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 12,
+    paddingVertical: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   listContainer: {
     padding: 20,

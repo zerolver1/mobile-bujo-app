@@ -53,6 +53,7 @@ export interface OCRResult {
   text: string;
   confidence: number;
   blocks: OCRBlock[];
+  parsedEntries?: BuJoEntry[]; // Structured entries from Mistral OCR
 }
 
 export interface OCRBlock {
@@ -76,4 +77,11 @@ export interface UserPreferences {
   syncCalendar: boolean;
   hapticFeedback: boolean;
   dailyNotifications: boolean;
+}
+
+// Navigation Types
+export interface EntryReviewParams {
+  imageUri: string;
+  ocrResult: OCRResult;
+  parsedEntries: BuJoEntry[];
 }
