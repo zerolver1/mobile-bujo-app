@@ -181,43 +181,86 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     }
   };
 
-  const EntryTypeSelector = ({ entry, index }: { entry: BuJoEntry; index: number }) => (
-    <View style={styles.typeSelectorContainer}>
-      <View style={styles.detectedInfo}>
-        <Text style={styles.detectedLabel}>
-          Detected: {getTypeLabel(entry.type)}
-          {entry.status !== 'incomplete' && ` (${getStatusLabel(entry.status)})`}
-        </Text>
-      </View>
-      <View style={styles.typeSelector}>
-        {['task', 'event', 'note'].map((type) => (
-          <TouchableOpacity
-            key={type}
-            style={[
-              styles.typeButton,
-              entry.type === type && styles.typeButtonActive
-            ]}
-            onPress={() => updateEntry(index, 'type', type)}
-          >
-            <View style={styles.typeButtonContent}>
-              <Text style={[
-                styles.typeButtonText,
-                entry.type === type && styles.typeButtonTextActive
-              ]}>
-                {type === 'task' ? '•' : type === 'event' ? '○' : '—'}
-              </Text>
-              <Text style={[
-                styles.typeButtonLabel,
-                entry.type === type && styles.typeButtonLabelActive
-              ]}>
-                {getTypeLabel(type)}
-              </Text>
+  const BulletSelector = ({ entry, index }: { entry: BuJoEntry; index: number }) => {
+    const [showSelector, setShowSelector] = useState(false);
+    
+    const bullets = [
+      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task' },
+      { symbol: 'X', type: 'task', status: 'complete', label: 'Complete' },
+      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated' },
+      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled' },
+      { symbol: '~', type: 'task', status: 'cancelled', label: 'Cancelled' },
+      { symbol: 'O', type: 'event', status: 'incomplete', label: 'Event' },
+      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note' },
+      { symbol: '!', type: 'note', status: 'incomplete', label: 'Idea' },
+    ];
+    
+    const currentBullet = bullets.find(b => 
+      b.type === entry.type && b.status === entry.status
+    ) || bullets[0];
+    
+    const handleBulletSelect = (bullet: typeof bullets[0]) => {
+      updateEntry(index, 'type', bullet.type);
+      updateEntry(index, 'status', bullet.status);
+      setShowSelector(false);
+    };
+    
+    const getConfidenceIndicator = () => {
+      const confidence = entry.ocrConfidence || 0;
+      if (confidence > 0.8) return '✓';
+      if (confidence > 0.6) return '⚠️';
+      return '❓';
+    };
+
+    return (
+      <View style={styles.bulletSelectorContainer}>
+        <View style={styles.detectedInfo}>
+          <Text style={styles.detectedLabel}>
+            {getConfidenceIndicator()} Detected: {currentBullet.label}
+          </Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.currentBulletButton}
+          onPress={() => setShowSelector(!showSelector)}
+        >
+          <Text style={styles.currentBulletSymbol}>{currentBullet.symbol}</Text>
+          <Text style={styles.currentBulletLabel}>{currentBullet.label}</Text>
+        </TouchableOpacity>
+        
+        {showSelector && (
+          <View style={styles.bulletSelector}>
+            <Text style={styles.selectorTitle}>Select bullet type:</Text>
+            <View style={styles.bulletGrid}>
+              {bullets.map((bullet, bulletIndex) => (
+                <TouchableOpacity
+                  key={bulletIndex}
+                  style={[
+                    styles.bulletButton,
+                    currentBullet.symbol === bullet.symbol && styles.bulletButtonActive
+                  ]}
+                  onPress={() => handleBulletSelect(bullet)}
+                >
+                  <Text style={[
+                    styles.bulletSymbol,
+                    currentBullet.symbol === bullet.symbol && styles.bulletSymbolActive
+                  ]}>
+                    {bullet.symbol}
+                  </Text>
+                  <Text style={[
+                    styles.bulletLabel,
+                    currentBullet.symbol === bullet.symbol && styles.bulletLabelActive
+                  ]}>
+                    {bullet.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </TouchableOpacity>
-        ))}
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -252,36 +295,89 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
 
         {/* Entries List */}
         <View style={styles.entriesSection}>
-          <Text style={styles.sectionTitle}>Extracted Entries</Text>
+          <Text style={styles.sectionTitle}>
+            {entries.length} entries found
+          </Text>
           
-          {entries.map((entry, index) => (
-            <View key={index} style={styles.entryCard}>
-              <View style={styles.entryHeader}>
-                <EntryTypeSelector entry={entry} index={index} />
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteEntry(index)}
-                >
-                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                </TouchableOpacity>
-              </View>
-              
-              <TextInput
-                style={styles.entryInput}
-                value={entry.content}
-                onChangeText={(text) => updateEntry(index, 'content', text)}
-                placeholder="Enter bullet journal entry..."
-                multiline
-                autoCapitalize="sentences"
-              />
-              
-              {entry.ocrConfidence !== undefined && (
-                <Text style={styles.confidenceText}>
-                  OCR Confidence: {Math.round(entry.ocrConfidence * 100)}%
-                </Text>
-              )}
-            </View>
-          ))}
+          {(() => {
+            // Group entries by date
+            const groupedEntries: { [date: string]: { entries: typeof entries; indices: number[] } } = {};
+            entries.forEach((entry, index) => {
+              const date = entry.collectionDate || new Date().toISOString().split('T')[0];
+              if (!groupedEntries[date]) {
+                groupedEntries[date] = { entries: [], indices: [] };
+              }
+              groupedEntries[date].entries.push(entry);
+              groupedEntries[date].indices.push(index);
+            });
+
+            return Object.entries(groupedEntries)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([date, group]) => {
+                const dateObj = new Date(date);
+                const today = new Date().toISOString().split('T')[0];
+                const isToday = date === today;
+                
+                const formatDate = (dateStr: string) => {
+                  const date = new Date(dateStr);
+                  const today = new Date();
+                  const tomorrow = new Date(today);
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  
+                  if (dateStr === today.toISOString().split('T')[0]) return 'Today';
+                  if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow';
+                  
+                  return date.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  });
+                };
+
+                return (
+                  <View key={date} style={styles.dateGroup}>
+                    <View style={styles.dateHeader}>
+                      <Text style={styles.dateLabel}>{formatDate(date)}</Text>
+                      <Text style={styles.entryCount}>
+                        {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
+                      </Text>
+                    </View>
+                    
+                    {group.entries.map((entry, groupIndex) => {
+                      const originalIndex = group.indices[groupIndex];
+                      return (
+                        <View key={originalIndex} style={styles.entryCard}>
+                          <View style={styles.entryHeader}>
+                            <BulletSelector entry={entry} index={originalIndex} />
+                            <TouchableOpacity
+                              style={styles.deleteButton}
+                              onPress={() => deleteEntry(originalIndex)}
+                            >
+                              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                            </TouchableOpacity>
+                          </View>
+                          
+                          <TextInput
+                            style={styles.entryInput}
+                            value={entry.content}
+                            onChangeText={(text) => updateEntry(originalIndex, 'content', text)}
+                            placeholder="Enter bullet journal entry..."
+                            multiline
+                            autoCapitalize="sentences"
+                          />
+                          
+                          {entry.ocrConfidence !== undefined && (
+                            <Text style={styles.confidenceText}>
+                              OCR Confidence: {Math.round(entry.ocrConfidence * 100)}%
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              });
+          })()}
 
           {/* Add New Entry Button */}
           <TouchableOpacity style={styles.addButton} onPress={addNewEntry}>
@@ -373,6 +469,30 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 12,
   },
+  dateGroup: {
+    marginBottom: 24,
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F2F2F7',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  dateLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  entryCount: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
   entryCard: {
     marginHorizontal: 20,
     marginBottom: 16,
@@ -386,7 +506,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  typeSelectorContainer: {
+  bulletSelectorContainer: {
     flex: 1,
   },
   detectedInfo: {
@@ -395,43 +515,83 @@ const styles = StyleSheet.create({
   detectedLabel: {
     fontSize: 12,
     color: '#8E8E93',
-    fontStyle: 'italic',
+    fontWeight: '500',
   },
-  typeSelector: {
+  currentBulletButton: {
     flexDirection: 'row',
-  },
-  typeButton: {
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+    alignSelf: 'flex-start',
+  },
+  currentBulletSymbol: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginRight: 6,
+  },
+  currentBulletLabel: {
+    fontSize: 14,
+    color: '#1C1C1E',
+    fontWeight: '500',
+  },
+  bulletSelector: {
+    marginTop: 12,
+    padding: 12,
     backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  selectorTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  bulletGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  bulletButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F2F2F7',
     borderWidth: 1,
     borderColor: '#E5E5E7',
   },
-  typeButtonActive: {
+  bulletButtonActive: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
-  typeButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typeButtonText: {
-    fontSize: 18,
-    color: '#8E8E93',
+  bulletSymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
     marginRight: 4,
   },
-  typeButtonTextActive: {
+  bulletSymbolActive: {
     color: '#FFFFFF',
   },
-  typeButtonLabel: {
-    fontSize: 14,
-    color: '#8E8E93',
+  bulletLabel: {
+    fontSize: 12,
+    color: '#1C1C1E',
+    fontWeight: '500',
   },
-  typeButtonLabelActive: {
+  bulletLabelActive: {
     color: '#FFFFFF',
   },
   deleteButton: {
