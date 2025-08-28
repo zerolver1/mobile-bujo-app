@@ -43,6 +43,12 @@ export class EnhancedBuJoParser {
 
   parse(text: string): BuJoEntry[] {
     const entries: BuJoEntry[] = [];
+    
+    if (!text || typeof text !== 'string') {
+      console.warn('EnhancedBuJoParser: Invalid text input');
+      return entries;
+    }
+    
     const lines = text.split('\n').filter(line => line.trim().length > 0);
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
@@ -50,27 +56,33 @@ export class EnhancedBuJoParser {
     let dateContext: Date | null = null;
 
     for (const line of lines) {
-      const trimmedLine = line.trim();
-      
-      // Skip empty lines
-      if (!trimmedLine) continue;
+      try {
+        const trimmedLine = line.trim();
+        
+        // Skip empty lines
+        if (!trimmedLine) continue;
 
-      // Check if this is a date header
-      const dateHeader = this.parseDateHeader(trimmedLine, currentYear, currentMonth);
-      if (dateHeader) {
-        dateContext = dateHeader;
-        currentDate = dateHeader;
-        console.log('EnhancedBuJoParser: Found date header:', trimmedLine, '→', dateContext.toISOString().split('T')[0]);
-        continue;
-      }
+        // Check if this is a date header
+        const dateHeader = this.parseDateHeader(trimmedLine, currentYear, currentMonth);
+        if (dateHeader) {
+          dateContext = dateHeader;
+          currentDate = dateHeader;
+          console.log('EnhancedBuJoParser: Found date header:', trimmedLine, '→', dateContext.toISOString().split('T')[0]);
+          continue;
+        }
 
-      // Parse the line as an entry
-      const entry = this.parseLine(trimmedLine, dateContext || currentDate);
-      if (entry) {
-        entries.push(entry);
+        // Parse the line as an entry
+        const entry = this.parseLine(trimmedLine, dateContext || currentDate);
+        if (entry) {
+          entries.push(entry);
+        }
+      } catch (error) {
+        console.error('EnhancedBuJoParser: Error parsing line:', line, error);
+        // Continue parsing other lines even if one fails
       }
     }
 
+    console.log('EnhancedBuJoParser: Parsed', entries.length, 'entries');
     return entries;
   }
 
@@ -129,7 +141,7 @@ export class EnhancedBuJoParser {
   private parseNaturalLanguage(line: string, collectionDate: string, currentDate: Date): BuJoEntry | null {
     // Check for appointment pattern (e.g., "OT @ 3pm")
     const appointmentMatch = line.match(this.patterns.appointment);
-    if (appointmentMatch) {
+    if (appointmentMatch && appointmentMatch[1] && appointmentMatch[2]) {
       const [_, content, time] = appointmentMatch;
       const entry = this.createEntry('event', content.trim(), line, collectionDate, currentDate);
       entry.type = 'event';
@@ -145,7 +157,7 @@ export class EnhancedBuJoParser {
 
     // Check for lunch/dinner meetings (e.g., "Amy for lunch @ 11:30 am")
     const lunchMatch = line.match(this.patterns.lunchMeeting);
-    if (lunchMatch) {
+    if (lunchMatch && lunchMatch[1] && lunchMatch[2] && lunchMatch[3]) {
       const [_, who, mealType, time] = lunchMatch;
       const content = `${who.trim()} for ${mealType} @ ${time}`;
       const entry = this.createEntry('event', content, line, collectionDate, currentDate);
@@ -155,7 +167,7 @@ export class EnhancedBuJoParser {
 
     // Check for percentage tasks (e.g., "100% for UNC tickets")
     const percentMatch = line.match(this.patterns.percentTask);
-    if (percentMatch) {
+    if (percentMatch && percentMatch[1] && percentMatch[2]) {
       const [_, percent, task] = percentMatch;
       const content = `${task.trim()} (${percent}%)`;
       const entry = this.createEntry('task', content, line, collectionDate, currentDate);
@@ -168,7 +180,6 @@ export class EnhancedBuJoParser {
     // Check for action verbs (e.g., "Pick up library book")
     const actionMatch = line.match(this.patterns.actionVerb);
     if (actionMatch) {
-      const [_, verb, object] = actionMatch;
       const entry = this.createEntry('task', line, line, collectionDate, currentDate);
       return entry;
     }
@@ -227,7 +238,9 @@ export class EnhancedBuJoParser {
     return entry;
   }
 
-  private cleanContent(content: string): string {
+  private cleanContent(content: string | undefined): string {
+    if (!content) return '';
+    
     // Remove priority markers, contexts, and tags from content
     return content
       .replace(this.patterns.priority, '')
@@ -299,7 +312,9 @@ export class EnhancedBuJoParser {
     return [...new Set(contexts)]; // Remove duplicates
   }
 
-  private parseTime(timeStr: string): { hours: number, minutes: number } | null {
+  private parseTime(timeStr: string | undefined): { hours: number, minutes: number } | null {
+    if (!timeStr) return null;
+    
     const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?/);
     if (match) {
       let hours = parseInt(match[1]);
