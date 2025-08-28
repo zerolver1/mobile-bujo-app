@@ -161,25 +161,61 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     return type === 'event' ? '○' : '—';
   };
 
+  const getTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'task': return 'Task';
+      case 'event': return 'Event';
+      case 'note': return 'Note';
+      default: return type;
+    }
+  };
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'complete': return 'Complete';
+      case 'migrated': return 'Migrated';
+      case 'scheduled': return 'Scheduled';
+      case 'cancelled': return 'Cancelled';
+      case 'incomplete': return 'Pending';
+      default: return status;
+    }
+  };
+
   const EntryTypeSelector = ({ entry, index }: { entry: BuJoEntry; index: number }) => (
-    <View style={styles.typeSelector}>
-      {['task', 'event', 'note'].map((type) => (
-        <TouchableOpacity
-          key={type}
-          style={[
-            styles.typeButton,
-            entry.type === type && styles.typeButtonActive
-          ]}
-          onPress={() => updateEntry(index, 'type', type)}
-        >
-          <Text style={[
-            styles.typeButtonText,
-            entry.type === type && styles.typeButtonTextActive
-          ]}>
-            {type === 'task' ? '•' : type === 'event' ? '○' : '—'}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View style={styles.typeSelectorContainer}>
+      <View style={styles.detectedInfo}>
+        <Text style={styles.detectedLabel}>
+          Detected: {getTypeLabel(entry.type)}
+          {entry.status !== 'incomplete' && ` (${getStatusLabel(entry.status)})`}
+        </Text>
+      </View>
+      <View style={styles.typeSelector}>
+        {['task', 'event', 'note'].map((type) => (
+          <TouchableOpacity
+            key={type}
+            style={[
+              styles.typeButton,
+              entry.type === type && styles.typeButtonActive
+            ]}
+            onPress={() => updateEntry(index, 'type', type)}
+          >
+            <View style={styles.typeButtonContent}>
+              <Text style={[
+                styles.typeButtonText,
+                entry.type === type && styles.typeButtonTextActive
+              ]}>
+                {type === 'task' ? '•' : type === 'event' ? '○' : '—'}
+              </Text>
+              <Text style={[
+                styles.typeButtonLabel,
+                entry.type === type && styles.typeButtonLabelActive
+              ]}>
+                {getTypeLabel(type)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 
@@ -347,16 +383,27 @@ const styles = StyleSheet.create({
   entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  typeSelectorContainer: {
+    flex: 1,
+  },
+  detectedInfo: {
+    marginBottom: 8,
+  },
+  detectedLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontStyle: 'italic',
   },
   typeSelector: {
     flexDirection: 'row',
   },
   typeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -368,11 +415,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
+  typeButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   typeButtonText: {
     fontSize: 18,
     color: '#8E8E93',
+    marginRight: 4,
   },
   typeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  typeButtonLabel: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  typeButtonLabelActive: {
     color: '#FFFFFF',
   },
   deleteButton: {

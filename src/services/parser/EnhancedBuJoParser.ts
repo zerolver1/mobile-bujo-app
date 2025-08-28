@@ -6,13 +6,25 @@ import { BuJoEntry } from '../../types/BuJo';
  */
 export class EnhancedBuJoParser {
   private readonly patterns = {
-    // Core bullets (traditional) - supporting OCR variations and common misreads
-    task: /^[\•\-\*·∙⋅‧]\s+(.+)$/,  // Bullet, dash, asterisk, and similar dots
-    taskComplete: /^[xX✓✔×]\s*[\•\-\*·∙⋅‧]?\s*(.+)$/,  // x, X, checkmark, cross
-    taskMigrated: /^[>→➜]\s*[\•\-\*·∙⋅‧]?\s*(.+)$/,  // Greater than, arrows
-    taskScheduled: /^[<←⬅]\s*[\•\-\*·∙⋅‧]?\s*(.+)$/,  // Less than, arrows
-    event: /^[○◦oO0Ø]\s+(.+)$/,  // Circle, o, O, zero (common OCR misread)
-    note: /^[—–\-=_]\s+(.+)$/,  // Various dashes and underscores
+    // Official Bullet Journal Method - Core bullets with OCR variations
+    // TASKS
+    task: /^[\•·∙⋅‧\.]\s+(.+)$/,  // • (bullet/dot) = Task
+    taskComplete: /^[xX✓✔×]\s*[\•·∙⋅‧\.]?\s*(.+)$/,  // X = Task Complete  
+    taskMigrated: /^[>→➜]\s*[\•·∙⋅‧\.]?\s*(.+)$/,  // > = Task Migrated (moved to new Monthly Log)
+    taskScheduled: /^[<←⬅]\s*[\•·∙⋅‧\.]?\s*(.+)$/,  // < = Task Scheduled (moved to Future Log)
+    taskIrrelevant: /^[\~]\s*[\•·∙⋅‧\.]?\s*(.+)$/,  // ~ = Task Irrelevant/Cancelled
+    
+    // EVENTS
+    event: /^[○◦oO0Ø]\s+(.+)$/,  // O (circle) = Event
+    
+    // NOTES  
+    note: /^[\-–—−]\s+(.+)$/,  // - (dash) = Note
+    idea: /^[!]\s+(.+)$/,  // ! = Idea/Inspiration (standalone)
+    
+    // SIGNIFIERS (prefix any bullet)
+    priorityTask: /^[\*]\s*[\•·∙⋅‧\.]\s+(.+)$/,  // * • = Priority Task
+    priorityEvent: /^[\*]\s*[○◦oO0Ø]\s+(.+)$/,  // * O = Priority Event
+    priorityNote: /^[\*]\s*[\-–—−]\s+(.+)$/,  // * - = Important Note
     
     // Natural language patterns (for OCR without bullets)
     appointment: /(.+)\s+@\s*(\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)?)/,
@@ -123,14 +135,28 @@ export class EnhancedBuJoParser {
   private parseLine(line: string, currentDate: Date): BuJoEntry | null {
     const collectionDate = currentDate.toISOString().split('T')[0];
     
-    // First, try traditional bullet patterns
-    for (const [patternName, pattern] of Object.entries(this.patterns)) {
-      if (['task', 'taskComplete', 'taskMigrated', 'taskScheduled', 'event', 'note'].includes(patternName)) {
-        const match = line.match(pattern as RegExp);
-        if (match) {
-          console.log(`EnhancedBuJoParser: Found bullet "${patternName}" in:`, line);
-          return this.createEntry(patternName, match[1], line, collectionDate, currentDate);
-        }
+    // First, check for priority signifiers (they come before bullets)
+    const priorityPatterns = ['priorityTask', 'priorityEvent', 'priorityNote'];
+    for (const patternName of priorityPatterns) {
+      const pattern = this.patterns[patternName];
+      const match = line.match(pattern as RegExp);
+      if (match) {
+        console.log(`EnhancedBuJoParser: Found priority "${patternName}" in:`, line);
+        const baseType = patternName.replace('priority', '').toLowerCase();
+        const entry = this.createEntry(baseType, match[1], line, collectionDate, currentDate);
+        entry.priority = 'high';
+        return entry;
+      }
+    }
+    
+    // Then try traditional bullet patterns
+    const bulletPatterns = ['task', 'taskComplete', 'taskMigrated', 'taskScheduled', 'taskIrrelevant', 'event', 'note', 'idea'];
+    for (const patternName of bulletPatterns) {
+      const pattern = this.patterns[patternName];
+      const match = line.match(pattern as RegExp);
+      if (match) {
+        console.log(`EnhancedBuJoParser: Found bullet "${patternName}" in:`, line);
+        return this.createEntry(patternName, match[1], line, collectionDate, currentDate);
       }
     }
 
@@ -255,10 +281,15 @@ export class EnhancedBuJoParser {
       case 'taskComplete':
       case 'taskMigrated':
       case 'taskScheduled':
+      case 'taskIrrelevant':
+      case 'priorityTask':
         return 'task';
       case 'event':
+      case 'priorityEvent':
         return 'event';
       case 'note':
+      case 'idea':
+      case 'priorityNote':
         return 'note';
       default:
         return 'task';
@@ -273,6 +304,8 @@ export class EnhancedBuJoParser {
         return 'migrated';
       case 'taskScheduled':
         return 'scheduled';
+      case 'taskIrrelevant':
+        return 'cancelled';
       default:
         // Check for completion indicators
         if (/\b(done|completed|finished)\b/i.test(originalLine) || /100%/.test(originalLine)) {
