@@ -7,7 +7,6 @@ import {
   Dimensions,
   TouchableOpacity,
   Pressable,
-  HapticFeedback,
 } from 'react-native';
 import {
   PanGestureHandler,

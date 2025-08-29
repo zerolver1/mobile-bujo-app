@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
 import { BuJoEntryItem } from '../../components/BuJoEntryItem';
-import { ModernSwipeableEntry } from '../../components/ModernSwipeableEntry';
+import { SimpleSwipeableEntry } from '../../components/SimpleSwipeableEntry';
 import { useSwipeGestures } from '../../hooks/useSwipeGestures';
 
 interface DailyLogScreenProps {
@@ -306,7 +306,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             useSwipeableEntries ? (
-              <ModernSwipeableEntry 
+              <SimpleSwipeableEntry 
                 entry={item} 
                 onSwipeAction={handleSwipeAction}
                 onPress={handleEntryAction}

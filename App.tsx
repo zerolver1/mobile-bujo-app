@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Navigation
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -49,5 +50,9 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppContent />
+    </GestureHandlerRootView>
+  );
 }
