@@ -246,107 +246,24 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
   isCompact = false,
 }) => {
   const translateX = useRef(new Animated.Value(0)).current;
-  const actionOpacity = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
   const { triggerHaptic } = useSwipeGestures();
   
-  const [currentActiveAction, setCurrentActiveAction] = useState<string | null>(null);
-  const [lastHapticIndex, setLastHapticIndex] = useState(-1);
-  
+  // Simplified: get only first action from each side
   const swipeActions = useMemo(() => {
-    const actions = getSimpleSwipeActions(entry);
-    // Assign widths and priorities to actions
-    actions.left.forEach((action, index) => {
-      if (index === 0) {
-        action.width = ACTION_WIDTHS.primary;
-        action.priority = 'primary';
-      } else if (action.id === 'delete') {
-        action.width = ACTION_WIDTHS.destructive;
-        action.priority = 'destructive';
-      } else {
-        action.width = ACTION_WIDTHS.secondary;
-        action.priority = 'secondary';
-      }
-    });
-    
-    actions.right.forEach((action, index) => {
-      if (index === 0) {
-        action.width = ACTION_WIDTHS.primary;
-        action.priority = 'primary';
-      } else if (action.id === 'delete') {
-        action.width = ACTION_WIDTHS.destructive;
-        action.priority = 'destructive';
-      } else {
-        action.width = ACTION_WIDTHS.secondary;
-        action.priority = 'secondary';
-      }
-    });
-    
-    return actions;
+    const allActions = getSimpleSwipeActions(entry);
+    return {
+      left: allActions.left.length > 0 ? [allActions.left[0]] : [],
+      right: allActions.right.length > 0 ? [allActions.right[0]] : [],
+    };
   }, [entry.type, entry.status]);
   
   const handleGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
-    { 
-      useNativeDriver: false,
-      listener: (event: PanGestureHandlerGestureEvent) => {
-        const { translationX } = event.nativeEvent;
-        
-        // Progressive haptic feedback based on actions revealed
-        const leftRevealed = Math.max(0, translationX);
-        const rightRevealed = Math.max(0, -translationX);
-        
-        // Calculate which action is currently active
-        let activeAction: string | null = null;
-        let actionIndex = -1;
-        
-        if (leftRevealed > 30 && swipeActions.left.length > 0) {
-          let currentWidth = 0;
-          for (let i = 0; i < swipeActions.left.length; i++) {
-            currentWidth += swipeActions.left[i].width || ACTION_WIDTHS.primary;
-            if (leftRevealed >= currentWidth - 20) {
-              actionIndex = i;
-              activeAction = swipeActions.left[i].id;
-            }
-          }
-          
-          // Trigger haptic feedback when crossing into new action zone
-          if (actionIndex !== lastHapticIndex && actionIndex >= 0) {
-            triggerHaptic('light');
-            setLastHapticIndex(actionIndex);
-            setCurrentActiveAction(activeAction);
-          }
-        } else if (rightRevealed > 30 && swipeActions.right.length > 0) {
-          let currentWidth = 0;
-          for (let i = 0; i < swipeActions.right.length; i++) {
-            currentWidth += swipeActions.right[i].width || ACTION_WIDTHS.primary;
-            if (rightRevealed >= currentWidth - 20) {
-              actionIndex = i;
-              activeAction = swipeActions.right[i].id;
-            }
-          }
-          
-          // Trigger haptic feedback when crossing into new action zone
-          if (actionIndex !== lastHapticIndex && actionIndex >= 0) {
-            triggerHaptic('light');
-            setLastHapticIndex(actionIndex);
-            setCurrentActiveAction(activeAction);
-          }
-        } else {
-          // Reset when not in any action zone
-          setLastHapticIndex(-1);
-          setCurrentActiveAction(null);
-        }
-        
-        // Animate action visibility based on swipe progress
-        const progress = Math.min(1, (leftRevealed + rightRevealed) / 60);
-        actionOpacity.setValue(progress);
-      }
-    }
+    { useNativeDriver: false }
   );
 
   const handleStateChange = (event: PanGestureHandlerStateChangeEvent) => {
-    const { state, translationX, velocityX } = event.nativeEvent;
+    const { state, translationX } = event.nativeEvent;
     
     if (state === State.END) {
       const leftRevealed = Math.max(0, translationX);
@@ -354,139 +271,67 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
       
       let triggeredAction: SwipeAction | null = null;
       
-      // Progressive multi-button detection
-      if (leftRevealed > 40 && swipeActions.left.length > 0) {
-        let currentWidth = 0;
-        for (const action of swipeActions.left) {
-          currentWidth += action.width || ACTION_WIDTHS.primary;
-          // Consider velocity for better UX
-          const threshold = velocityX > 500 ? currentWidth - 20 : currentWidth - 10;
-          if (leftRevealed >= threshold) {
-            triggeredAction = action;
-          }
-        }
-      } else if (rightRevealed > 40 && swipeActions.right.length > 0) {
-        let currentWidth = 0;
-        for (const action of swipeActions.right) {
-          currentWidth += action.width || ACTION_WIDTHS.primary;
-          // Consider velocity for better UX
-          const threshold = -velocityX > 500 ? currentWidth - 20 : currentWidth - 10;
-          if (rightRevealed >= threshold) {
-            triggeredAction = action;
-          }
-        }
+      // Simple threshold detection - 80px
+      if (leftRevealed > 80 && swipeActions.left.length > 0) {
+        triggeredAction = swipeActions.left[0];
+      } else if (rightRevealed > 80 && swipeActions.right.length > 0) {
+        triggeredAction = swipeActions.right[0];
       }
       
       // Trigger action if one was selected
       if (triggeredAction) {
         triggerHaptic('medium');
-        
-        // Scale animation feedback
-        Animated.sequence([
-          Animated.spring(scaleAnim, {
-            toValue: 0.95,
-            useNativeDriver: true,
-            tension: 200,
-            friction: 7,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            useNativeDriver: true,
-            tension: 200,
-            friction: 7,
-          }),
-        ]).start();
-        
         onSwipeAction(entry, triggeredAction.action);
       }
       
-      // Reset state
-      setLastHapticIndex(-1);
-      setCurrentActiveAction(null);
-      
-      // Animate back to center with velocity consideration
-      Animated.parallel([
-        Animated.spring(translateX, {
-          toValue: 0,
-          useNativeDriver: false,
-          tension: 120,
-          friction: 9,
-          velocity: -velocityX * 0.1,
-        }),
-        Animated.timing(actionOpacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-      ]).start();
+      // Animate back to center
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: false,
+        tension: 100,
+        friction: 8,
+      }).start();
     }
   };
 
-  const renderActionButtons = (actions: SwipeAction[], side: 'left' | 'right') => {
-    if (actions.length === 0) return null;
-    
+  const renderActionButton = (action: SwipeAction, side: 'left' | 'right') => {
     return (
-      <Animated.View style={[
-        styles.actionGroup,
-        side === 'left' ? styles.leftActionGroup : styles.rightActionGroup,
-        { opacity: actionOpacity }
-      ]}>
-        {actions.map((action, index) => {
-          const isActive = currentActiveAction === action.id;
-          return (
-            <View
-              key={action.id}
-              style={[
-                styles.actionContainer,
-                {
-                  backgroundColor: action.backgroundColor,
-                  width: action.width || ACTION_WIDTHS.primary,
-                  opacity: isActive ? 1.0 : 0.95,
-                  transform: [{ scale: isActive ? 1.05 : 1 }],
-                }
-              ]}
-            >
-              <Pressable
-                style={styles.actionButton}
-                onPress={() => {
-                  triggerHaptic('medium');
-                  onSwipeAction(entry, action.action);
-                }}
-              >
-                <Ionicons 
-                  name={action.icon} 
-                  size={isActive ? (action.priority === 'destructive' ? 24 : 22) : (action.priority === 'destructive' ? 22 : 20)} 
-                  color={action.textColor} 
-                  style={styles.actionIcon}
-                />
-                <Text style={[
-                  styles.actionText, 
-                  { 
-                    color: action.textColor,
-                    fontWeight: isActive ? '700' : (action.priority === 'primary' ? '700' : '600'),
-                    fontSize: isActive ? 12 : (action.priority === 'destructive' ? 12 : 11),
-                  }
-                ]}>
-                  {action.label}
-                </Text>
-              </Pressable>
-            </View>
-          );
-        })}
-      </Animated.View>
+      <View
+        key={action.id}
+        style={[
+          styles.actionButton,
+          side === 'left' ? styles.leftAction : styles.rightAction,
+          { backgroundColor: action.backgroundColor }
+        ]}
+      >
+        <Pressable
+          style={styles.buttonPressable}
+          onPress={() => {
+            triggerHaptic('medium');
+            onSwipeAction(entry, action.action);
+          }}
+        >
+          <Ionicons 
+            name={action.icon} 
+            size={22} 
+            color={action.textColor} 
+            style={styles.actionIcon}
+          />
+          <Text style={[styles.actionText, { color: action.textColor }]}>
+            {action.label}
+          </Text>
+        </Pressable>
+      </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Background Actions */}
-      <View style={styles.actionsBackground}>
-        {/* Left Actions */}
-        {renderActionButtons(swipeActions.left, 'left')}
-        
-        {/* Right Actions */}
-        {renderActionButtons(swipeActions.right, 'right')}
-      </View>
+      {/* Left Action */}
+      {swipeActions.left.length > 0 && renderActionButton(swipeActions.left[0], 'left')}
+      
+      {/* Right Action */}
+      {swipeActions.right.length > 0 && renderActionButton(swipeActions.right[0], 'right')}
       
       {/* Main Content that slides over actions */}
       <PanGestureHandler
@@ -499,10 +344,7 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
           style={[
             styles.entryContainer,
             {
-              transform: [
-                { scale: scaleAnim },
-                { translateX: translateX }
-              ],
+              transform: [{ translateX: translateX }],
             }
           ]}
         >
@@ -522,55 +364,40 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     backgroundColor: '#FAF7F0',
-    overflow: 'hidden',
-  },
-  actionsBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 1,
   },
   entryContainer: {
     backgroundColor: '#FFFFFF',
-    zIndex: 10,
-    elevation: 5,
-    position: 'relative',
-  },
-  actionGroup: {
-    flexDirection: 'row',
-    height: '100%',
-  },
-  leftActionGroup: {
-    // Actions flow from left to right
-  },
-  rightActionGroup: {
-    // Actions flow from right to left
-    flexDirection: 'row-reverse',
-  },
-  actionContainer: {
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 60,
+    zIndex: 2,
+    elevation: 2,
   },
   actionButton: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  leftAction: {
+    left: 0,
+  },
+  rightAction: {
+    right: 0,
+  },
+  buttonPressable: {
     justifyContent: 'center',
     alignItems: 'center',
     height: '100%',
     width: '100%',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   actionIcon: {
     marginBottom: 2,
   },
   actionText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 12,
   },
 });
