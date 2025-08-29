@@ -186,8 +186,11 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
         <Text style={styles.title}>
           {editEntry ? 'Edit Entry' : 'Quick Capture'}
         </Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.saveButton}>Save</Text>
+        <TouchableOpacity onPress={handleSave} style={styles.saveButtonContainer}>
+          <Text style={[styles.saveBulletSymbol, { color: currentBullet.color }]}>
+            {currentBullet.symbol}
+          </Text>
+          <Text style={styles.saveButton}>Save {currentBullet.label}</Text>
         </TouchableOpacity>
       </View>
 
@@ -350,6 +353,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1C1C1E',
+  },
+  saveButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  saveBulletSymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Menlo',
   },
   saveButton: {
     fontSize: 16,

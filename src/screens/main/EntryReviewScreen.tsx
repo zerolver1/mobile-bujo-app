@@ -42,6 +42,14 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
   const [entries, setEntries] = useState<BuJoEntry[]>(deserializedEntries);
   const [saving, setSaving] = useState(false);
   
+  // Store original detected types - never changes after initialization
+  const [originalDetections] = useState<{[id: string]: {type: string, status: string}}>(
+    deserializedEntries.reduce((acc, entry) => {
+      acc[entry.id] = { type: entry.type, status: entry.status };
+      return acc;
+    }, {} as {[id: string]: {type: string, status: string}})
+  );
+  
   const { addEntry, updateEntry: updateStoreEntry, addScan } = useBuJoStore();
 
   const updateEntry = (index: number, field: keyof BuJoEntry, value: any) => {
@@ -220,25 +228,38 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     const [showSelector, setShowSelector] = useState(false);
     
     const bullets = [
-      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', color: '#1C1C1E' },
-      { symbol: '✗', type: 'task', status: 'complete', label: 'Complete', color: '#34C759' },
-      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', color: '#FF9500' },
-      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', color: '#007AFF' },
-      { symbol: '/', type: 'task', status: 'cancelled', label: 'Cancelled', color: '#8E8E93' },
-      { symbol: '○', type: 'event', status: 'incomplete', label: 'Event', color: '#007AFF' },
-      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note', color: '#8E8E93' },
-      { symbol: '★', type: 'inspiration', status: 'incomplete', label: 'Inspiration', color: '#FFD60A' },
-      { symbol: '&', type: 'research', status: 'incomplete', label: 'Research', color: '#5856D6' },
-      { symbol: '◇', type: 'memory', status: 'incomplete', label: 'Memory', color: '#FF2D55' },
+      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', color: '#1C1C1E', description: 'Things you need to do' },
+      { symbol: '✗', type: 'task', status: 'complete', label: 'Complete', color: '#34C759', description: 'Task completed' },
+      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', color: '#FF9500', description: 'Task migrated to future' },
+      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', color: '#007AFF', description: 'Task scheduled in calendar' },
+      { symbol: '/', type: 'task', status: 'cancelled', label: 'Cancelled', color: '#8E8E93', description: 'Task no longer relevant' },
+      { symbol: '○', type: 'event', status: 'incomplete', label: 'Event', color: '#007AFF', description: 'Appointments and experiences' },
+      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note', color: '#8E8E93', description: 'Ideas, thoughts, observations' },
+      { symbol: '★', type: 'inspiration', status: 'incomplete', label: 'Inspiration', color: '#FFD60A', description: 'Ideas that inspire action' },
+      { symbol: '&', type: 'research', status: 'incomplete', label: 'Research', color: '#5856D6', description: 'Things to investigate or explore' },
+      { symbol: '◇', type: 'memory', status: 'incomplete', label: 'Memory', color: '#FF2D55', description: 'Gratitude, memories, and reflections' },
     ];
     
+    // Current bullet based on entry's current type/status (for the button)
     const currentBullet = bullets.find(b => 
       b.type === entry.type && b.status === entry.status
     ) || bullets[0];
     
+    // Get the originally detected type from our permanent store
+    const originalDetection = originalDetections[entry.id] || { type: entry.type, status: entry.status };
+    const originalBullet = bullets.find(b => 
+      b.type === originalDetection.type && b.status === originalDetection.status
+    ) || bullets[0];
+    
     const handleBulletSelect = (bullet: typeof bullets[0]) => {
-      updateEntry(index, 'type', bullet.type);
-      updateEntry(index, 'status', bullet.status);
+      // Single state update to avoid race conditions
+      const updatedEntries = [...entries];
+      updatedEntries[index] = { 
+        ...updatedEntries[index], 
+        type: bullet.type,
+        status: bullet.status
+      };
+      setEntries(updatedEntries);
       setShowSelector(false);
     };
     
@@ -253,7 +274,10 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       <View style={styles.bulletSelectorContainer}>
         <View style={styles.detectedInfo}>
           <Text style={styles.detectedLabel}>
-            {getConfidenceIndicator()} Detected: {currentBullet.label}
+            {getConfidenceIndicator()} Detected: {originalBullet.label}
+          </Text>
+          <Text style={styles.detectedDescription}>
+            {currentBullet.description}
           </Text>
         </View>
         
@@ -386,7 +410,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
                       return (
                         <View key={originalIndex} style={styles.entryCard}>
                           <View style={styles.entryHeader}>
-                            <BulletSelector entry={entry} index={originalIndex} />
+                            <BulletSelector key={`${originalIndex}-${entries[originalIndex]?.type}-${entries[originalIndex]?.status}`} entry={entries[originalIndex]} index={originalIndex} />
                             <TouchableOpacity
                               style={styles.deleteButton}
                               onPress={() => deleteEntry(originalIndex)}
@@ -554,6 +578,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
     fontWeight: '500',
+  },
+  detectedDescription: {
+    fontSize: 11,
+    color: '#A8A8A8',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   currentBulletButton: {
     flexDirection: 'row',
