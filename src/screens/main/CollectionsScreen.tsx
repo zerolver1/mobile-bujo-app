@@ -68,6 +68,20 @@ export const CollectionsScreen: React.FC<CollectionsScreenProps> = ({ navigation
 
           <TouchableOpacity 
             style={styles.collectionCard}
+            onPress={() => navigation.navigate('MemoryLog')}
+          >
+            <View style={styles.collectionIcon}>
+              <Ionicons name="heart-outline" size={24} color="#FF2D92" />
+            </View>
+            <View style={styles.collectionContent}>
+              <Text style={styles.collectionTitle}>Memory Log</Text>
+              <Text style={styles.collectionSubtitle}>Gratitude journaling and memories</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.collectionCard}
             onPress={() => navigation.navigate('Index')}
           >
             <View style={styles.collectionIcon}>
