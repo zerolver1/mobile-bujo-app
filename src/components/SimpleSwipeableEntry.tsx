@@ -499,9 +499,10 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
           style={[
             styles.entryContainer,
             {
-              transform: [{ 
-                translateX: translateX
-              }],
+              transform: [
+                { scale: scaleAnim },
+                { translateX: translateX }
+              ],
             }
           ]}
         >
