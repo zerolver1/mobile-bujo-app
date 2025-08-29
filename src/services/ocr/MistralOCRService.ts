@@ -90,6 +90,7 @@ class MistralOCRService {
       // Compress image to reduce payload size
       let finalImageUri = imageUri;
       let base64Image = '';
+      let tempImageToCleanup: string | null = null;
       
       try {
         // First, get the original image size
@@ -113,6 +114,7 @@ class MistralOCRService {
           );
           
           finalImageUri = compressedImage.uri;
+          tempImageToCleanup = finalImageUri; // Track for cleanup
           console.log('MistralOCR: Image compressed, new URI:', finalImageUri);
         }
         
@@ -252,8 +254,8 @@ class MistralOCRService {
     } finally {
       // Memory cleanup - remove temporary compressed image
       try {
-        if (finalImageUri !== imageUri && finalImageUri.startsWith('file://')) {
-          await FileSystem.deleteAsync(finalImageUri, { idempotent: true });
+        if (tempImageToCleanup && tempImageToCleanup !== imageUri && tempImageToCleanup.startsWith('file://')) {
+          await FileSystem.deleteAsync(tempImageToCleanup, { idempotent: true });
           console.log('MistralOCR: Cleaned up temporary compressed image');
         }
       } catch (cleanupError) {

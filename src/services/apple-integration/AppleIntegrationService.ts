@@ -35,6 +35,21 @@ interface AppleIntegrationModule {
   updateReminderStatus(reminderId: string, completed: boolean): Promise<{
     success: boolean;
   }>;
+  
+  // Bidirectional sync methods
+  fetchReminderStatus(reminderId: string): Promise<{
+    completed: boolean;
+    completionDate?: number;
+    success: boolean;
+  }>;
+  
+  fetchEventDetails(eventId: string): Promise<{
+    title: string;
+    startDate: number;
+    endDate: number;
+    location?: string;
+    success: boolean;
+  }>;
 }
 
 class AppleIntegrationService {
@@ -148,6 +163,101 @@ class AppleIntegrationService {
     }
     
     await this.nativeModule.updateReminderStatus(reminderId, completed);
+  }
+  
+  /**
+   * Fetch reminder status from Apple Reminders
+   */
+  async fetchReminderStatus(reminderId: string): Promise<{ completed: boolean; completionDate?: Date; success: boolean }> {
+    if (!this.nativeModule) {
+      throw new Error('Apple integration not available');
+    }
+    
+    const result = await this.nativeModule.fetchReminderStatus(reminderId);
+    
+    return {
+      completed: result.completed,
+      completionDate: result.completionDate ? new Date(result.completionDate) : undefined,
+      success: result.success
+    };
+  }
+  
+  /**
+   * Fetch event details from Apple Calendar
+   */
+  async fetchEventDetails(eventId: string): Promise<{ title: string; startDate: Date; endDate: Date; location?: string; success: boolean }> {
+    if (!this.nativeModule) {
+      throw new Error('Apple integration not available');
+    }
+    
+    const result = await this.nativeModule.fetchEventDetails(eventId);
+    
+    return {
+      title: result.title,
+      startDate: new Date(result.startDate),
+      endDate: new Date(result.endDate),
+      location: result.location,
+      success: result.success
+    };
+  }
+  
+  /**
+   * Sync entry status from Apple apps back to BuJo
+   */
+  async syncFromApple(entry: BuJoEntry): Promise<{ updated: boolean; changes?: Partial<BuJoEntry> }> {
+    if (!this.isAvailable()) {
+      return { updated: false };
+    }
+    
+    try {
+      const changes: Partial<BuJoEntry> = {};
+      let hasChanges = false;
+      
+      // Check reminder status
+      if (entry.appleReminderId && entry.type === 'task') {
+        const reminderStatus = await this.fetchReminderStatus(entry.appleReminderId);
+        
+        if (reminderStatus.success) {
+          const currentStatus = entry.status === 'complete';
+          
+          if (currentStatus !== reminderStatus.completed) {
+            changes.status = reminderStatus.completed ? 'complete' : 'incomplete';
+            changes.lastSyncAt = new Date();
+            hasChanges = true;
+          }
+        }
+      }
+      
+      // Check event details
+      if (entry.appleEventId && entry.type === 'event') {
+        const eventDetails = await this.fetchEventDetails(entry.appleEventId);
+        
+        if (eventDetails.success) {
+          // Check if event was moved or renamed
+          if (entry.content !== eventDetails.title) {
+            changes.content = eventDetails.title;
+            hasChanges = true;
+          }
+          
+          if (entry.dueDate && entry.dueDate.getTime() !== eventDetails.startDate.getTime()) {
+            changes.dueDate = eventDetails.startDate;
+            hasChanges = true;
+          }
+          
+          if (hasChanges) {
+            changes.lastSyncAt = new Date();
+          }
+        }
+      }
+      
+      return {
+        updated: hasChanges,
+        changes: hasChanges ? changes : undefined
+      };
+    } catch (error) {
+      console.error('Failed to sync from Apple apps:', error);
+      return { updated: false };
+    }
   }
   
   /**

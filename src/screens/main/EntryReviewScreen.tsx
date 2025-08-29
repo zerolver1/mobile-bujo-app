@@ -31,7 +31,15 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
   route,
 }) => {
   const { imageUri, ocrResult, parsedEntries } = route.params;
-  const [entries, setEntries] = useState<BuJoEntry[]>(parsedEntries);
+  
+  // Deserialize dates from navigation params
+  const deserializedEntries = parsedEntries.map(entry => ({
+    ...entry,
+    createdAt: typeof entry.createdAt === 'string' ? new Date(entry.createdAt) : entry.createdAt,
+    dueDate: typeof entry.dueDate === 'string' ? new Date(entry.dueDate) : entry.dueDate,
+  }));
+  
+  const [entries, setEntries] = useState<BuJoEntry[]>(deserializedEntries);
   const [saving, setSaving] = useState(false);
   
   const { addEntry, updateEntry: updateStoreEntry, addScan } = useBuJoStore();
@@ -129,11 +137,17 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       
       // Navigate intelligently based on content
       if (hasToday) {
-        // If entries are for today, go to DailyLog
-        navigation.navigate('MainTabs', { screen: 'DailyLog' });
+        // If entries are for today, reset to DailyLog tab
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
       } else if (hasFuture) {
-        // If entries are future-dated, go to Collections
-        navigation.navigate('MainTabs', { screen: 'Collections' });
+        // If entries are future-dated, reset to Collections tab
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
       } else {
         // Default: go back to previous screen
         navigation.goBack();
@@ -206,14 +220,16 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     const [showSelector, setShowSelector] = useState(false);
     
     const bullets = [
-      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task' },
-      { symbol: 'X', type: 'task', status: 'complete', label: 'Complete' },
-      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated' },
-      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled' },
-      { symbol: '~', type: 'task', status: 'cancelled', label: 'Cancelled' },
-      { symbol: 'O', type: 'event', status: 'incomplete', label: 'Event' },
-      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note' },
-      { symbol: '!', type: 'note', status: 'incomplete', label: 'Idea' },
+      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', color: '#1C1C1E' },
+      { symbol: '✗', type: 'task', status: 'complete', label: 'Complete', color: '#34C759' },
+      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', color: '#FF9500' },
+      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', color: '#007AFF' },
+      { symbol: '/', type: 'task', status: 'cancelled', label: 'Cancelled', color: '#8E8E93' },
+      { symbol: '○', type: 'event', status: 'incomplete', label: 'Event', color: '#007AFF' },
+      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note', color: '#8E8E93' },
+      { symbol: '★', type: 'inspiration', status: 'incomplete', label: 'Inspiration', color: '#FFD60A' },
+      { symbol: '&', type: 'research', status: 'incomplete', label: 'Research', color: '#5856D6' },
+      { symbol: '◇', type: 'memory', status: 'incomplete', label: 'Memory', color: '#FF2D55' },
     ];
     
     const currentBullet = bullets.find(b => 
@@ -245,7 +261,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
           style={styles.currentBulletButton}
           onPress={() => setShowSelector(!showSelector)}
         >
-          <Text style={styles.currentBulletSymbol}>{currentBullet.symbol}</Text>
+          <Text style={[styles.currentBulletSymbol, { color: currentBullet.color }]}>{currentBullet.symbol}</Text>
           <Text style={styles.currentBulletLabel}>{currentBullet.label}</Text>
         </TouchableOpacity>
         
@@ -264,6 +280,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
                 >
                   <Text style={[
                     styles.bulletSymbol,
+                    { color: bullet.color },
                     currentBullet.symbol === bullet.symbol && styles.bulletSymbolActive
                   ]}>
                     {bullet.symbol}
@@ -554,6 +571,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1C1E',
     marginRight: 6,
+    fontFamily: 'Menlo', // Monospace for consistent alignment
   },
   currentBulletLabel: {
     fontSize: 14,
@@ -603,6 +621,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1C1E',
     marginRight: 4,
+    fontFamily: 'Menlo', // Monospace for consistent alignment
   },
   bulletSymbolActive: {
     color: '#FFFFFF',

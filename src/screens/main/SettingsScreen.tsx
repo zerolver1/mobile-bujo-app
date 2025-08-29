@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '../../stores/SubscriptionStore';
+import { useProcessingStore, ProcessingSpeedPreference } from '../../stores/ProcessingStore';
 
 interface SettingsScreenProps {
   navigation: any;
@@ -18,12 +19,18 @@ interface SettingsScreenProps {
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { getSubscriptionTier, usageStats, restorePurchases } = useSubscriptionStore();
+  const { speedPreference, setSpeedPreference, loadPreferences } = useProcessingStore();
 
   const [preferences, setPreferences] = React.useState({
     autoSync: true,
     hapticFeedback: true,
     dailyNotifications: false,
   });
+
+  // Load processing preferences on mount
+  React.useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
 
   const subscriptionTier = getSubscriptionTier();
 
@@ -105,6 +112,43 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               subtitle="Restore previous purchases"
               icon="refresh-outline"
               onPress={handleRestorePurchases}
+            />
+          </View>
+        </View>
+
+        {/* Processing Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Processing</Text>
+          <View style={styles.card}>
+            <SettingRow
+              title="Processing Mode"
+              subtitle={speedPreference === 'speed' 
+                ? 'Prioritize Speed - Faster results with good accuracy'
+                : 'Prioritize Accuracy - Best quality results, may take longer'
+              }
+              icon="flash-outline"
+              rightElement={
+                <Switch
+                  value={speedPreference === 'speed'}
+                  onValueChange={(value) => 
+                    setSpeedPreference(value ? 'speed' : 'accuracy')
+                  }
+                />
+              }
+              showChevron={false}
+            />
+          </View>
+        </View>
+
+        {/* Apple Integration Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Apple Integration</Text>
+          <View style={styles.card}>
+            <SettingRow
+              title="Apple Sync Settings"
+              subtitle="Configure sync with Reminders & Calendar"
+              icon="phone-portrait-outline"
+              onPress={() => navigation.navigate('AppleSyncSettings')}
             />
           </View>
         </View>

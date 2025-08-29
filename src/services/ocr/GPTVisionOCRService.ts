@@ -12,8 +12,8 @@ import { gptVisionRateLimiter } from '../utils/RateLimiter';
 class GPTVisionOCRService {
   private apiKey: string;
   private apiUrl: string;
-  private model: string = 'gpt-4o'; // Best vision model
-  private maxTokens: number = 2000;
+  private model: string = 'gpt-4o-mini'; // Fast and cost-effective vision model
+  private maxTokens: number = 1000;
 
   constructor() {
     this.apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
@@ -134,16 +134,16 @@ class GPTVisionOCRService {
           }
         ],
         max_tokens: this.maxTokens,
-        temperature: 0.1, // Low temperature for consistent structured output
+        temperature: 0.05, // Very low temperature for faster, consistent responses
         response_format: { type: 'json_object' }
       };
 
       console.log('GPTVision: Making API request...');
       console.log('GPTVision: Request body size:', JSON.stringify(requestBody).length, 'characters');
 
-      // Make request with timeout
+      // Make request with 30 second timeout for GPT-4o-mini
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch(this.apiUrl, {
         method: 'POST',
@@ -245,7 +245,10 @@ BULLET JOURNAL SYMBOLS (Official Method):
 ~ = Task Cancelled/Irrelevant
 ○ (circle) = Event
 - (dash) = Note
-! = Idea/Important note
+★ (star) = Inspiration/Important idea
+& (ampersand) = Research/Investigation needed
+◇ (diamond) = Memory/Gratitude entry
+! = Important note (deprecated, use ★ instead)
 * prefix = Priority marker (high priority)
 
 CONTEXT & TAGS:
@@ -261,7 +264,7 @@ EXTRACT AS JSON:
 {
   "entries": [
     {
-      "type": "task|event|note",
+      "type": "task|event|note|inspiration|research|memory",
       "status": "incomplete|complete|migrated|scheduled|cancelled",
       "content": "clean text content without bullet symbol",
       "priority": "none|high",
@@ -269,7 +272,8 @@ EXTRACT AS JSON:
       "tags": ["tag1", "tag2"],  
       "date": "YYYY-MM-DD or null",
       "time": "HH:MM or null",
-      "confidence": 0.95
+      "confidence": 0.95,
+      "mood": "excellent|good|neutral|poor (for memory entries only)"
     }
   ],
   "metadata": {
@@ -311,11 +315,16 @@ RULES:
       // Convert GPT entries to our BuJoEntry format
       const parsedEntries: BuJoEntry[] = entries.map((entry: any, index: number) => {
         const today = new Date();
-        const entryDate = entry.date ? new Date(entry.date) : today;
+        // Handle various date formats including string "null"
+        const entryDate = this.parseEntryDate(entry.date) || today;
         
-        return {
+        // Validate and normalize entry type
+        const validTypes = ['task', 'event', 'note', 'inspiration', 'research', 'memory'];
+        const entryType = validTypes.includes(entry.type) ? entry.type : 'task';
+        
+        const baseEntry: BuJoEntry = {
           id: this.generateId(),
-          type: entry.type || 'task',
+          type: entryType,
           content: entry.content || '',
           status: entry.status || 'incomplete',
           priority: entry.priority === 'high' ? 'high' : 'none',
@@ -325,8 +334,15 @@ RULES:
           tags: entry.tags || [],
           contexts: entry.contexts || [],
           ocrConfidence: entry.confidence || 0.9,
-          dueDate: entry.time ? this.parseDateTime(entry.date, entry.time) : undefined
+          dueDate: (entry.time && this.parseEntryDate(entry.date)) ? this.parseDateTime(entry.date, entry.time) : undefined
         };
+        
+        // Add memory-specific fields if it's a memory entry
+        if (entryType === 'memory' && entry.mood) {
+          baseEntry.mood = entry.mood;
+        }
+        
+        return baseEntry;
       });
 
       // Build comprehensive text from all entries for compatibility
@@ -381,16 +397,40 @@ RULES:
   }
 
   /**
+   * Safely parse entry date handling various formats including string "null"
+   */
+  private parseEntryDate(dateStr: any): Date | null {
+    if (!dateStr || dateStr === 'null' || dateStr === null || dateStr === undefined) {
+      return null;
+    }
+    
+    try {
+      const parsed = new Date(dateStr);
+      // Check if date is valid
+      if (isNaN(parsed.getTime())) {
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Parse date and time into a Date object
    */
   private parseDateTime(dateStr: string, timeStr: string): Date {
     try {
-      const date = new Date(dateStr);
+      const baseDate = this.parseEntryDate(dateStr);
+      if (!baseDate) {
+        return new Date(); // Fallback to current date
+      }
+      
       if (timeStr) {
         const [hours, minutes] = timeStr.split(':').map(Number);
-        date.setHours(hours, minutes, 0, 0);
+        baseDate.setHours(hours, minutes, 0, 0);
       }
-      return date;
+      return baseDate;
     } catch {
       return new Date(); // Fallback to current date
     }
@@ -412,6 +452,12 @@ RULES:
       return '○';
     } else if (type === 'note') {
       return '-';
+    } else if (type === 'inspiration') {
+      return '★';
+    } else if (type === 'research') {
+      return '&';
+    } else if (type === 'memory') {
+      return '◇';
     }
     return '•';
   }

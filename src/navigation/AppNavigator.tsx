@@ -14,6 +14,12 @@ import { SettingsScreen } from '../screens/main/SettingsScreen';
 import { EntryReviewScreen } from '../screens/main/EntryReviewScreen';
 import { QuickCaptureScreen } from '../screens/main/QuickCaptureScreen';
 import { BuJoGuideScreen } from '../screens/settings/BuJoGuideScreen';
+import { AppleSyncSettingsScreen } from '../screens/settings/AppleSyncSettingsScreen';
+import { MonthlyLogScreen } from '../screens/collections/MonthlyLogScreen';
+import { FutureLogScreen } from '../screens/collections/FutureLogScreen';
+import { CustomCollectionsScreen } from '../screens/collections/CustomCollectionsScreen';
+import { CollectionDetailScreen } from '../screens/collections/CollectionDetailScreen';
+import { IndexScreen } from '../screens/collections/IndexScreen';
 
 // Type definitions
 export type RootTabParamList = {
@@ -26,8 +32,14 @@ export type RootTabParamList = {
 export type RootStackParamList = {
   MainTabs: undefined;
   EntryReview: EntryReviewParams;
-  QuickCapture: undefined;
+  QuickCapture: { editEntry?: any } | undefined;
   BuJoGuide: undefined;
+  AppleSyncSettings: undefined;
+  MonthlyLog: undefined;
+  FutureLog: undefined;
+  CustomCollections: undefined;
+  CollectionDetail: { collection: any };
+  Index: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -105,13 +117,14 @@ const MainTabNavigator: React.FC = () => {
         {(props) => <CaptureScreen {...props} />}
       </Tab.Screen>
       <Tab.Screen 
-        name="Collections" 
-        component={CollectionsScreen}
+        name="Collections"
         options={{
           title: 'Collections',
           headerTitle: 'Collections',
         }}
-      />
+      >
+        {(props) => <CollectionsScreen {...props} />}
+      </Tab.Screen>
       <Tab.Screen 
         name="Settings" 
         options={{
@@ -153,6 +166,54 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="BuJoGuide" 
         component={BuJoGuideScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="AppleSyncSettings" 
+        component={AppleSyncSettingsScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="MonthlyLog" 
+        component={MonthlyLogScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="FutureLog" 
+        component={FutureLogScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="CustomCollections" 
+        component={CustomCollectionsScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="CollectionDetail" 
+        component={CollectionDetailScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="Index" 
+        component={IndexScreen}
         options={{
           headerShown: false,
           presentation: 'card',
