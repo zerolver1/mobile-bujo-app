@@ -231,35 +231,37 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     backgroundColor: '#FAF7F0',
+    overflow: 'hidden', // Prevent action buttons from leaking outside
   },
   entryContainer: {
     backgroundColor: '#FFFFFF',
-    zIndex: 1,
+    zIndex: 10, // Higher z-index to ensure it's above actions
+    elevation: 5, // Android elevation
   },
   actionContainer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 80,
-    zIndex: 0,
+    zIndex: 1, // Lower z-index so it stays behind
+    elevation: 1, // Lower Android elevation
   },
   leftAction: {
     left: 0,
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 8,
+    alignItems: 'center', // Center the action content
   },
   rightAction: {
     right: 0,
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingLeft: 8,
+    alignItems: 'center', // Center the action content
   },
   actionButton: {
     justifyContent: 'center',
     alignItems: 'center',
     height: '100%',
-    paddingHorizontal: 12,
+    width: '100%', // Fill the entire action container
+    paddingHorizontal: 8,
   },
   actionIcon: {
     marginBottom: 2,
