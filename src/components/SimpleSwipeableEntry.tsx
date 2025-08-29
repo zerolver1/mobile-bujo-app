@@ -188,13 +188,16 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Left Action */}
-      {swipeActions.left.length > 0 && renderActionButton(swipeActions.left[0], 'left')}
+      {/* Background Actions */}
+      <View style={styles.actionsBackground}>
+        {/* Left Action */}
+        {swipeActions.left.length > 0 && renderActionButton(swipeActions.left[0], 'left')}
+        
+        {/* Right Action */}
+        {swipeActions.right.length > 0 && renderActionButton(swipeActions.right[0], 'right')}
+      </View>
       
-      {/* Right Action */}
-      {swipeActions.right.length > 0 && renderActionButton(swipeActions.right[0], 'right')}
-      
-      {/* Main Content */}
+      {/* Main Content that slides over actions */}
       <PanGestureHandler
         onGestureEvent={handleGestureEvent}
         onHandlerStateChange={handleStateChange}
@@ -206,11 +209,7 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
             styles.entryContainer,
             {
               transform: [{ 
-                translateX: translateX.interpolate({
-                  inputRange: [-120, -80, 0, 80, 120],
-                  outputRange: [-80, -80, 0, 80, 80],
-                  extrapolate: 'clamp',
-                })
+                translateX: translateX
               }],
             }
           ]}
@@ -231,36 +230,40 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     backgroundColor: '#FAF7F0',
-    overflow: 'hidden', // Prevent action buttons from leaking outside
+  },
+  actionsBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 1,
   },
   entryContainer: {
     backgroundColor: '#FFFFFF',
-    zIndex: 10, // Higher z-index to ensure it's above actions
-    elevation: 5, // Android elevation
+    zIndex: 10,
+    elevation: 5,
+    position: 'relative',
   },
   actionContainer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
     width: 80,
-    zIndex: 1, // Lower z-index so it stays behind
-    elevation: 1, // Lower Android elevation
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   leftAction: {
-    left: 0,
-    justifyContent: 'center',
-    alignItems: 'center', // Center the action content
+    // No additional positioning needed - handled by actionsBackground
   },
   rightAction: {
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center', // Center the action content
+    // No additional positioning needed - handled by actionsBackground
   },
   actionButton: {
     justifyContent: 'center',
     alignItems: 'center',
     height: '100%',
-    width: '100%', // Fill the entire action container
+    width: '100%',
     paddingHorizontal: 8,
   },
   actionIcon: {
