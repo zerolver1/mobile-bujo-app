@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry, OCRResult } from '../../types/BuJo';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { appleIntegrationService } from '../../services/apple-integration/AppleIntegrationService';
+import { DateSelectionModal } from '../../components/DateSelectionModal';
 
 interface EntryReviewScreenProps {
   navigation: any;
@@ -49,6 +50,14 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       return acc;
     }, {} as {[id: string]: {type: string, status: string}})
   );
+
+  // Date selection modal state
+  const [dateModalVisible, setDateModalVisible] = useState(false);
+  const [dateModalContext, setDateModalContext] = useState<{
+    type: 'single' | 'batch';
+    entryIndex?: number;
+    targetDate?: string;
+  }>({ type: 'single' });
   
   const { addEntry, updateEntry: updateStoreEntry, addScan } = useBuJoStore();
 
@@ -79,6 +88,60 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       ocrConfidence: 1.0 // Manual entry has perfect confidence
     };
     setEntries([...entries, newEntry]);
+  };
+
+  // Date selection handlers
+  const handleDateSelect = (entryIndex: number) => {
+    setDateModalContext({
+      type: 'single',
+      entryIndex,
+      targetDate: entries[entryIndex]?.collectionDate,
+    });
+    setDateModalVisible(true);
+  };
+
+  const handleBatchDateSelect = (targetDate: string) => {
+    setDateModalContext({
+      type: 'batch',
+      targetDate,
+    });
+    setDateModalVisible(true);
+  };
+
+  const handleDateModalSelect = (selectedDate: string) => {
+    if (dateModalContext.type === 'single' && dateModalContext.entryIndex !== undefined) {
+      // Update single entry
+      updateEntry(dateModalContext.entryIndex, 'collectionDate', selectedDate);
+    } else if (dateModalContext.type === 'batch') {
+      // Update all entries with the same date as targetDate
+      const targetDate = dateModalContext.targetDate;
+      if (targetDate) {
+        const updatedEntries = entries.map(entry => 
+          entry.collectionDate === targetDate 
+            ? { ...entry, collectionDate: selectedDate }
+            : entry
+        );
+        setEntries(updatedEntries);
+      }
+    }
+    setDateModalVisible(false);
+  };
+
+  const handleBatchDateForAll = () => {
+    // Get the most common date to use as target
+    const dateCounts = entries.reduce((acc, entry) => {
+      acc[entry.collectionDate] = (acc[entry.collectionDate] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const mostCommonDate = Object.entries(dateCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0] || new Date().toISOString().split('T')[0];
+
+    setDateModalContext({
+      type: 'batch',
+      targetDate: mostCommonDate,
+    });
+    setDateModalVisible(true);
   };
 
   const saveEntries = async () => {
@@ -332,11 +395,16 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Review Entries</Text>
-        <TouchableOpacity onPress={saveEntries} disabled={saving}>
-          <Text style={[styles.saveButton, saving && styles.saveButtonDisabled]}>
-            {saving ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={handleBatchDateForAll} style={styles.dateButton}>
+            <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={saveEntries} disabled={saving}>
+            <Text style={[styles.saveButton, saving && styles.saveButtonDisabled]}>
+              {saving ? 'Saving...' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -398,12 +466,18 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
 
                 return (
                   <View key={date} style={styles.dateGroup}>
-                    <View style={styles.dateHeader}>
-                      <Text style={styles.dateLabel}>{formatDate(date)}</Text>
-                      <Text style={styles.entryCount}>
-                        {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
-                      </Text>
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.dateHeader}
+                      onPress={() => handleBatchDateSelect(date)}
+                    >
+                      <View style={styles.dateHeaderLeft}>
+                        <Text style={styles.dateLabel}>{formatDate(date)}</Text>
+                        <Text style={styles.entryCount}>
+                          {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
+                        </Text>
+                      </View>
+                      <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+                    </TouchableOpacity>
                     
                     {group.entries.map((entry, groupIndex) => {
                       const originalIndex = group.indices[groupIndex];
@@ -411,12 +485,20 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
                         <View key={originalIndex} style={styles.entryCard}>
                           <View style={styles.entryHeader}>
                             <BulletSelector key={`${originalIndex}-${entries[originalIndex]?.type}-${entries[originalIndex]?.status}`} entry={entries[originalIndex]} index={originalIndex} />
-                            <TouchableOpacity
-                              style={styles.deleteButton}
-                              onPress={() => deleteEntry(originalIndex)}
-                            >
-                              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                            </TouchableOpacity>
+                            <View style={styles.entryActions}>
+                              <TouchableOpacity
+                                style={styles.dateActionButton}
+                                onPress={() => handleDateSelect(originalIndex)}
+                              >
+                                <Ionicons name="calendar-outline" size={16} color="#007AFF" />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={() => deleteEntry(originalIndex)}
+                              >
+                                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                              </TouchableOpacity>
+                            </View>
                           </View>
                           
                           <TextInput
@@ -456,6 +538,28 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
           </View>
         </View>
       </ScrollView>
+
+      {/* Date Selection Modal */}
+      <DateSelectionModal
+        visible={dateModalVisible}
+        onClose={() => setDateModalVisible(false)}
+        onSelectDate={handleDateModalSelect}
+        initialDate={dateModalContext.targetDate}
+        title={
+          dateModalContext.type === 'single' 
+            ? 'Select Entry Date' 
+            : `Change Date for ${entries.filter(e => e.collectionDate === dateModalContext.targetDate).length} Entries`
+        }
+        showBatchOption={dateModalContext.type === 'single'}
+        onBatchSelect={() => {
+          if (dateModalContext.entryIndex !== undefined) {
+            const entryDate = entries[dateModalContext.entryIndex]?.collectionDate;
+            if (entryDate) {
+              handleBatchDateSelect(entryDate);
+            }
+          }
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -479,6 +583,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#1C1C1E',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dateButton: {
+    padding: 8,
   },
   saveButton: {
     fontSize: 17,
@@ -545,6 +657,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#E5E5E7',
   },
+  dateHeaderLeft: {
+    flex: 1,
+  },
   dateLabel: {
     fontSize: 16,
     fontWeight: '600',
@@ -567,6 +682,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  entryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateActionButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F0F7FF',
   },
   bulletSelectorContainer: {
     flex: 1,

@@ -67,6 +67,12 @@ export interface OCRResult {
   confidence: number;
   blocks: OCRBlock[];
   parsedEntries?: BuJoEntry[]; // Structured entries from Mistral OCR
+  metadata?: {
+    page_date?: string; // Detected date from the journal page
+    handwriting_quality?: string;
+    total_entries?: number;
+    [key: string]: any; // Allow additional metadata
+  };
 }
 
 export interface OCRBlock {

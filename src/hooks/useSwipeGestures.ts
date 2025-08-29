@@ -128,19 +128,51 @@ export const useSwipeGestures = ({
         break;
 
       case 'convert':
-        // Handle type conversions
-        if (action.key === 'convert' && entry.type === 'note') {
-          // Convert note to task
-          updateEntry(entry.id, { type: 'task', status: 'incomplete' });
+        // Handle type conversions based on action.key (target type)
+        let targetType: BuJoEntry['type'] | null = null;
+        let targetStatus: BuJoEntry['status'] = 'incomplete';
+        
+        switch (action.key) {
+          case 'task':
+            targetType = 'task';
+            targetStatus = 'incomplete';
+            break;
+          case 'event':
+            targetType = 'event';
+            targetStatus = 'incomplete';
+            break;
+          case 'note':
+            targetType = 'note';
+            targetStatus = 'incomplete';
+            break;
+          case 'inspiration':
+            targetType = 'inspiration';
+            targetStatus = 'incomplete';
+            break;
+          case 'research':
+            targetType = 'research';
+            targetStatus = 'incomplete';
+            break;
+          case 'memory':
+            targetType = 'memory';
+            targetStatus = 'incomplete';
+            break;
+          case 'convert':
+            // Generic convert - for backward compatibility with old swipe actions
+            if (entry.type === 'note') {
+              targetType = 'task';
+              targetStatus = 'incomplete';
+            }
+            break;
+        }
+        
+        if (targetType && targetType !== entry.type) {
+          updateEntry(entry.id, { type: targetType, status: targetStatus });
           await triggerHaptic('success');
-        } else if (action.key === 'research' && entry.type === 'inspiration') {
-          // Convert inspiration to research
-          updateEntry(entry.id, { type: 'research' });
-          await triggerHaptic('success');
-        } else if (action.key === 'task' && (entry.type === 'inspiration' || entry.type === 'research')) {
-          // Convert to task
-          updateEntry(entry.id, { type: 'task', status: 'incomplete' });
-          await triggerHaptic('success');
+          Alert.alert(
+            'Converted Entry',
+            `"${entry.content}" converted from ${entry.type} to ${targetType}.`
+          );
         }
         break;
 

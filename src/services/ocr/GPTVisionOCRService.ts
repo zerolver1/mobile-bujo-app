@@ -315,8 +315,8 @@ RULES:
       // Convert GPT entries to our BuJoEntry format
       const parsedEntries: BuJoEntry[] = entries.map((entry: any, index: number) => {
         const today = new Date();
-        // Handle various date formats including string "null"
-        const entryDate = this.parseEntryDate(entry.date) || today;
+        // Parse entry date for dueDate, but don't use for collectionDate
+        const entryDate = this.parseEntryDate(entry.date);
         
         // Validate and normalize entry type
         const validTypes = ['task', 'event', 'note', 'inspiration', 'research', 'memory'];
@@ -330,11 +330,11 @@ RULES:
           priority: entry.priority === 'high' ? 'high' : 'none',
           createdAt: new Date(),
           collection: 'daily',
-          collectionDate: entryDate.toISOString().split('T')[0],
+          collectionDate: today.toISOString().split('T')[0], // Use today as default, will be overridden by OCREntryMapper
           tags: entry.tags || [],
           contexts: entry.contexts || [],
           ocrConfidence: entry.confidence || 0.9,
-          dueDate: (entry.time && this.parseEntryDate(entry.date)) ? this.parseDateTime(entry.date, entry.time) : undefined
+          dueDate: (entry.time && entryDate) ? this.parseDateTime(entry.date, entry.time) : entryDate
         };
         
         // Add memory-specific fields if it's a memory entry
@@ -374,11 +374,13 @@ RULES:
         text: fullText,
         confidence: avgConfidence,
         blocks: blocks,
-        parsedEntries: parsedEntries
+        parsedEntries: parsedEntries,
+        metadata: metadata // Include metadata with page_date
       };
 
       console.log('GPTVision: Successfully parsed', parsedEntries.length, 'entries with avg confidence', avgConfidence);
       console.log('GPTVision: Handwriting quality:', metadata.handwriting_quality || 'unknown');
+      console.log('GPTVision: Page date detected:', metadata.page_date || 'none');
       
       return result;
 

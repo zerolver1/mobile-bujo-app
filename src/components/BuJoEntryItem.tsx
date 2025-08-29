@@ -83,6 +83,7 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
     }
   };
 
+
   const bullet = getBulletSymbol();
   const priority = getPriorityIndicator();
   const isCompleted = entry.status === 'complete';
