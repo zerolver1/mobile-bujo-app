@@ -452,10 +452,9 @@ export const ModernSwipeableEntry: React.FC<ModernSwipeableEntryProps> = ({
     if (actions.length === 0) return null;
     
     return (
-      <Animated.View style={[
+      <View style={[
         styles.actionsContainer,
-        direction === 'left' ? styles.leftActions : styles.rightActions,
-        { opacity: actionOpacity }
+        direction === 'left' ? styles.leftActions : styles.rightActions
       ]}>
         {actions.map((action, index) => {
           const isActive = currentActiveAction === action.id;
@@ -467,8 +466,9 @@ export const ModernSwipeableEntry: React.FC<ModernSwipeableEntryProps> = ({
                 { 
                   backgroundColor: action.backgroundColor,
                   width: action.width,
-                  opacity: isActive ? 1.0 : 0.9,
+                  opacity: isActive ? 1.0 : 0.95,
                   transform: [{ scale: isActive ? 1.05 : 1 }],
+                  zIndex: 10 + index, // Ensure proper layering
                 }
               ]}
               onPress={() => {
@@ -495,7 +495,7 @@ export const ModernSwipeableEntry: React.FC<ModernSwipeableEntryProps> = ({
             </Pressable>
           );
         })}
-      </Animated.View>
+      </View>
     );
   };
 
@@ -516,7 +516,8 @@ export const ModernSwipeableEntry: React.FC<ModernSwipeableEntryProps> = ({
           <PanGestureHandler
             onGestureEvent={handleGestureEvent}
             onHandlerStateChange={handleStateChange}
-            activeOffsetX={[-10, 10]}
+            activeOffsetX={[-20, 20]}
+            failOffsetY={[-20, 20]}
             maxPointers={1}
           >
             <Animated.View 
@@ -562,10 +563,12 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     backgroundColor: '#FAF7F0',
+    overflow: 'hidden', // Ensure actions don't leak outside
   },
   entryContainer: {
     backgroundColor: '#FFFFFF',
-    zIndex: 1,
+    zIndex: 100, // High z-index to stay above actions
+    elevation: 5, // Android elevation
   },
   actionsContainer: {
     position: 'absolute',
@@ -573,14 +576,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 0,
+    zIndex: 1, // Below entry container
   },
   leftActions: {
     left: 0,
+    justifyContent: 'flex-end', // Align actions to the right edge
     paddingLeft: 0,
   },
   rightActions: {
     right: 0,
+    justifyContent: 'flex-start', // Align actions to the left edge
     paddingRight: 0,
   },
   actionButton: {
@@ -588,6 +593,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
+    minWidth: 60, // Ensure minimum touch target
   },
   actionIcon: {
     marginBottom: 2,
