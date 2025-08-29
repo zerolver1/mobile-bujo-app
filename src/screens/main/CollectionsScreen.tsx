@@ -9,7 +9,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export const CollectionsScreen: React.FC = () => {
+interface CollectionsScreenProps {
+  navigation: any;
+}
+
+export const CollectionsScreen: React.FC<CollectionsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -20,7 +24,10 @@ export const CollectionsScreen: React.FC = () => {
 
         {/* Collection Types */}
         <View style={styles.collectionsContainer}>
-          <TouchableOpacity style={styles.collectionCard}>
+          <TouchableOpacity 
+            style={styles.collectionCard}
+            onPress={() => navigation.navigate('MonthlyLog')}
+          >
             <View style={styles.collectionIcon}>
               <Ionicons name="today-outline" size={24} color="#007AFF" />
             </View>
@@ -31,7 +38,10 @@ export const CollectionsScreen: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.collectionCard}>
+          <TouchableOpacity 
+            style={styles.collectionCard}
+            onPress={() => navigation.navigate('FutureLog')}
+          >
             <View style={styles.collectionIcon}>
               <Ionicons name="calendar-outline" size={24} color="#FF9500" />
             </View>
@@ -42,7 +52,10 @@ export const CollectionsScreen: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.collectionCard}>
+          <TouchableOpacity 
+            style={styles.collectionCard}
+            onPress={() => navigation.navigate('CustomCollections')}
+          >
             <View style={styles.collectionIcon}>
               <Ionicons name="folder-outline" size={24} color="#34C759" />
             </View>
@@ -53,7 +66,24 @@ export const CollectionsScreen: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.collectionCard}>
+          <TouchableOpacity 
+            style={styles.collectionCard}
+            onPress={() => navigation.navigate('MemoryLog')}
+          >
+            <View style={styles.collectionIcon}>
+              <Ionicons name="heart-outline" size={24} color="#FF2D92" />
+            </View>
+            <View style={styles.collectionContent}>
+              <Text style={styles.collectionTitle}>Memory Log</Text>
+              <Text style={styles.collectionSubtitle}>Gratitude journaling and memories</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.collectionCard}
+            onPress={() => navigation.navigate('Index')}
+          >
             <View style={styles.collectionIcon}>
               <Ionicons name="search-outline" size={24} color="#FF3B30" />
             </View>

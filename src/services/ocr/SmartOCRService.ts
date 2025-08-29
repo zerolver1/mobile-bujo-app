@@ -37,6 +37,7 @@ interface SmartOCROptions {
   maxCostTier?: 'premium' | 'standard' | 'free';
   prioritizeSpeed?: boolean;
   prioritizeAccuracy?: boolean;
+  userSpeedPreference?: 'speed' | 'accuracy';
 }
 
 class SmartOCRService {
@@ -157,8 +158,25 @@ class SmartOCRService {
       );
     }
     
-    // Sort by preference
-    if (options.preferredService) {
+    // Apply user speed preference first
+    if (options.userSpeedPreference === 'speed') {
+      console.log('SmartOCR: User prefers speed - prioritizing faster services');
+      // For speed preference: exclude GPT Vision (slowest), prioritize Mistral
+      strategies = strategies.filter(s => s.name !== 'GPT Vision OCR');
+      strategies.sort((a, b) => a.averageResponseTime - b.averageResponseTime);
+      console.log('SmartOCR: Speed mode strategies:', strategies.map(s => s.name));
+    } else if (options.userSpeedPreference === 'accuracy') {
+      console.log('SmartOCR: User prefers accuracy - prioritizing accurate services');
+      // For accuracy preference: prioritize GPT Vision first, then by accuracy
+      strategies.sort((a, b) => {
+        if (a.name === 'GPT Vision OCR') return -1;
+        if (b.name === 'GPT Vision OCR') return 1;
+        return b.averageAccuracy - a.averageAccuracy;
+      });
+      console.log('SmartOCR: Accuracy mode strategies:', strategies.map(s => s.name));
+    }
+    // Then apply other preferences as overrides
+    else if (options.preferredService) {
       const preferredName = this.serviceNameMap[options.preferredService];
       strategies.sort((a, b) => {
         if (a.name === preferredName) return -1;

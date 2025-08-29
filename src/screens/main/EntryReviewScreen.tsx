@@ -31,8 +31,24 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
   route,
 }) => {
   const { imageUri, ocrResult, parsedEntries } = route.params;
-  const [entries, setEntries] = useState<BuJoEntry[]>(parsedEntries);
+  
+  // Deserialize dates from navigation params
+  const deserializedEntries = parsedEntries.map(entry => ({
+    ...entry,
+    createdAt: typeof entry.createdAt === 'string' ? new Date(entry.createdAt) : entry.createdAt,
+    dueDate: typeof entry.dueDate === 'string' ? new Date(entry.dueDate) : entry.dueDate,
+  }));
+  
+  const [entries, setEntries] = useState<BuJoEntry[]>(deserializedEntries);
   const [saving, setSaving] = useState(false);
+  
+  // Store original detected types - never changes after initialization
+  const [originalDetections] = useState<{[id: string]: {type: string, status: string}}>(
+    deserializedEntries.reduce((acc, entry) => {
+      acc[entry.id] = { type: entry.type, status: entry.status };
+      return acc;
+    }, {} as {[id: string]: {type: string, status: string}})
+  );
   
   const { addEntry, updateEntry: updateStoreEntry, addScan } = useBuJoStore();
 
@@ -129,11 +145,17 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       
       // Navigate intelligently based on content
       if (hasToday) {
-        // If entries are for today, go to DailyLog
-        navigation.navigate('MainTabs', { screen: 'DailyLog' });
+        // If entries are for today, reset to DailyLog tab
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
       } else if (hasFuture) {
-        // If entries are future-dated, go to Collections
-        navigation.navigate('MainTabs', { screen: 'Collections' });
+        // If entries are future-dated, reset to Collections tab
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
       } else {
         // Default: go back to previous screen
         navigation.goBack();
@@ -206,23 +228,38 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     const [showSelector, setShowSelector] = useState(false);
     
     const bullets = [
-      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task' },
-      { symbol: 'X', type: 'task', status: 'complete', label: 'Complete' },
-      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated' },
-      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled' },
-      { symbol: '~', type: 'task', status: 'cancelled', label: 'Cancelled' },
-      { symbol: 'O', type: 'event', status: 'incomplete', label: 'Event' },
-      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note' },
-      { symbol: '!', type: 'note', status: 'incomplete', label: 'Idea' },
+      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', color: '#1C1C1E', description: 'Things you need to do' },
+      { symbol: '✗', type: 'task', status: 'complete', label: 'Complete', color: '#34C759', description: 'Task completed' },
+      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', color: '#FF9500', description: 'Task migrated to future' },
+      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', color: '#007AFF', description: 'Task scheduled in calendar' },
+      { symbol: '/', type: 'task', status: 'cancelled', label: 'Cancelled', color: '#8E8E93', description: 'Task no longer relevant' },
+      { symbol: '○', type: 'event', status: 'incomplete', label: 'Event', color: '#007AFF', description: 'Appointments and experiences' },
+      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note', color: '#8E8E93', description: 'Ideas, thoughts, observations' },
+      { symbol: '★', type: 'inspiration', status: 'incomplete', label: 'Inspiration', color: '#FFD60A', description: 'Ideas that inspire action' },
+      { symbol: '&', type: 'research', status: 'incomplete', label: 'Research', color: '#5856D6', description: 'Things to investigate or explore' },
+      { symbol: '◇', type: 'memory', status: 'incomplete', label: 'Memory', color: '#FF2D55', description: 'Gratitude, memories, and reflections' },
     ];
     
+    // Current bullet based on entry's current type/status (for the button)
     const currentBullet = bullets.find(b => 
       b.type === entry.type && b.status === entry.status
     ) || bullets[0];
     
+    // Get the originally detected type from our permanent store
+    const originalDetection = originalDetections[entry.id] || { type: entry.type, status: entry.status };
+    const originalBullet = bullets.find(b => 
+      b.type === originalDetection.type && b.status === originalDetection.status
+    ) || bullets[0];
+    
     const handleBulletSelect = (bullet: typeof bullets[0]) => {
-      updateEntry(index, 'type', bullet.type);
-      updateEntry(index, 'status', bullet.status);
+      // Single state update to avoid race conditions
+      const updatedEntries = [...entries];
+      updatedEntries[index] = { 
+        ...updatedEntries[index], 
+        type: bullet.type,
+        status: bullet.status
+      };
+      setEntries(updatedEntries);
       setShowSelector(false);
     };
     
@@ -237,7 +274,10 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       <View style={styles.bulletSelectorContainer}>
         <View style={styles.detectedInfo}>
           <Text style={styles.detectedLabel}>
-            {getConfidenceIndicator()} Detected: {currentBullet.label}
+            {getConfidenceIndicator()} Detected: {originalBullet.label}
+          </Text>
+          <Text style={styles.detectedDescription}>
+            {currentBullet.description}
           </Text>
         </View>
         
@@ -245,7 +285,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
           style={styles.currentBulletButton}
           onPress={() => setShowSelector(!showSelector)}
         >
-          <Text style={styles.currentBulletSymbol}>{currentBullet.symbol}</Text>
+          <Text style={[styles.currentBulletSymbol, { color: currentBullet.color }]}>{currentBullet.symbol}</Text>
           <Text style={styles.currentBulletLabel}>{currentBullet.label}</Text>
         </TouchableOpacity>
         
@@ -264,6 +304,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
                 >
                   <Text style={[
                     styles.bulletSymbol,
+                    { color: bullet.color },
                     currentBullet.symbol === bullet.symbol && styles.bulletSymbolActive
                   ]}>
                     {bullet.symbol}
@@ -369,7 +410,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
                       return (
                         <View key={originalIndex} style={styles.entryCard}>
                           <View style={styles.entryHeader}>
-                            <BulletSelector entry={entry} index={originalIndex} />
+                            <BulletSelector key={`${originalIndex}-${entries[originalIndex]?.type}-${entries[originalIndex]?.status}`} entry={entries[originalIndex]} index={originalIndex} />
                             <TouchableOpacity
                               style={styles.deleteButton}
                               onPress={() => deleteEntry(originalIndex)}
@@ -538,6 +579,12 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontWeight: '500',
   },
+  detectedDescription: {
+    fontSize: 11,
+    color: '#A8A8A8',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
   currentBulletButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -554,6 +601,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1C1E',
     marginRight: 6,
+    fontFamily: 'Menlo', // Monospace for consistent alignment
   },
   currentBulletLabel: {
     fontSize: 14,
@@ -603,6 +651,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1C1E',
     marginRight: 4,
+    fontFamily: 'Menlo', // Monospace for consistent alignment
   },
   bulletSymbolActive: {
     color: '#FFFFFF',

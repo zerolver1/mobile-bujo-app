@@ -18,6 +18,8 @@ import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 // import { tesseractService } from '../../services/ocr/TesseractService';
 import { smartOCRService } from '../../services/ocr/SmartOCRService';
 import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
+import { OCREntryMapper } from '../../services/utils/OCREntryMapper';
+import { useProcessingStore } from '../../stores/ProcessingStore';
 
 interface CaptureScreenProps {
   navigation?: any;
@@ -30,6 +32,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   const { addScan } = useBuJoStore();
   const { canPerformScan, trackScan, triggerPaywall } = useSubscriptionStore();
+  const { startTask, updateTask, completeTask, failTask, speedPreference } = useProcessingStore();
 
   // Initialize Smart OCR service on component mount
   useEffect(() => {
@@ -121,27 +124,82 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
     try {
       console.log('Starting intelligent OCR processing...');
       
-      // Step 1: Use Smart OCR Service for intelligent provider selection
+      // Start global processing task
+      const taskId = startTask({
+        type: 'ocr',
+        stage: 'Analyzing image...',
+        progress: 10,
+        canNavigate: false,
+        imageUri: imageUri
+      });
+      
+      // Brief delay to show initial stage
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      updateTask(taskId, {
+        stage: 'Processing with Smart OCR...',
+        progress: 25,
+        canNavigate: true
+      });
+      
+      // Step 1: Use Smart OCR Service with user speed preference
+      console.log(`CaptureScreen: Using speed preference: ${speedPreference}`);
+      
       const ocrResult = await smartOCRService.processImage(imageUri, {
-        prioritizeAccuracy: true, // Prioritize accuracy for bullet journal recognition
-        maxCostTier: 'premium' // Allow all services including GPT Vision
+        prioritizeAccuracy: speedPreference === 'accuracy',
+        prioritizeSpeed: speedPreference === 'speed',
+        maxCostTier: 'premium', // Allow all services
+        userSpeedPreference: speedPreference // Pass user preference
+      });
+      
+      // Update task with detected service name
+      const serviceName = ocrResult.parsedEntries && ocrResult.parsedEntries.length > 0 ? 'gpt-vision' : 'mistral';
+      updateTask(taskId, {
+        serviceName: serviceName
+      });
+      
+      updateTask(taskId, {
+        stage: 'Extracting bullet journal entries...',
+        progress: 75
       });
       
       let entries: any[] = [];
       
-      // Step 2: Extract entries - GPT Vision may provide structured entries
+      // Step 2: Extract and normalize entries consistently
+      let rawEntries: any[] = [];
+      let ocrSource: 'gpt-vision' | 'mistral' | 'parser' = 'parser';
+      
       if (ocrResult.parsedEntries && ocrResult.parsedEntries.length > 0) {
         console.log('Using structured entries from smart OCR:', ocrResult.parsedEntries.length);
-        entries = ocrResult.parsedEntries;
+        rawEntries = ocrResult.parsedEntries;
+        ocrSource = 'gpt-vision'; // Most likely from GPT Vision
       } else {
         // Fallback to enhanced parsing for services that return text only
         console.log('Parsing OCR text with enhanced BuJo parser...');
-        entries = enhancedBuJoParser.parse(ocrResult.text);
+        rawEntries = enhancedBuJoParser.parse(ocrResult.text);
+        ocrSource = 'parser';
       }
+      
+      // Normalize all entries to consistent format
+      entries = OCREntryMapper.mapToConsistentFormat(rawEntries, ocrSource, ocrResult.confidence);
+      
+      // Fix common OCR content issues
+      entries = entries.map(entry => ({
+        ...entry,
+        content: OCREntryMapper.fixCommonOCRIssues(entry.content)
+      }));
+      
+      // Validate entries and filter out invalid ones
+      entries = entries.filter(entry => OCREntryMapper.validateEntry(entry));
       
       console.log('Smart OCR completed. Text preview:', ocrResult.text.substring(0, 100) + '...');
       console.log('Extracted entries:', entries.length);
       console.log('Average confidence:', (ocrResult.confidence * 100).toFixed(1) + '%');
+      
+      updateTask(taskId, {
+        stage: 'Finalizing results...',
+        progress: 90
+      });
       
       // Step 3: Add scan record
       const scanHash = await generateImageHash(imageUri);
@@ -170,12 +228,40 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         });
       }
       
-      // Step 5: Navigate to review screen
+      updateTask(taskId, {
+        stage: 'Complete!',
+        progress: 100
+      });
+      
+      // Brief delay to show completion
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 5: Serialize all entries for navigation (fix serialization warning)
+      const serializedEntries = entries.map(entry => ({
+        ...entry,
+        createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
+        dueDate: entry.dueDate instanceof Date ? entry.dueDate.toISOString() : entry.dueDate,
+      }));
+
+      // Also serialize ocrResult.parsedEntries if they exist
+      const serializedOcrResult = {
+        ...ocrResult,
+        parsedEntries: ocrResult.parsedEntries ? ocrResult.parsedEntries.map(entry => ({
+          ...entry,
+          createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
+          dueDate: entry.dueDate instanceof Date ? entry.dueDate.toISOString() : entry.dueDate,
+        })) : []
+      };
+
+      // Complete the task
+      completeTask(taskId);
+
+      // Navigate to review screen
       if (navigation) {
         navigation.navigate('EntryReview', {
           imageUri,
-          ocrResult,
-          parsedEntries: entries
+          ocrResult: serializedOcrResult,
+          parsedEntries: serializedEntries
         });
       } else {
         // Fallback alert if navigation not available  
@@ -188,6 +274,19 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
     } catch (error) {
       console.error('Image processing failed:', error);
+      
+      // Find the task ID if it exists (in case of error during processing)
+      const taskId = startTask({
+        type: 'ocr',
+        stage: 'Processing failed',
+        progress: 0,
+        canNavigate: true,
+        imageUri: imageUri,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
+      failTask(taskId, error instanceof Error ? error.message : 'Unknown error');
+      
       Alert.alert(
         'Processing Failed', 
         'Could not process the image. Please try again with better lighting or a clearer photo.',
@@ -290,6 +389,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         <Text style={styles.tipItem}>• Keep page flat and straight</Text>
         <Text style={styles.tipItem}>• Avoid shadows on the page</Text>
       </View>
+
     </SafeAreaView>
   );
 };

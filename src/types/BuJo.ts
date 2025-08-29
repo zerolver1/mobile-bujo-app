@@ -2,7 +2,7 @@
 
 export interface BuJoEntry {
   id: string;
-  type: 'task' | 'event' | 'note';
+  type: 'task' | 'event' | 'note' | 'inspiration' | 'research' | 'memory' | 'custom';
   content: string;
   status: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled';
   priority: 'none' | 'low' | 'medium' | 'high';
@@ -27,6 +27,14 @@ export interface BuJoEntry {
   appleReminderId?: string;
   appleEventId?: string;
   lastSyncAt?: Date;
+  
+  // Custom signifier support
+  customSignifierId?: string; // Links to CustomSignifier if type is 'custom'
+  
+  // Memory/gratitude specific fields
+  mood?: 'excellent' | 'good' | 'neutral' | 'poor';
+  gratitude?: string[];
+  photoUri?: string;
 }
 
 export interface BuJoCollection {
@@ -34,7 +42,12 @@ export interface BuJoCollection {
   type: 'daily' | 'monthly' | 'future' | 'custom';
   date: string; // YYYY-MM-DD
   title?: string;
+  name?: string; // For custom collections
+  description?: string; // For custom collections
+  color?: string; // For custom collections
   entries: BuJoEntry[];
+  entryIds?: string[]; // Manual entry assignments
+  smartMatch?: boolean; // Enable/disable automatic matching
   createdAt: Date;
   modifiedAt: Date;
 }
@@ -77,6 +90,40 @@ export interface UserPreferences {
   syncCalendar: boolean;
   hapticFeedback: boolean;
   dailyNotifications: boolean;
+}
+
+// Custom Signifier System
+export interface CustomSignifier {
+  id: string;
+  symbol: string; // Single character or emoji
+  label: string;
+  description: string;
+  color: string; // Hex color code
+  createdAt: Date;
+  modifiedAt: Date;
+}
+
+// Quarterly Planning
+export interface QuarterlyPlan {
+  id: string;
+  quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+  year: number;
+  goals: QuarterlyGoal[];
+  entries: BuJoEntry[];
+  reflection?: string;
+  createdAt: Date;
+  modifiedAt: Date;
+}
+
+export interface QuarterlyGoal {
+  id: string;
+  title: string;
+  description?: string;
+  progress: number; // 0-100 percentage
+  status: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
+  milestones: string[];
+  completedMilestones: string[];
+  targetDate?: Date;
 }
 
 // Navigation Types

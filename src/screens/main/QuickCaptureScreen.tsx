@@ -15,59 +15,72 @@ import { useBuJoStore } from '../../stores/BuJoStore';
 
 interface QuickCaptureScreenProps {
   navigation: any;
+  route?: {
+    params?: {
+      editEntry?: BuJoEntry;
+    };
+  };
 }
 
-export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigation }) => {
-  const [content, setContent] = useState('');
-  const [selectedBullet, setSelectedBullet] = useState(0);
-  const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
-  const { addEntry } = useBuJoStore();
+export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigation, route }) => {
+  const editEntry = route?.params?.editEntry;
+  const [content, setContent] = useState(editEntry?.content || '');
+  const [selectedBullet, setSelectedBullet] = useState(editEntry ? getBulletIndex(editEntry) : 0);
+  const [priority, setPriority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
+  const [targetDate, setTargetDate] = useState(editEntry?.collectionDate || new Date().toISOString().split('T')[0]);
+  const { addEntry, updateEntry } = useBuJoStore();
+
+  // Helper function to get bullet index from entry
+  function getBulletIndex(entry: BuJoEntry): number {
+    if (entry.type === 'task') {
+      switch (entry.status) {
+        case 'complete': return 1;
+        case 'migrated': return 2;
+        case 'scheduled': return 3;
+        case 'cancelled': return 4;
+        default: return 0; // incomplete
+      }
+    } else if (entry.type === 'event') {
+      return 5;
+    } else if (entry.type === 'note') {
+      return 6;
+    } else if (entry.type === 'inspiration') {
+      return 7;
+    } else if (entry.type === 'research') {
+      return 8;
+    } else if (entry.type === 'memory') {
+      return 9;
+    }
+    return 0; // fallback to task
+  }
 
   const bullets = [
-    { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', color: '#007AFF' },
-    { symbol: 'X', type: 'task', status: 'complete', label: 'Complete', color: '#34C759' },
-    { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', color: '#FF9500' },
-    { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', color: '#5856D6' },
-    { symbol: '~', type: 'task', status: 'cancelled', label: 'Cancelled', color: '#8E8E93' },
-    { symbol: 'O', type: 'event', status: 'incomplete', label: 'Event', color: '#FF3B30' },
-    { symbol: '—', type: 'note', status: 'incomplete', label: 'Note', color: '#32D74B' },
-    { symbol: '!', type: 'note', status: 'incomplete', label: 'Idea', color: '#FFD60A' },
+    // Tasks - Follow BuJo methodology: Only create incomplete tasks, complete through swipe/tap
+    { symbol: '•', type: 'task' as const, status: 'incomplete' as const, label: 'Task', color: '#1C1C1E', description: 'Things you need to do' },
+    
+    // Task Status Indicators - For editing existing tasks only
+    { symbol: '✗', type: 'task' as const, status: 'complete' as const, label: 'Complete', color: '#34C759', description: 'Task completed' },
+    { symbol: '>', type: 'task' as const, status: 'migrated' as const, label: 'Migrated', color: '#FF9500', description: 'Task migrated to future' },
+    { symbol: '<', type: 'task' as const, status: 'scheduled' as const, label: 'Scheduled', color: '#007AFF', description: 'Task scheduled in calendar' },
+    { symbol: '/', type: 'task' as const, status: 'cancelled' as const, label: 'Cancelled', color: '#8E8E93', description: 'Task no longer relevant' },
+    
+    // Other Entry Types - Always incomplete when created
+    { symbol: '○', type: 'event' as const, status: 'incomplete' as const, label: 'Event', color: '#007AFF', description: 'Appointments and experiences' },
+    { symbol: '—', type: 'note' as const, status: 'incomplete' as const, label: 'Note', color: '#8E8E93', description: 'Ideas, thoughts, observations' },
+    { symbol: '★', type: 'inspiration' as const, status: 'incomplete' as const, label: 'Inspiration', color: '#FFD60A', description: 'Ideas that inspire action' },
+    { symbol: '&', type: 'research' as const, status: 'incomplete' as const, label: 'Research', color: '#5856D6', description: 'Things to investigate or explore' },
+    { symbol: '◇', type: 'memory' as const, status: 'incomplete' as const, label: 'Memory', color: '#FF2D55', description: 'Gratitude, memories, and reflections' },
+  ];
+  
+  const priorities = [
+    { level: 'none' as const, symbol: '', label: 'None', color: '#8E8E93' },
+    { level: 'low' as const, symbol: '∘', label: 'Low', color: '#34C759' },
+    { level: 'medium' as const, symbol: '*', label: 'Medium', color: '#FF9500' },
+    { level: 'high' as const, symbol: '!', label: 'High', color: '#FF3B30' },
   ];
 
   const currentBullet = bullets[selectedBullet];
-
-  const handleSave = async () => {
-    if (!content.trim()) {
-      Alert.alert('Empty Entry', 'Please enter some content for your bullet journal entry.');
-      return;
-    }
-
-    const entry: Omit<BuJoEntry, 'id'> = {
-      type: currentBullet.type as 'task' | 'event' | 'note',
-      status: currentBullet.status as BuJoEntry['status'],
-      content: content.trim(),
-      priority: 'none',
-      createdAt: new Date(),
-      tags: extractTags(content),
-      contexts: extractContexts(content),
-      collection: 'daily',
-      collectionDate: targetDate,
-    };
-
-    try {
-      await addEntry(entry);
-      Alert.alert(
-        'Entry Added',
-        `Your ${currentBullet.label.toLowerCase()} has been added to your journal.`,
-        [
-          { text: 'Add Another', onPress: () => setContent('') },
-          { text: 'Done', onPress: () => navigation.goBack() },
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save entry. Please try again.');
-    }
-  };
+  const currentPriority = priorities.find(p => p.level === priority) || priorities[0];
 
   const extractTags = (text: string): string[] => {
     const matches = text.match(/#([a-zA-Z0-9_]+)/g);
@@ -77,6 +90,61 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   const extractContexts = (text: string): string[] => {
     const matches = text.match(/@([a-zA-Z0-9_]+)/g);
     return matches ? matches.map(context => context.substring(1)) : [];
+  };
+
+  const handleSave = async () => {
+    if (!content.trim()) {
+      Alert.alert('Empty Entry', 'Please enter some content for your bullet journal entry.');
+      return;
+    }
+
+    const tags = extractTags(content);
+    const contexts = extractContexts(content);
+
+    try {
+      if (editEntry) {
+        // Update existing entry
+        updateEntry(editEntry.id, {
+          type: currentBullet.type,
+          content: content.trim(),
+          status: currentBullet.status,
+          priority,
+          tags,
+          contexts,
+          collectionDate: targetDate,
+        });
+        
+        Alert.alert('Success', 'Entry updated successfully!', [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+      } else {
+        // Create new entry
+        const entry: Omit<BuJoEntry, 'id' | 'createdAt'> = {
+          type: currentBullet.type,
+          status: currentBullet.status,
+          content: content.trim(),
+          priority,
+          tags,
+          contexts,
+          collection: 'daily',
+          collectionDate: targetDate,
+        };
+
+        addEntry(entry);
+        
+        Alert.alert(
+          'Entry Added',
+          `Your ${currentBullet.label.toLowerCase()} has been added to your journal.`,
+          [
+            { text: 'Add Another', onPress: () => setContent('') },
+            { text: 'Done', onPress: () => navigation.goBack() },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      Alert.alert('Error', 'Failed to save entry. Please try again.');
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -110,60 +178,94 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color="#8E8E93" />
+          <Text style={styles.cancelButton}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quick Capture</Text>
-        <TouchableOpacity onPress={handleSave} disabled={!content.trim()}>
-          <Text style={[
-            styles.saveButton,
-            !content.trim() && styles.saveButtonDisabled
-          ]}>
-            Save
+        <Text style={styles.title}>
+          {editEntry ? 'Edit Entry' : 'Quick Capture'}
+        </Text>
+        <TouchableOpacity onPress={handleSave} style={styles.saveButtonContainer}>
+          <Text style={[styles.saveBulletSymbol, { color: currentBullet.color }]}>
+            {currentBullet.symbol}
           </Text>
+          <Text style={styles.saveButton}>Save {currentBullet.label}</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Current Selection Display */}
-        <View style={styles.currentSelection}>
-          <View style={[styles.selectedBullet, { backgroundColor: currentBullet.color }]}>
-            <Text style={styles.selectedBulletText}>{currentBullet.symbol}</Text>
-          </View>
-          <View style={styles.selectionInfo}>
-            <Text style={styles.selectionType}>{currentBullet.label}</Text>
-            <Text style={styles.selectionTarget}>Adding to {formatDate(targetDate)}</Text>
-          </View>
-        </View>
-
-        {/* Bullet Selector */}
+      <ScrollView style={styles.content}>
+        {/* Bullet Type Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bullet Type</Text>
+          <Text style={styles.sectionTitle}>Entry Type</Text>
           <View style={styles.bulletGrid}>
             {bullets.map((bullet, index) => (
               <TouchableOpacity
                 key={index}
                 style={[
-                  styles.bulletButton,
-                  selectedBullet === index && styles.bulletButtonActive,
-                  { borderColor: bullet.color }
+                  styles.bulletOption,
+                  selectedBullet === index && styles.selectedBulletOption
                 ]}
                 onPress={() => setSelectedBullet(index)}
               >
-                <View style={[styles.bulletCircle, { backgroundColor: bullet.color }]}>
-                  <Text style={styles.bulletSymbol}>{bullet.symbol}</Text>
-                </View>
+                <Text 
+                  style={[
+                    styles.bulletSymbol, 
+                    { color: bullet.color },
+                    selectedBullet === index && styles.selectedBulletSymbol
+                  ]}
+                >
+                  {bullet.symbol}
+                </Text>
                 <Text style={[
                   styles.bulletLabel,
-                  selectedBullet === index && styles.bulletLabelActive
+                  selectedBullet === index && styles.selectedBulletLabel
                 ]}>
                   {bullet.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
+          
+          <View style={styles.bulletDescription}>
+            <Text style={styles.descriptionText}>
+              {currentBullet.description}
+            </Text>
+          </View>
         </View>
+
+        {/* Priority Selection (for tasks only) */}
+        {currentBullet.type === 'task' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Priority</Text>
+            <View style={styles.priorityRow}>
+              {priorities.map((priorityOption) => (
+                <TouchableOpacity
+                  key={priorityOption.level}
+                  style={[
+                    styles.priorityOption,
+                    priority === priorityOption.level && styles.selectedPriorityOption
+                  ]}
+                  onPress={() => setPriority(priorityOption.level)}
+                >
+                  {priorityOption.symbol ? (
+                    <Text style={[styles.prioritySymbol, { color: priorityOption.color }]}>
+                      {priorityOption.symbol}
+                    </Text>
+                  ) : (
+                    <View style={styles.noPrioritySymbol} />
+                  )}
+                  <Text style={[
+                    styles.priorityLabel,
+                    priority === priorityOption.level && styles.selectedPriorityLabel
+                  ]}>
+                    {priorityOption.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Content Input */}
         <View style={styles.section}>
@@ -174,58 +276,30 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
             onChangeText={setContent}
             placeholder={`Enter your ${currentBullet.label.toLowerCase()}...`}
             multiline
-            autoCapitalize="sentences"
-            autoFocus
+            autoFocus={!editEntry}
             textAlignVertical="top"
           />
-          
-          <View style={styles.inputHelp}>
-            <Text style={styles.helpText}>
-              Use @context and #tags in your text. They'll be automatically detected.
-            </Text>
-            {(content.includes('@') || content.includes('#')) && (
-              <View style={styles.detectedTags}>
-                {extractContexts(content).length > 0 && (
-                  <View style={styles.tagGroup}>
-                    <Text style={styles.tagGroupTitle}>Contexts:</Text>
-                    {extractContexts(content).map((context, index) => (
-                      <View key={index} style={styles.tag}>
-                        <Text style={styles.tagText}>@{context}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {extractTags(content).length > 0 && (
-                  <View style={styles.tagGroup}>
-                    <Text style={styles.tagGroupTitle}>Tags:</Text>
-                    {extractTags(content).map((tag, index) => (
-                      <View key={index} style={styles.tag}>
-                        <Text style={styles.tagText}>#{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
+          <Text style={styles.helpText}>
+            Use #tags and @contexts to organize your entries
+          </Text>
         </View>
 
-        {/* Date Selector */}
+        {/* Date Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Add to Date</Text>
+          <Text style={styles.sectionTitle}>Date</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
             {getDateOptions().map((date) => (
               <TouchableOpacity
                 key={date}
                 style={[
-                  styles.dateButton,
-                  targetDate === date && styles.dateButtonActive
+                  styles.dateOption,
+                  targetDate === date && styles.selectedDateOption
                 ]}
                 onPress={() => setTargetDate(date)}
               >
                 <Text style={[
-                  styles.dateButtonText,
-                  targetDate === date && styles.dateButtonTextActive
+                  styles.dateLabel,
+                  targetDate === date && styles.selectedDateLabel
                 ]}>
                   {formatDate(date)}
                 </Text>
@@ -234,7 +308,23 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           </ScrollView>
         </View>
 
-        <View style={{ height: 40 }} />
+        {/* Preview */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Preview</Text>
+          <View style={styles.previewContainer}>
+            <Text style={[styles.bulletSymbol, { color: currentBullet.color }]}>
+              {currentBullet.symbol}
+            </Text>
+            {currentPriority.symbol && (
+              <Text style={[styles.prioritySymbol, { color: currentPriority.color }]}>
+                {currentPriority.symbol}
+              </Text>
+            )}
+            <Text style={styles.previewContent}>
+              {content || `Sample ${currentBullet.label.toLowerCase()}...`}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -243,75 +333,52 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FAF7F0',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E7',
   },
-  headerTitle: {
+  cancelButton: {
+    fontSize: 16,
+    color: '#8E8E93',
+  },
+  title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1C1C1E',
+  },
+  saveButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  saveBulletSymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Menlo',
   },
   saveButton: {
     fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
-  saveButtonDisabled: {
-    color: '#8E8E93',
-  },
   content: {
     flex: 1,
   },
-  currentSelection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    marginBottom: 12,
-  },
-  selectedBullet: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  selectedBulletText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  selectionInfo: {
-    flex: 1,
-  },
-  selectionType: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 2,
-  },
-  selectionTarget: {
-    fontSize: 16,
-    color: '#8E8E93',
-  },
   section: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#1C1C1E',
     marginBottom: 16,
@@ -321,109 +388,141 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  bulletButton: {
+  bulletOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#E5E5E7',
-    backgroundColor: '#F2F2F7',
-  },
-  bulletButtonActive: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    minWidth: 100,
   },
-  bulletCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+  selectedBulletOption: {
+    borderColor: '#007AFF',
+    backgroundColor: '#F0F7FF',
   },
   bulletSymbol: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    marginRight: 8,
+    fontFamily: 'Menlo', // Monospace for consistent alignment
+  },
+  selectedBulletSymbol: {
+    // Keep original color
   },
   bulletLabel: {
     fontSize: 14,
-    fontWeight: '500',
     color: '#1C1C1E',
+    fontWeight: '500',
   },
-  bulletLabelActive: {
+  selectedBulletLabel: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  bulletDescription: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    lineHeight: 18,
+  },
+  priorityRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  priorityOption: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    flex: 1,
+  },
+  selectedPriorityOption: {
+    borderColor: '#007AFF',
+    backgroundColor: '#F0F7FF',
+  },
+  prioritySymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    fontFamily: 'Menlo',
+  },
+  noPrioritySymbol: {
+    width: 16,
+    height: 16,
+    marginBottom: 4,
+  },
+  priorityLabel: {
+    fontSize: 12,
+    color: '#1C1C1E',
+    fontWeight: '500',
+  },
+  selectedPriorityLabel: {
+    color: '#007AFF',
     fontWeight: '600',
   },
   contentInput: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#1C1C1E',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
+    fontSize: 16,
+    color: '#1C1C1E',
     minHeight: 120,
     borderWidth: 1,
     borderColor: '#E5E5E7',
   },
-  inputHelp: {
-    marginTop: 12,
-  },
   helpText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontStyle: 'italic',
-  },
-  detectedTags: {
-    marginTop: 12,
-  },
-  tagGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: 8,
-  },
-  tagGroupTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginRight: 8,
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    marginRight: 6,
-  },
-  tagText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#FFFFFF',
+    color: '#8E8E93',
+    marginTop: 8,
+    lineHeight: 16,
   },
   dateScroll: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
+    flexDirection: 'row',
   },
-  dateButton: {
+  dateOption: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: '#F2F2F7',
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    marginRight: 8,
+    paddingVertical: 12,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  dateButtonActive: {
-    backgroundColor: '#007AFF',
+  selectedDateOption: {
     borderColor: '#007AFF',
+    backgroundColor: '#F0F7FF',
   },
-  dateButtonText: {
+  dateLabel: {
     fontSize: 14,
-    fontWeight: '500',
     color: '#1C1C1E',
+    fontWeight: '500',
   },
-  dateButtonTextActive: {
-    color: '#FFFFFF',
+  selectedDateLabel: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  previewContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  previewContent: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+    lineHeight: 22,
   },
 });
