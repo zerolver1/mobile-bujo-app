@@ -21,6 +21,10 @@ export { InkButton, type InkButtonProps } from '../InkButton';
 // Utility components
 export { GlassMorphism, type GlassMorphismProps } from '../GlassMorphism';
 
+// Paper-themed navigation and symbols
+export { PaperTabBar } from '../PaperTabBar';
+export { BuJoSymbol, BuJoSymbolLegend, type BuJoSymbolProps } from '../BuJoSymbols';
+
 // Re-export design tokens and utilities for component customization
 export { PAPER_DESIGN_TOKENS } from '../../../theme/paperDesignTokens';
 export { 

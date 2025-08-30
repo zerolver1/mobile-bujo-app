@@ -2,8 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { PaperTabBar } from '../components/ui/PaperTabBar';
+import { useTheme } from '../theme';
+import { safeThemeAccess } from '../theme/paperStyleUtils';
+import { PAPER_DESIGN_TOKENS } from '../theme/paperDesignTokens';
 import { EntryReviewParams } from '../types/BuJo';
 
 // Screens
@@ -50,56 +53,35 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 const Stack = createStackNavigator<RootStackParamList>();
 
 const MainTabNavigator: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
+      tabBar={(props) => <PaperTabBar {...props} />}
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          switch (route.name) {
-            case 'DailyLog':
-              iconName = focused ? 'today' : 'today-outline';
-              break;
-            case 'Capture':
-              iconName = focused ? 'camera' : 'camera-outline';
-              break;
-            case 'Collections':
-              iconName = focused ? 'library' : 'library-outline';
-              break;
-            case 'Settings':
-              iconName = focused ? 'settings' : 'settings-outline';
-              break;
-            default:
-              iconName = 'help-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5E7',
-          paddingTop: Platform.OS === 'ios' ? 0 : 5,
-          height: Platform.OS === 'ios' ? 84 : 65,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-          marginBottom: Platform.OS === 'ios' ? 2 : 5,
-        },
+        // Tab bar is now handled by PaperTabBar component
         headerStyle: {
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E5E7',
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8'),
+          borderBottomWidth: 0.5,
+          borderBottomColor: safeThemeAccess(theme, t => t.colors.border, '#E8E3D5'),
+          elevation: 0,
+          shadowOpacity: 0.1,
+          shadowColor: 'rgba(139, 69, 19, 0.1)',
+          shadowOffset: { width: 0, height: 1 },
+          shadowRadius: 2,
         },
         headerTitleStyle: {
-          fontSize: 17,
+          fontSize: 20,
           fontWeight: '600',
-          color: '#1C1C1E',
+          color: safeThemeAccess(theme, t => t.colors.text, '#2B2B2B'),
+          fontFamily: Platform.select({
+            ios: 'Georgia',
+            android: 'serif',
+            default: 'System',
+          }),
+          letterSpacing: 0.4,
         },
-        headerTintColor: '#007AFF',
+        headerTintColor: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44'),
       })}
     >
       <Tab.Screen 
