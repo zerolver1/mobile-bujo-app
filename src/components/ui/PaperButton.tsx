@@ -27,6 +27,13 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
   const getButtonStyle = () => {
     // Safety check for theme
     if (!theme?.colors || !theme?.shadow) {
+      const fallbackStyles = {
+        ink: { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#000000' },
+        pencil: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#666666' },
+        highlight: { backgroundColor: 'rgba(254, 240, 138, 0.6)', borderWidth: 0 },
+        sticky: { backgroundColor: '#FEF3C7', borderWidth: 0 },
+      };
+      
       return {
         flexDirection: 'row' as const,
         alignItems: 'center' as const,
@@ -35,9 +42,7 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
         paddingHorizontal: 12,
         paddingVertical: 8,
         minHeight: 40,
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: '#000000',
+        ...fallbackStyles[variant],
       };
     }
 
@@ -87,8 +92,8 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
       },
       highlight: {
         backgroundColor: theme.isDark 
-          ? 'rgba(251, 191, 36, 0.15)'  // Yellow highlighter on dark paper
-          : 'rgba(254, 240, 138, 0.4)', // Yellow highlighter on light paper
+          ? 'rgba(251, 191, 36, 0.25)'  // More visible yellow highlighter on dark paper
+          : 'rgba(254, 240, 138, 0.6)', // More visible yellow highlighter on light paper
         borderWidth: 0,
         borderRadius: 4,
         // Highlighter has uneven edges
