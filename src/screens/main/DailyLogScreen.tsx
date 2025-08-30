@@ -212,7 +212,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
               style={styles.navButton} 
               onPress={() => navigateDate('prev')}
             >
-              <Ionicons name="chevron-back" size={20} color="#007AFF" />
+              <Ionicons name="chevron-back" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -227,7 +227,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
               style={styles.navButton} 
               onPress={() => navigateDate('next')}
             >
-              <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+              <Ionicons name="chevron-forward" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
             </TouchableOpacity>
           </View>
           
@@ -250,25 +250,35 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         
         <View style={styles.headerActions}>
           {hasUndo && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.undoButton]} 
+            <PaperButton 
+              variant="pencil" 
+              size="sm" 
+              icon="arrow-undo" 
               onPress={undoLastAction}
-            >
-              <Ionicons name="arrow-undo" size={18} color="#FF9500" />
-            </TouchableOpacity>
+              style={styles.undoButton}
+            />
           )}
-          <TouchableOpacity 
-            style={[styles.actionButton, useSwipeableEntries && styles.activeButton]} 
+          <PaperButton 
+            variant={useSwipeableEntries ? "highlight" : "pencil"} 
+            size="sm" 
+            icon="swap-horizontal" 
             onPress={() => setUseSwipeableEntries(!useSwipeableEntries)}
-          >
-            <Ionicons name="swap-horizontal" size={20} color={useSwipeableEntries ? "#34C759" : "#8E8E93"} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('DesignSystem')}>
-            <Ionicons name="color-palette-outline" size={20} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleQuickScan}>
-            <Ionicons name="camera-outline" size={20} color="#007AFF" />
-          </TouchableOpacity>
+            style={styles.swipeToggleButton}
+          />
+          <PaperButton 
+            variant="pencil" 
+            size="sm" 
+            icon="color-palette-outline" 
+            onPress={() => navigation.navigate('DesignSystem')}
+            style={styles.actionButton}
+          />
+          <PaperButton 
+            variant="ink" 
+            size="sm" 
+            icon="camera-outline" 
+            onPress={handleQuickScan}
+            style={styles.actionButton}
+          />
           <PaperButton 
             variant="ink" 
             size="md" 
@@ -401,11 +411,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    padding: PAPER_DESIGN_TOKENS.spacing.md,
-    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   addButton: {
     marginLeft: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  swipeToggleButton: {
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   statsContainer: {
     marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
@@ -476,12 +488,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   undoButton: {
-    backgroundColor: 'rgba(255, 149, 0, 0.1)', // Orange tint for undo
-    borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
-  },
-  activeButton: {
-    backgroundColor: 'rgba(52, 199, 89, 0.1)', // Green tint for active
-    borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   swipeHint: {
     marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
