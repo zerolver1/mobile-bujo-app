@@ -1,10 +1,11 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
   Dimensions,
+  Pressable,
 } from 'react-native';
 import {
   PanGestureHandler,
@@ -26,7 +27,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SwipeableEntryItemProps {
   entry: BuJoEntry;
-  onSwipeAction: (entry: BuJoEntry, action: SwipeAction) => void;
+  onSwipeAction: (entry: BuJoEntry, action: { action: string; key: string }) => void;
   onPress: (entry: BuJoEntry, action: 'complete' | 'migrate' | 'schedule' | 'cancel' | 'edit') => void;
   showDate?: boolean;
   isCompact?: boolean;
@@ -42,6 +43,9 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   const translateX = useRef(new Animated.Value(0)).current;
   const actionOpacity = useRef(new Animated.Value(0)).current;
   const currentAction = useRef<SwipeAction | null>(null);
+  
+  // Track which side is currently revealed
+  const [revealedSide, setRevealedSide] = useState<'none' | 'left' | 'right'>('none');
   
   // Memoize swipe config to prevent unnecessary recalculations
   const swipeConfig = useMemo(() => getSwipeConfig(entry), [entry.type, entry.status]);
@@ -82,176 +86,167 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
     if (event.nativeEvent.state === State.END) {
       const { translationX, velocityX } = event.nativeEvent;
       
-      // Check if we should trigger an action
-      const action = getCurrentAction(translationX, swipeConfig);
+      const leftRevealed = Math.max(0, translationX);
+      const rightRevealed = Math.max(0, -translationX);
       
-      if (action && (Math.abs(translationX) >= action.threshold || Math.abs(velocityX) > 800)) {
-        // Trigger the action
-        onSwipeAction(entry, action);
-        
-        // Animate out and back
-        Animated.sequence([
-          Animated.timing(translateX, {
-            toValue: translationX > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateX, {
+      const leftActions = getLeftActions();
+      const rightActions = getRightActions();
+      
+      // Calculate total widths for each side
+      const leftWidth = leftActions.length * 80;
+      const rightWidth = rightActions.length * 80;
+      
+      // Toggle behavior: swipe same direction to close, different direction to open
+      if (leftRevealed > 40 && leftActions.length > 0) {
+        if (revealedSide === 'left') {
+          // Already showing left actions - close them
+          Animated.spring(translateX, {
             toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
+            useNativeDriver: false,
+            tension: 200,
+            friction: 8,
+          }).start();
+          setRevealedSide('none');
+        } else {
+          // Show left actions
+          Animated.spring(translateX, {
+            toValue: leftWidth,
+            useNativeDriver: false,
+            tension: 200,
+            friction: 8,
+          }).start();
+          setRevealedSide('left');
+        }
+      } else if (rightRevealed > 40 && rightActions.length > 0) {
+        if (revealedSide === 'right') {
+          // Already showing right actions - close them
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: false,
+            tension: 200,
+            friction: 8,
+          }).start();
+          setRevealedSide('none');
+        } else {
+          // Show right actions
+          Animated.spring(translateX, {
+            toValue: -rightWidth,
+            useNativeDriver: false,
+            tension: 200,
+            friction: 8,
+          }).start();
+          setRevealedSide('right');
+        }
       } else {
-        // Spring back to center
+        // Not enough swipe distance - snap back to center
         Animated.spring(translateX, {
           toValue: 0,
-          speed: 20,
-          bounciness: 10,
-          useNativeDriver: true,
+          useNativeDriver: false,
+          tension: 200,
+          friction: 8,
         }).start();
+        setRevealedSide('none');
       }
-      
-      // Reset opacity
-      Animated.timing(actionOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-      
-      currentAction.current = null;
     }
   };
 
-  const renderLeftActions = () => {
+  const getLeftActions = () => {
     const { leftShort, leftLong } = swipeConfig;
+    const actions = [];
+    if (leftShort) actions.push(leftShort);
+    if (leftLong) actions.push(leftLong);
+    return actions;
+  };
+
+  const renderLeftActions = () => {
+    const actions = getLeftActions();
+    if (actions.length === 0) return null;
     
     return (
-      <Animated.View 
-        style={[
-          styles.actionsContainer,
-          styles.leftActions,
-          {
-            opacity: actionOpacity,
-            transform: [
-              {
-                translateX: translateX.interpolate({
-                  inputRange: [0, SWIPE_THRESHOLDS.MAX],
-                  outputRange: [-100, 0],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        {leftLong && (
-          <Animated.View
+      <View style={[styles.actionsContainer, styles.leftActions]}>
+        {actions.map((action, index) => (
+          <View
+            key={action.key}
             style={[
-              styles.actionItem,
-              { backgroundColor: leftLong.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [0, leftLong.threshold - 20, leftLong.threshold],
-                  outputRange: [0, 0, 1],
-                  extrapolate: 'clamp',
-                }),
+              styles.actionButton,
+              { 
+                backgroundColor: action.backgroundColor,
+                left: index * 80,
               },
             ]}
           >
-            <Ionicons name={leftLong.icon as any} size={24} color={leftLong.color} />
-            <Text style={[styles.actionText, { color: leftLong.color }]}>
-              {leftLong.label}
-            </Text>
-          </Animated.View>
-        )}
-        {leftShort && (
-          <Animated.View
-            style={[
-              styles.actionItem,
-              { backgroundColor: leftShort.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [0, leftShort.threshold - 20, leftShort.threshold],
-                  outputRange: [0, 0, 1],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ]}
-          >
-            <Ionicons name={leftShort.icon as any} size={24} color={leftShort.color} />
-            <Text style={[styles.actionText, { color: leftShort.color }]}>
-              {leftShort.label}
-            </Text>
-          </Animated.View>
-        )}
-      </Animated.View>
+            <Pressable
+              style={styles.actionPressable}
+              onPress={() => {
+                onSwipeAction(entry, { action: action.action, key: action.key });
+                // Animate back to closed position and reset state
+                Animated.spring(translateX, {
+                  toValue: 0,
+                  useNativeDriver: false,
+                  tension: 200,
+                  friction: 8,
+                }).start();
+                setRevealedSide('none');
+              }}
+            >
+              <Ionicons name={action.icon as any} size={20} color={action.color} />
+              <Text style={[styles.actionText, { color: action.color }]}>
+                {action.label}
+              </Text>
+            </Pressable>
+          </View>
+        ))}
+      </View>
     );
   };
 
-  const renderRightActions = () => {
+  const getRightActions = () => {
     const { rightShort, rightLong } = swipeConfig;
+    const actions = [];
+    if (rightShort) actions.push(rightShort);
+    if (rightLong) actions.push(rightLong);
+    return actions;
+  };
+
+  const renderRightActions = () => {
+    const actions = getRightActions();
+    if (actions.length === 0) return null;
     
     return (
-      <Animated.View 
-        style={[
-          styles.actionsContainer,
-          styles.rightActions,
-          {
-            opacity: actionOpacity,
-            transform: [
-              {
-                translateX: translateX.interpolate({
-                  inputRange: [-SWIPE_THRESHOLDS.MAX, 0],
-                  outputRange: [0, 100],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        {rightShort && (
-          <Animated.View
+      <View style={[styles.actionsContainer, styles.rightActions]}>
+        {actions.map((action, index) => (
+          <View
+            key={action.key}
             style={[
-              styles.actionItem,
-              { backgroundColor: rightShort.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [-rightShort.threshold, -rightShort.threshold + 20, 0],
-                  outputRange: [1, 0, 0],
-                  extrapolate: 'clamp',
-                }),
+              styles.actionButton,
+              { 
+                backgroundColor: action.backgroundColor,
+                right: index * 80,
               },
             ]}
           >
-            <Ionicons name={rightShort.icon as any} size={24} color={rightShort.color} />
-            <Text style={[styles.actionText, { color: rightShort.color }]}>
-              {rightShort.label}
-            </Text>
-          </Animated.View>
-        )}
-        {rightLong && (
-          <Animated.View
-            style={[
-              styles.actionItem,
-              { backgroundColor: rightLong.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [-rightLong.threshold, -rightLong.threshold + 20, 0],
-                  outputRange: [1, 0, 0],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ]}
-          >
-            <Ionicons name={rightLong.icon as any} size={24} color={rightLong.color} />
-            <Text style={[styles.actionText, { color: rightLong.color }]}>
-              {rightLong.label}
-            </Text>
-          </Animated.View>
-        )}
-      </Animated.View>
+            <Pressable
+              style={styles.actionPressable}
+              onPress={() => {
+                onSwipeAction(entry, { action: action.action, key: action.key });
+                // Animate back to closed position and reset state
+                Animated.spring(translateX, {
+                  toValue: 0,
+                  useNativeDriver: false,
+                  tension: 200,
+                  friction: 8,
+                }).start();
+                setRevealedSide('none');
+              }}
+            >
+              <Ionicons name={action.icon as any} size={20} color={action.color} />
+              <Text style={[styles.actionText, { color: action.color }]}>
+                {action.label}
+              </Text>
+            </Pressable>
+          </View>
+        ))}
+      </View>
     );
   };
 
@@ -292,9 +287,10 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     marginBottom: 8,
+    overflow: 'hidden',
   },
   entryContainer: {
-    backgroundColor: '#FAF7F0',
+    backgroundColor: '#FFFFFF',
     zIndex: 2,
   },
   actionsContainer: {
@@ -307,24 +303,30 @@ const styles = StyleSheet.create({
   },
   leftActions: {
     left: 0,
-    paddingLeft: 20,
+    justifyContent: 'flex-start',
   },
   rightActions: {
     right: 0,
-    paddingRight: 20,
     justifyContent: 'flex-end',
   },
-  actionItem: {
-    flexDirection: 'row',
+  actionButton: {
+    width: 80,
+    height: '100%',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginHorizontal: 4,
+    position: 'absolute',
+  },
+  actionPressable: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    marginLeft: 8,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

@@ -209,6 +209,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Text style={styles.sectionHeader}>Support</Text>
           <View style={styles.card}>
             <SettingRow
+              title="Design System"
+              subtitle="Preview app components & theming"
+              icon="color-palette-outline"
+              onPress={() => navigation.navigate('DesignSystem')}
+            />
+            <View style={styles.separator} />
+            <SettingRow
               title="Bullet Journal Guide"
               subtitle="Learn the methodology & app features"
               icon="book-outline"

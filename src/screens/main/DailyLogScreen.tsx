@@ -14,8 +14,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
 import { BuJoEntryItem } from '../../components/BuJoEntryItem';
-import { SimpleSwipeableEntry } from '../../components/SimpleSwipeableEntry';
+import { SwipeableEntryItem } from '../../components/SwipeableEntryItem';
 import { useSwipeGestures } from '../../hooks/useSwipeGestures';
+import { useTheme } from '../../theme';
+import { 
+  PaperBackground, 
+  PaperButton, 
+  Typography, 
+  NotebookCard,
+  Card,
+  PAPER_DESIGN_TOKENS,
+  createPaperShadow,
+  safeThemeAccess 
+} from '../../components/ui/paperComponents';
 
 interface DailyLogScreenProps {
   navigation: any;
@@ -188,128 +199,160 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   };
 
   const isToday = currentDate === new Date().toISOString().split('T')[0];
+  const { theme } = useTheme();
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="flat" padding="md" style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.dateNavigation}>
             <TouchableOpacity 
               style={styles.navButton} 
               onPress={() => navigateDate('prev')}
             >
-              <Ionicons name="chevron-back" size={20} color="#007AFF" />
+              <Ionicons name="chevron-back" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.dateButton} 
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={styles.dateText}>{formatDateShort(currentDate)}</Text>
-              <Text style={styles.fullDateText}>{formatDate(currentDate).split(',')[0]}</Text>
+              <Typography variant="body" style={styles.dateText}>{formatDateShort(currentDate)}</Typography>
+              <Typography variant="caption1" style={styles.fullDateText}>{formatDate(currentDate).split(',')[0]}</Typography>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.navButton} 
               onPress={() => navigateDate('next')}
             >
-              <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+              <Ionicons name="chevron-forward" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
             </TouchableOpacity>
           </View>
           
           {stats.total > 0 && (
-            <Text style={styles.statsText}>
+            <Typography variant="footnote" color="textSecondary" style={styles.statsText}>
               {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
-            </Text>
+            </Typography>
           )}
           
           {!isToday && (
-            <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
-              <Text style={styles.todayButtonText}>Today</Text>
-            </TouchableOpacity>
+            <PaperButton 
+              variant="sticky" 
+              size="sm" 
+              title="Today" 
+              onPress={goToToday}
+              style={styles.todayButton}
+            />
           )}
         </View>
         
         <View style={styles.headerActions}>
           {hasUndo && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.undoButton]} 
+            <PaperButton 
+              variant="pencil" 
+              size="sm" 
+              icon="arrow-undo" 
               onPress={undoLastAction}
-            >
-              <Ionicons name="arrow-undo" size={18} color="#FF9500" />
-            </TouchableOpacity>
+              style={styles.undoButton}
+            />
           )}
-          <TouchableOpacity 
-            style={[styles.actionButton, useSwipeableEntries && styles.activeButton]} 
+          <PaperButton 
+            variant={useSwipeableEntries ? "highlight" : "pencil"} 
+            size="sm" 
+            icon="swap-horizontal" 
             onPress={() => setUseSwipeableEntries(!useSwipeableEntries)}
-          >
-            <Ionicons name="swap-horizontal" size={20} color={useSwipeableEntries ? "#34C759" : "#8E8E93"} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleQuickScan}>
-            <Ionicons name="camera-outline" size={20} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddQuickEntry}>
-            <Ionicons name="add" size={24} color="#007AFF" />
-          </TouchableOpacity>
+            style={styles.swipeToggleButton}
+          />
+          <PaperButton 
+            variant="pencil" 
+            size="sm" 
+            icon="color-palette-outline" 
+            onPress={() => navigation.navigate('DesignSystem')}
+            style={styles.actionButton}
+          />
+          <PaperButton 
+            variant="ink" 
+            size="sm" 
+            icon="camera-outline" 
+            onPress={handleQuickScan}
+            style={styles.actionButton}
+          />
+          <PaperButton 
+            variant="ink" 
+            size="md" 
+            icon="add" 
+            onPress={handleAddQuickEntry}
+            style={styles.addButton}
+          />
         </View>
-      </View>
+        </Card>
+        
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={new Date(currentDate)}
+            mode="date"
+            display="default"
+            onChange={handleDatePickerChange}
+          />
+        )}
       
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={new Date(currentDate)}
-          mode="date"
-          display="default"
-          onChange={handleDatePickerChange}
-        />
-      )}
-      
-      {/* Swipe Tutorial Hint */}
-      {useSwipeableEntries && todaysEntries.length > 0 && todaysEntries.length <= 3 && (
-        <View style={styles.swipeHint}>
-          <Ionicons name="swap-horizontal" size={16} color="#8E8E93" />
-          <Text style={styles.swipeHintText}>
-            Swipe entries left or right for quick actions
-          </Text>
-        </View>
-      )}
+        {/* Swipe Tutorial Hint */}
+        {useSwipeableEntries && todaysEntries.length > 0 && todaysEntries.length <= 3 && (
+          <NotebookCard variant="sticky" style={styles.swipeHint}>
+            <View style={styles.swipeHintContent}>
+              <Ionicons name="swap-horizontal" size={16} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93')} />
+              <Typography variant="footnote" color="textSecondary" style={styles.swipeHintText}>
+                Swipe entries left or right for quick actions
+              </Typography>
+            </View>
+          </NotebookCard>
+        )}
 
-      {/* Quick Stats Summary */}
-      {stats.total > 0 && (
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.tasks}</Text>
-            <Text style={styles.statLabel}>Tasks</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.events}</Text>
-            <Text style={styles.statLabel}>Events</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.notes}</Text>
-            <Text style={styles.statLabel}>Notes</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: stats.completionRate > 50 ? '#34C759' : '#FF9500' }]}>
-              {stats.completionRate}%
-            </Text>
-            <Text style={styles.statLabel}>Done</Text>
-          </View>
-        </View>
-      )}
+        {/* Quick Stats Summary */}
+        {stats.total > 0 && (
+          <NotebookCard variant="page" showHoles={false} style={styles.statsContainer}>
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.tasks}</Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Tasks</Typography>
+              </View>
+              <View style={styles.statCard}>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.events}</Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Events</Typography>
+              </View>
+              <View style={styles.statCard}>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.notes}</Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Notes</Typography>
+              </View>
+              <View style={styles.statCard}>
+                <Typography 
+                  variant="title3" 
+                  style={[styles.statNumber, { color: stats.completionRate > 50 ? safeThemeAccess(theme, t => t.colors.success, '#15803D') : safeThemeAccess(theme, t => t.colors.warning, '#D97706') }]}
+                >
+                  {stats.completionRate}%
+                </Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Done</Typography>
+              </View>
+            </View>
+          </NotebookCard>
+        )}
 
-      {/* Entries List */}
-      {todaysEntries.length > 0 ? (
-        <FlatList
+        {/* Entries List */}
+        {todaysEntries.length > 0 ? (
+          <FlatList
           data={todaysEntries}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             useSwipeableEntries ? (
-              <SimpleSwipeableEntry 
+              <SwipeableEntryItem 
                 entry={item} 
                 onSwipeAction={handleSwipeAction}
                 onPress={handleEntryAction}
+                showDate={false}
+                isCompact={false}
               />
             ) : (
               <BuJoEntryItem 
@@ -321,123 +364,103 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           contentContainerStyle={styles.listContainer}
           style={styles.entriesList}
           showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No entries yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start your day by scanning a journal page or adding a quick entry
-          </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleAddQuickEntry}>
-            <Text style={styles.primaryButtonText}>Add Entry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </SafeAreaView>
+          />
+        ) : (
+          <View style={styles.emptyState}>
+            <Typography variant="title2" color="text" style={styles.emptyTitle}>No entries yet</Typography>
+            <Typography variant="body" color="textSecondary" style={styles.emptySubtitle}>
+              Start your day by scanning a journal page or adding a quick entry
+            </Typography>
+            <PaperButton 
+              variant="ink" 
+              size="lg" 
+              title="Add Entry" 
+              onPress={handleAddQuickEntry}
+              style={styles.primaryButton}
+            />
+          </View>
+        )}
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: 'transparent', // Let PaperBackground show through
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
   },
   headerContent: {
     flex: 1,
   },
   dateText: {
-    fontSize: 17,
     fontWeight: '600',
-    color: '#1C1C1E',
   },
   statsText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   actionButton: {
-    padding: 8,
-    marginRight: 8,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   addButton: {
-    padding: 8,
+    marginLeft: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  swipeToggleButton: {
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   statsContainer: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 12,
-    paddingVertical: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   statCard: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 20,
     fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   listContainer: {
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.xl2,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.xl2,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl4,
   },
   emptyTitle: {
-    fontSize: 24,
     fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 8,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.md,
+    textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl4,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
   },
   dateNavigation: {
     flexDirection: 'row',
@@ -455,49 +478,29 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   fullDateText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   todayButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
     alignSelf: 'flex-start',
-  },
-  todayButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
   },
   entriesList: {
     flex: 1,
   },
   undoButton: {
-    backgroundColor: '#FFF7E6',
-    borderRadius: 8,
-  },
-  activeButton: {
-    backgroundColor: '#F0F7FF',
-    borderRadius: 8,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   swipeHint: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+  },
+  swipeHintContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#F2F2F7',
-    marginHorizontal: 20,
-    marginTop: 8,
-    borderRadius: 8,
-    gap: 8,
+    gap: PAPER_DESIGN_TOKENS.spacing.md,
   },
   swipeHintText: {
-    fontSize: 13,
-    color: '#8E8E93',
     fontWeight: '500',
   },
 });

@@ -59,10 +59,22 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
       color: '#32D74B',
     },
     {
-      symbol: '!',
-      name: 'Idea',
-      description: 'Inspiration or brilliant thought',
+      symbol: '★',
+      name: 'Inspiration',
+      description: 'Brilliant ideas and creative thoughts',
       color: '#FFD60A',
+    },
+    {
+      symbol: '&',
+      name: 'Research',
+      description: 'Investigation, study, learning topics',
+      color: '#5856D6',
+    },
+    {
+      symbol: '◇',
+      name: 'Memory',
+      description: 'Gratitude, special moments, reflections',
+      color: '#FF2D55',
     },
   ];
 
@@ -194,7 +206,9 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
                   <Text style={styles.handwritingText}>• Buy groceries @store #food</Text>
                   <Text style={styles.handwritingText}>○ Meeting with Sarah 2:30pm</Text>
                   <Text style={styles.handwritingText}>— Great idea for weekend project</Text>
-                  <Text style={styles.handwritingText}>! Remember to call mom</Text>
+                  <Text style={styles.handwritingText}>★ Remember to call mom</Text>
+                  <Text style={styles.handwritingText}>& Research React Native performance</Text>
+                  <Text style={styles.handwritingText}>◇ Grateful for sunny weather</Text>
                 </View>
                 
                 <View style={styles.digitalExample}>
@@ -228,10 +242,26 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
                   </View>
 
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#FFD60A' }]}>!</Text>
+                    <Text style={[styles.bullet, { color: '#FFD60A' }]}>★</Text>
                     <View style={styles.entryDetails}>
                       <Text style={styles.entryText}>Remember to call mom</Text>
-                      <Text style={styles.entryType}>Idea</Text>
+                      <Text style={styles.entryType}>Inspiration</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.digitalEntry}>
+                    <Text style={[styles.bullet, { color: '#5856D6' }]}>& </Text>
+                    <View style={styles.entryDetails}>
+                      <Text style={styles.entryText}>Research React Native performance</Text>
+                      <Text style={styles.entryType}>Research</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.digitalEntry}>
+                    <Text style={[styles.bullet, { color: '#FF2D55' }]}>◇</Text>
+                    <View style={styles.entryDetails}>
+                      <Text style={styles.entryText}>Grateful for sunny weather</Text>
+                      <Text style={styles.entryType}>Memory • Gratitude</Text>
                     </View>
                   </View>
                 </View>

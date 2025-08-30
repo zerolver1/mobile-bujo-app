@@ -20,6 +20,7 @@ import { smartOCRService } from '../../services/ocr/SmartOCRService';
 import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
 import { OCREntryMapper } from '../../services/utils/OCREntryMapper';
 import { useProcessingStore } from '../../stores/ProcessingStore';
+import { ImageMetadataService, ImageMetadata } from '../../services/utils/ImageMetadataService';
 
 interface CaptureScreenProps {
   navigation?: any;
@@ -137,19 +138,34 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       updateTask(taskId, {
+        stage: 'Extracting image metadata...',
+        progress: 15,
+        canNavigate: true
+      });
+
+      // Extract image metadata including timestamps
+      const imageMetadata = await ImageMetadataService.extractMetadata(imageUri);
+      console.log('CaptureScreen: Extracted image metadata:', {
+        createdAt: imageMetadata.createdAt,
+        source: imageMetadata.source,
+        estimatedJournalDate: imageMetadata.estimatedJournalDate
+      });
+      
+      updateTask(taskId, {
         stage: 'Processing with Smart OCR...',
         progress: 25,
         canNavigate: true
       });
       
-      // Step 1: Use Smart OCR Service with user speed preference
+      // Step 1: Use Smart OCR Service with user speed preference and metadata
       console.log(`CaptureScreen: Using speed preference: ${speedPreference}`);
       
       const ocrResult = await smartOCRService.processImage(imageUri, {
         prioritizeAccuracy: speedPreference === 'accuracy',
         prioritizeSpeed: speedPreference === 'speed',
         maxCostTier: 'premium', // Allow all services
-        userSpeedPreference: speedPreference // Pass user preference
+        userSpeedPreference: speedPreference, // Pass user preference
+        imageMetadata: imageMetadata // Pass metadata for date context
       });
       
       // Update task with detected service name
@@ -173,6 +189,15 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         console.log('Using structured entries from smart OCR:', ocrResult.parsedEntries.length);
         rawEntries = ocrResult.parsedEntries;
         ocrSource = 'gpt-vision'; // Most likely from GPT Vision
+        
+        // Add page_date from metadata to each entry if available
+        if (ocrResult.metadata?.page_date) {
+          console.log('CaptureScreen: Adding page_date from OCR metadata:', ocrResult.metadata.page_date);
+          rawEntries = rawEntries.map(entry => ({
+            ...entry,
+            pageDate: entry.pageDate || ocrResult.metadata.page_date
+          }));
+        }
       } else {
         // Fallback to enhanced parsing for services that return text only
         console.log('Parsing OCR text with enhanced BuJo parser...');
@@ -180,8 +205,8 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         ocrSource = 'parser';
       }
       
-      // Normalize all entries to consistent format
-      entries = OCREntryMapper.mapToConsistentFormat(rawEntries, ocrSource, ocrResult.confidence);
+      // Normalize all entries to consistent format with metadata
+      entries = OCREntryMapper.mapToConsistentFormat(rawEntries, ocrSource, ocrResult.confidence, imageMetadata);
       
       // Fix common OCR content issues
       entries = entries.map(entry => ({

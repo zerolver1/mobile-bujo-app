@@ -19,7 +19,21 @@ export class EnhancedBuJoParser {
     
     // NOTES  
     note: /^[\-–—−]\s+(.+)$/,  // - (dash) = Note
-    idea: /^[!]\s+(.+)$/,  // ! = Idea/Inspiration (standalone)
+    
+    // EXTENDED ENTRY TYPES
+    inspiration: /^[★☆!]\s+(.+)$/,  // ★ or ! = Inspiration/Idea
+    research: /^[&]\s+(.+)$/,  // & = Research
+    memory: /^[◇◆♢♦]\s+(.+)$/,  // ◇ = Memory/Gratitude
+    
+    // Mood indicators (can be standalone or with other entries)
+    moodExcellent: /\b(feeling\s+)?(excellent|amazing|fantastic|wonderful|great|awesome)\b/i,
+    moodGood: /\b(feeling\s+)?(good|happy|positive|nice|okay|fine)\b/i,
+    moodNeutral: /\b(feeling\s+)?(neutral|meh|average|so-so)\b/i,
+    moodPoor: /\b(feeling\s+)?(poor|bad|sad|terrible|awful|difficult|challenging)\b/i,
+    
+    // Gratitude patterns
+    gratitude: /^(grateful\s+for|thankful\s+for|appreciate|blessed\s+by)\s+(.+)/i,
+    gratitudeList: /^gratitude[:]\s*(.+)/i,
     
     // SIGNIFIERS (prefix any bullet)
     priorityTask: /^[\*]\s*[\•·∙⋅‧\.]\s+(.+)$/,  // * • = Priority Task
@@ -219,7 +233,10 @@ export class EnhancedBuJoParser {
     }
     
     // Then try traditional bullet patterns
-    const bulletPatterns = ['task', 'taskComplete', 'taskMigrated', 'taskScheduled', 'taskIrrelevant', 'event', 'note', 'idea'];
+    const bulletPatterns = [
+      'task', 'taskComplete', 'taskMigrated', 'taskScheduled', 'taskIrrelevant', 
+      'event', 'note', 'inspiration', 'research', 'memory'
+    ];
     for (const patternName of bulletPatterns) {
       const pattern = this.patterns[patternName];
       const match = line.match(pattern as RegExp);
@@ -234,6 +251,32 @@ export class EnhancedBuJoParser {
   }
 
   private parseNaturalLanguage(line: string, collectionDate: string, currentDate: Date): BuJoEntry | null {
+    // Check for mood patterns
+    const moodPatterns = ['moodExcellent', 'moodGood', 'moodNeutral', 'moodPoor'];
+    for (const moodPattern of moodPatterns) {
+      const match = line.match(this.patterns[moodPattern] as RegExp);
+      if (match) {
+        const entry = this.createEntry('memory', line, line, collectionDate, currentDate);
+        entry.mood = this.extractMoodFromPattern(moodPattern);
+        return entry;
+      }
+    }
+    
+    // Check for gratitude patterns
+    const gratitudeMatch = line.match(this.patterns.gratitude);
+    if (gratitudeMatch) {
+      const entry = this.createEntry('memory', gratitudeMatch[2], line, collectionDate, currentDate);
+      entry.gratitude = [gratitudeMatch[2]];
+      return entry;
+    }
+    
+    const gratitudeListMatch = line.match(this.patterns.gratitudeList);
+    if (gratitudeListMatch) {
+      const entry = this.createEntry('memory', 'Daily gratitude', line, collectionDate, currentDate);
+      entry.gratitude = gratitudeListMatch[1].split(/[,;]/).map(item => item.trim());
+      return entry;
+    }
+
     // Check for appointment pattern (e.g., "OT @ 3pm")
     const appointmentMatch = line.match(this.patterns.appointment);
     if (appointmentMatch && appointmentMatch[1] && appointmentMatch[2]) {
@@ -344,7 +387,7 @@ export class EnhancedBuJoParser {
       .trim();
   }
 
-  private mapEntryType(patternType: string): 'task' | 'event' | 'note' {
+  private mapEntryType(patternType: string): 'task' | 'event' | 'note' | 'inspiration' | 'research' | 'memory' | 'custom' {
     switch (patternType) {
       case 'task':
       case 'taskComplete':
@@ -357,9 +400,16 @@ export class EnhancedBuJoParser {
       case 'priorityEvent':
         return 'event';
       case 'note':
-      case 'idea':
       case 'priorityNote':
         return 'note';
+      case 'inspiration':
+      case 'idea':
+        return 'inspiration';
+      case 'research':
+        return 'research';
+      case 'memory':
+      case 'gratitude':
+        return 'memory';
       default:
         return 'task';
     }
@@ -443,6 +493,21 @@ export class EnhancedBuJoParser {
       'july', 'august', 'september', 'october', 'november', 'december'
     ];
     return months.indexOf(monthName.toLowerCase());
+  }
+
+  private extractMoodFromPattern(patternName: string): 'excellent' | 'good' | 'neutral' | 'poor' | undefined {
+    switch (patternName) {
+      case 'moodExcellent':
+        return 'excellent';
+      case 'moodGood':
+        return 'good';
+      case 'moodNeutral':
+        return 'neutral';
+      case 'moodPoor':
+        return 'poor';
+      default:
+        return undefined;
+    }
   }
 
   private generateId(): string {
