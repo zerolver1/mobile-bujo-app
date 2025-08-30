@@ -18,19 +18,19 @@ export const NotebookCard: React.FC<NotebookCardProps> = ({
   const { theme } = useTheme();
 
   const getCardStyle = () => {
-    // Safety check for theme
+    // Safety check for theme - use paper colors as fallback
     if (!theme?.colors || !theme?.shadow) {
       return {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F2E8', // Parchment fallback instead of white
         borderRadius: variant === 'torn' ? 0 : 2,
         padding: 12,
-        shadowColor: '#000000',
+        shadowColor: 'rgba(139, 69, 19, 0.1)', // Warm paper shadow
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 1,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
+        borderWidth: 0.5,
+        borderColor: '#E8E3D5', // Paper border
       };
     }
 

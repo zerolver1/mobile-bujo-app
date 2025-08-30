@@ -18,15 +18,15 @@ export const Card: React.FC<CardProps> = ({
   const { theme } = useTheme();
 
   const getCardStyle = () => {
-    // Safety check for theme
+    // Safety check for theme - use paper colors as fallback
     if (!theme?.colors || !theme?.shadow || !theme?.borderRadius) {
       return {
         borderRadius: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F2E8', // Parchment fallback instead of white
         padding: 12,
-        shadowColor: '#000000',
+        shadowColor: 'rgba(139, 69, 19, 0.1)', // Warm paper shadow
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 1,
       };
