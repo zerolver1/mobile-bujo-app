@@ -3,6 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+// Theme
+import { ThemeProvider } from './src/theme';
+
 // Navigation
 import { AppNavigator } from './src/navigation/AppNavigator';
 
@@ -41,11 +44,13 @@ const AppContent: React.FC = () => {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <AppNavigator />
-      <GlobalProcessingOverlay />
-      <StatusBar style="dark" backgroundColor="#FAF7F0" />
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <AppNavigator />
+        <GlobalProcessingOverlay />
+        <StatusBar style="dark" backgroundColor="#FAF7F0" />
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 };
 

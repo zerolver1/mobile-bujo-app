@@ -21,6 +21,7 @@ import { CustomCollectionsScreen } from '../screens/collections/CustomCollection
 import { CollectionDetailScreen } from '../screens/collections/CollectionDetailScreen';
 import { IndexScreen } from '../screens/collections/IndexScreen';
 import { MemoryLogScreen } from '../screens/memory/MemoryLogScreen';
+import { DesignSystemScreen } from '../screens/design/DesignSystemScreen';
 
 // Type definitions
 export type RootTabParamList = {
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   CollectionDetail: { collection: any };
   Index: undefined;
   MemoryLog: undefined;
+  DesignSystem: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -224,6 +226,14 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="MemoryLog" 
         component={MemoryLogScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="DesignSystem" 
+        component={DesignSystemScreen}
         options={{
           headerShown: false,
           presentation: 'card',

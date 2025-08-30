@@ -246,6 +246,9 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           >
             <Ionicons name="swap-horizontal" size={20} color={useSwipeableEntries ? "#34C759" : "#8E8E93"} />
           </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('DesignSystem')}>
+            <Ionicons name="color-palette-outline" size={20} color="#007AFF" />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleQuickScan}>
             <Ionicons name="camera-outline" size={20} color="#007AFF" />
           </TouchableOpacity>
@@ -335,111 +338,85 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: 'transparent', // Let PaperBackground show through
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
   },
   headerContent: {
     flex: 1,
   },
   dateText: {
-    fontSize: 17,
     fontWeight: '600',
-    color: '#1C1C1E',
   },
   statsText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   actionButton: {
-    padding: 8,
-    marginRight: 8,
+    padding: PAPER_DESIGN_TOKENS.spacing.md,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
   },
   addButton: {
-    padding: 8,
+    marginLeft: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   statsContainer: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 12,
-    paddingVertical: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   statCard: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 20,
     fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   listContainer: {
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.xl2,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.xl2,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl4,
   },
   emptyTitle: {
-    fontSize: 24,
     fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 8,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.md,
+    textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl4,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
   },
   dateNavigation: {
     flexDirection: 'row',
@@ -457,49 +434,34 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   fullDateText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   todayButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
     alignSelf: 'flex-start',
-  },
-  todayButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
   },
   entriesList: {
     flex: 1,
   },
   undoButton: {
-    backgroundColor: '#FFF7E6',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 149, 0, 0.1)', // Orange tint for undo
+    borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
   },
   activeButton: {
-    backgroundColor: '#F0F7FF',
-    borderRadius: 8,
+    backgroundColor: 'rgba(52, 199, 89, 0.1)', // Green tint for active
+    borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
   },
   swipeHint: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+  },
+  swipeHintContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#F2F2F7',
-    marginHorizontal: 20,
-    marginTop: 8,
-    borderRadius: 8,
-    gap: 8,
+    gap: PAPER_DESIGN_TOKENS.spacing.md,
   },
   swipeHintText: {
-    fontSize: 13,
-    color: '#8E8E93',
     fontWeight: '500',
   },
 });

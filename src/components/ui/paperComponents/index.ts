@@ -22,7 +22,7 @@ export { InkButton, type InkButtonProps } from '../InkButton';
 export { GlassMorphism, type GlassMorphismProps } from '../GlassMorphism';
 
 // Re-export design tokens and utilities for component customization
-export { PAPER_DESIGN_TOKENS } from '../../theme/paperDesignTokens';
+export { PAPER_DESIGN_TOKENS } from '../../../theme/paperDesignTokens';
 export { 
   createPaperShadow,
   createInkTextStyle,
@@ -31,7 +31,7 @@ export {
   getPaperPatternProps,
   safeThemeAccess,
   COMMON_PAPER_STYLES,
-} from '../../theme/paperStyleUtils';
+} from '../../../theme/paperStyleUtils';
 
 // Component usage guidelines and examples
 export const PAPER_COMPONENT_EXAMPLES = {
