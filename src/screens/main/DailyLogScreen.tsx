@@ -16,6 +16,17 @@ import { BuJoEntry } from '../../types/BuJo';
 import { BuJoEntryItem } from '../../components/BuJoEntryItem';
 import { SwipeableEntryItem } from '../../components/SwipeableEntryItem';
 import { useSwipeGestures } from '../../hooks/useSwipeGestures';
+import { useTheme } from '../../theme';
+import { 
+  PaperBackground, 
+  PaperButton, 
+  Typography, 
+  NotebookCard,
+  Card,
+  PAPER_DESIGN_TOKENS,
+  createPaperShadow,
+  safeThemeAccess 
+} from '../../components/ui/paperComponents';
 
 interface DailyLogScreenProps {
   navigation: any;
@@ -188,11 +199,13 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   };
 
   const isToday = currentDate === new Date().toISOString().split('T')[0];
+  const { theme } = useTheme();
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="flat" padding="md" style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.dateNavigation}>
             <TouchableOpacity 
@@ -206,8 +219,8 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
               style={styles.dateButton} 
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={styles.dateText}>{formatDateShort(currentDate)}</Text>
-              <Text style={styles.fullDateText}>{formatDate(currentDate).split(',')[0]}</Text>
+              <Typography variant="body" style={styles.dateText}>{formatDateShort(currentDate)}</Typography>
+              <Typography variant="caption1" style={styles.fullDateText}>{formatDate(currentDate).split(',')[0]}</Typography>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -219,15 +232,19 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           </View>
           
           {stats.total > 0 && (
-            <Text style={styles.statsText}>
+            <Typography variant="footnote" color="textSecondary" style={styles.statsText}>
               {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
-            </Text>
+            </Typography>
           )}
           
           {!isToday && (
-            <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
-              <Text style={styles.todayButtonText}>Today</Text>
-            </TouchableOpacity>
+            <PaperButton 
+              variant="sticky" 
+              size="sm" 
+              title="Today" 
+              onPress={goToToday}
+              style={styles.todayButton}
+            />
           )}
         </View>
         
@@ -252,59 +269,70 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           <TouchableOpacity style={styles.actionButton} onPress={handleQuickScan}>
             <Ionicons name="camera-outline" size={20} color="#007AFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddQuickEntry}>
-            <Ionicons name="add" size={24} color="#007AFF" />
-          </TouchableOpacity>
+          <PaperButton 
+            variant="ink" 
+            size="md" 
+            icon="add" 
+            onPress={handleAddQuickEntry}
+            style={styles.addButton}
+          />
         </View>
-      </View>
+        </Card>
+        
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={new Date(currentDate)}
+            mode="date"
+            display="default"
+            onChange={handleDatePickerChange}
+          />
+        )}
       
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={new Date(currentDate)}
-          mode="date"
-          display="default"
-          onChange={handleDatePickerChange}
-        />
-      )}
-      
-      {/* Swipe Tutorial Hint */}
-      {useSwipeableEntries && todaysEntries.length > 0 && todaysEntries.length <= 3 && (
-        <View style={styles.swipeHint}>
-          <Ionicons name="swap-horizontal" size={16} color="#8E8E93" />
-          <Text style={styles.swipeHintText}>
-            Swipe entries left or right for quick actions
-          </Text>
-        </View>
-      )}
+        {/* Swipe Tutorial Hint */}
+        {useSwipeableEntries && todaysEntries.length > 0 && todaysEntries.length <= 3 && (
+          <NotebookCard variant="sticky" style={styles.swipeHint}>
+            <View style={styles.swipeHintContent}>
+              <Ionicons name="swap-horizontal" size={16} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93')} />
+              <Typography variant="footnote" color="textSecondary" style={styles.swipeHintText}>
+                Swipe entries left or right for quick actions
+              </Typography>
+            </View>
+          </NotebookCard>
+        )}
 
-      {/* Quick Stats Summary */}
-      {stats.total > 0 && (
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.tasks}</Text>
-            <Text style={styles.statLabel}>Tasks</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.events}</Text>
-            <Text style={styles.statLabel}>Events</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.notes}</Text>
-            <Text style={styles.statLabel}>Notes</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: stats.completionRate > 50 ? '#34C759' : '#FF9500' }]}>
-              {stats.completionRate}%
-            </Text>
-            <Text style={styles.statLabel}>Done</Text>
-          </View>
-        </View>
-      )}
+        {/* Quick Stats Summary */}
+        {stats.total > 0 && (
+          <NotebookCard variant="page" showHoles={false} style={styles.statsContainer}>
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.tasks}</Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Tasks</Typography>
+              </View>
+              <View style={styles.statCard}>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.events}</Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Events</Typography>
+              </View>
+              <View style={styles.statCard}>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.notes}</Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Notes</Typography>
+              </View>
+              <View style={styles.statCard}>
+                <Typography 
+                  variant="title3" 
+                  style={[styles.statNumber, { color: stats.completionRate > 50 ? safeThemeAccess(theme, t => t.colors.success, '#15803D') : safeThemeAccess(theme, t => t.colors.warning, '#D97706') }]}
+                >
+                  {stats.completionRate}%
+                </Typography>
+                <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Done</Typography>
+              </View>
+            </View>
+          </NotebookCard>
+        )}
 
-      {/* Entries List */}
-      {todaysEntries.length > 0 ? (
-        <FlatList
+        {/* Entries List */}
+        {todaysEntries.length > 0 ? (
+          <FlatList
           data={todaysEntries}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -326,18 +354,22 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           contentContainerStyle={styles.listContainer}
           style={styles.entriesList}
           showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No entries yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start your day by scanning a journal page or adding a quick entry
-          </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleAddQuickEntry}>
-            <Text style={styles.primaryButtonText}>Add Entry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+          />
+        ) : (
+          <View style={styles.emptyState}>
+            <Typography variant="title2" color="text" style={styles.emptyTitle}>No entries yet</Typography>
+            <Typography variant="body" color="textSecondary" style={styles.emptySubtitle}>
+              Start your day by scanning a journal page or adding a quick entry
+            </Typography>
+            <PaperButton 
+              variant="ink" 
+              size="lg" 
+              title="Add Entry" 
+              onPress={handleAddQuickEntry}
+              style={styles.primaryButton}
+            />
+          </View>
+        )}
       </SafeAreaView>
     </PaperBackground>
   );
