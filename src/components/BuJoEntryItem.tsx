@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../types/BuJo';
 import { BuJoSymbol } from './ui/BuJoSymbols';
 import { Typography } from './ui/Typography';
-import { NotebookCard } from './ui/NotebookCard';
+import { Card } from './ui/Card';
 import { useTheme } from '../theme';
 import { PAPER_DESIGN_TOKENS } from '../theme/paperDesignTokens';
 import { safeThemeAccess } from '../theme/paperStyleUtils';
@@ -87,13 +87,17 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
   const isInactive = isCompleted || isCancelled;
 
   return (
-    <NotebookCard 
-      variant="page" 
-      showHoles={false}
+    <Card 
+      variant="elevated" 
+      padding="md"
       style={[
         styles.container, 
         isCompact && styles.compactContainer,
-        isInactive && styles.inactiveContainer
+        isInactive && styles.inactiveContainer,
+        // Force paper background color
+        { 
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8') 
+        }
       ]}
     >
       <TouchableOpacity 
@@ -257,7 +261,7 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
           </TouchableOpacity>
         )}
       </TouchableOpacity>
-    </NotebookCard>
+    </Card>
   );
 };
 
