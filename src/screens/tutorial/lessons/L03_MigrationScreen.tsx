@@ -370,7 +370,7 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({
           </View>
           
           <View style={styles.migrationTip}>
-            <Ionicons name="lightbulb" size={20} color="#FFD60A" />
+            <Ionicons name="information-circle" size={20} color="#FFD60A" />
             <Typography variant="body" style={styles.tipText}>
               The key is being honest about what you'll actually do with each task.
             </Typography>

@@ -264,7 +264,7 @@ export const CoreSignifiersScreen: React.FC<CoreSignifiersScreenProps> = ({
           </Typography>
           
           <View style={styles.signifierList}>
-            {coreSignifiers.map(renderSignifierCard)}
+            {coreSignifiers.map((signifier, index) => renderSignifierCard(signifier, index))}
           </View>
         </Card>
       )
