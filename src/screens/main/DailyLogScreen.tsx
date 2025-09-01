@@ -78,14 +78,35 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
     const completedTasks = tasks.filter(e => e.status === 'complete');
     const events = todaysEntries.filter(e => e.type === 'event');
     const notes = todaysEntries.filter(e => e.type === 'note');
+    const inspiration = todaysEntries.filter(e => e.type === 'inspiration');
+    const research = todaysEntries.filter(e => e.type === 'research');
+    const memory = todaysEntries.filter(e => e.type === 'memory');
+    const custom = todaysEntries.filter(e => e.type === 'custom');
+    
+    // BuJo Pro groupings
+    const coreEntries = tasks.length + events.length + notes.length;
+    const informationEntries = notes.length + inspiration.length + research.length;
+    const reflectiveEntries = memory.length;
     
     return {
       total: todaysEntries.length,
+      // Core BuJo types
       tasks: tasks.length,
       completed: completedTasks.length,
       events: events.length,
       notes: notes.length,
-      completionRate: tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0
+      // Extended types
+      inspiration: inspiration.length,
+      research: research.length,
+      memory: memory.length,
+      custom: custom.length,
+      // Grouped metrics
+      coreEntries,
+      informationEntries,
+      reflectiveEntries,
+      completionRate: tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0,
+      // Check if we have extended types to show second row
+      hasExtendedTypes: inspiration.length > 0 || research.length > 0 || memory.length > 0 || custom.length > 0
     };
   };
 
@@ -233,7 +254,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           
           {stats.total > 0 && (
             <Typography variant="footnote" color="textSecondary" style={styles.statsText}>
-              {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
+              {stats.total} entries • {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
             </Typography>
           )}
           
@@ -314,6 +335,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         {/* Quick Stats Summary */}
         {stats.total > 0 && (
           <NotebookCard variant="page" showHoles={false} style={styles.statsContainer}>
+            {/* Core BuJo Types Row */}
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
                 <Typography variant="title3" color="text" style={styles.statNumber}>{stats.tasks}</Typography>
@@ -337,6 +359,36 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
                 <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Done</Typography>
               </View>
             </View>
+            
+            {/* Extended Types Row - only show if we have extended entries */}
+            {stats.hasExtendedTypes && (
+              <View style={[styles.statsRow, styles.extendedStatsRow]}>
+                {stats.inspiration > 0 && (
+                  <View style={styles.statCard}>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.inspiration}</Typography>
+                    <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Ideas</Typography>
+                  </View>
+                )}
+                {stats.research > 0 && (
+                  <View style={styles.statCard}>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.research}</Typography>
+                    <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Research</Typography>
+                  </View>
+                )}
+                {stats.memory > 0 && (
+                  <View style={styles.statCard}>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.memory}</Typography>
+                    <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Memory</Typography>
+                  </View>
+                )}
+                {stats.custom > 0 && (
+                  <View style={styles.statCard}>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.custom}</Typography>
+                    <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Custom</Typography>
+                  </View>
+                )}
+              </View>
+            )}
           </NotebookCard>
         )}
 
@@ -425,6 +477,12 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+  },
+  extendedStatsRow: {
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: safeThemeAccess({}, t => t?.colors?.border, '#E5E5E7'),
   },
   statCard: {
     flex: 1,
