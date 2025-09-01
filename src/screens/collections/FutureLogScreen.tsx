@@ -432,7 +432,7 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
                           style={[styles.actionButton, styles.goalButton]}
                           onPress={() => openGoalModal(quarter)}
                         >
-                          <Ionicons name="target" size={16} color="#007AFF" />
+                          <Ionicons name="flag" size={16} color="#007AFF" />
                           <Text style={styles.actionButtonText}>Goals</Text>
                         </TouchableOpacity>
                       )}
