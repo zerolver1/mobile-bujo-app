@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   FlatList,
@@ -17,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
 import { useTheme } from '../../theme';
-import { PaperBackground, Typography, Card } from '../../components/ui/paperComponents';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
 import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface MemoryLogScreenProps {
@@ -33,6 +31,7 @@ interface MemoryStats {
 
 export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) => {
   const { entries, addEntry, updateEntry, getEntriesByType } = useBuJoStore();
+  const { theme } = useTheme();
   const [memoryEntries, setMemoryEntries] = useState<BuJoEntry[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMemoryContent, setNewMemoryContent] = useState('');
@@ -241,69 +240,97 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
     const hasGratitude = memory.gratitude && memory.gratitude.length > 0;
     
     return (
-      <TouchableOpacity style={styles.memoryCard} activeOpacity={0.7}>
-        <View style={styles.memoryHeader}>
-          <View style={styles.memoryDate}>
-            <Text style={styles.memoryDateText}>
-              {new Date(memory.createdAt).toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
+      <Card style={styles.memoryCard}>
+        <TouchableOpacity activeOpacity={0.7}>
+          <View style={styles.memoryHeader}>
+            <Card style={[styles.memoryDate, {
+              backgroundColor: safeThemeAccess(theme, t => t.colors.accent, '#007AFF')
+            }]}>
+              <Typography variant="caption" style={[styles.memoryDateText, {
+                color: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+              }]}>
+                {new Date(memory.createdAt).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </Typography>
+            </Card>
+            <View style={[styles.moodIndicator, { backgroundColor: getMoodColor(memory.mood || 'good') }]}>
+              <Typography variant="body" style={styles.moodEmoji}>{getMoodEmoji(memory.mood || 'good')}</Typography>
+            </View>
+          </View>
+          
+          {hasPhoto && (
+            <Image source={{ uri: memory.photoUri }} style={styles.memoryPhoto} />
+          )}
+          
+          <Typography variant="body" style={[styles.memoryContent, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>{memory.content}</Typography>
+          
+          {hasGratitude && (
+            <View style={styles.gratitudeSection}>
+              <Typography variant="caption" style={[styles.gratitudeTitle, {
+                color: safeThemeAccess(theme, t => t.colors.placeholder, '#666')
+              }]}>Grateful for:</Typography>
+              {memory.gratitude!.map((item, index) => (
+                <View key={index} style={styles.gratitudeItem}>
+                  <Ionicons name="heart" size={12} color="#FF2D55" />
+                  <Typography variant="caption" style={[styles.gratitudeText, {
+                    color: safeThemeAccess(theme, t => t.colors.text, '#333')
+                  }]}>{item}</Typography>
+                </View>
+              ))}
+            </View>
+          )}
+          
+          <View style={styles.memoryFooter}>
+            <Typography variant="caption" style={[styles.memoryTime, {
+              color: safeThemeAccess(theme, t => t.colors.placeholder, '#999')
+            }]}>
+              {new Date(memory.createdAt).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit'
               })}
-            </Text>
+            </Typography>
           </View>
-          <View style={[styles.moodIndicator, { backgroundColor: getMoodColor(memory.mood || 'good') }]}>
-            <Text style={styles.moodEmoji}>{getMoodEmoji(memory.mood || 'good')}</Text>
-          </View>
-        </View>
-        
-        {hasPhoto && (
-          <Image source={{ uri: memory.photoUri }} style={styles.memoryPhoto} />
-        )}
-        
-        <Text style={styles.memoryContent}>{memory.content}</Text>
-        
-        {hasGratitude && (
-          <View style={styles.gratitudeSection}>
-            <Text style={styles.gratitudeTitle}>Grateful for:</Text>
-            {memory.gratitude!.map((item, index) => (
-              <View key={index} style={styles.gratitudeItem}>
-                <Ionicons name="heart" size={12} color="#FF2D55" />
-                <Text style={styles.gratitudeText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-        
-        <View style={styles.memoryFooter}>
-          <Text style={styles.memoryTime}>
-            {new Date(memory.createdAt).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit'
-            })}
-          </Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Card>
     );
   };
 
   const renderStatsCard = (title: string, value: string | number, subtitle?: string, icon?: string) => (
-    <View style={styles.statCard}>
+    <Card style={[styles.statCard, {
+      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+    }]}>
       {icon && <Ionicons name={icon as any} size={24} color="#FF2D55" />}
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
-      {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
-    </View>
+      <Typography variant="title" style={[styles.statValue, {
+        color: safeThemeAccess(theme, t => t.colors.accent, '#FF2D55')
+      }]}>{value}</Typography>
+      <Typography variant="caption" style={[styles.statTitle, {
+        color: safeThemeAccess(theme, t => t.colors.placeholder, '#666')
+      }]}>{title}</Typography>
+      {subtitle && <Typography variant="caption" style={[styles.statSubtitle, {
+        color: safeThemeAccess(theme, t => t.colors.placeholder, '#999')
+      }]}>{subtitle}</Typography>}
+    </Card>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
       {/* Header */}
-      <View style={styles.header}>
+      <Card style={[styles.header, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+        borderBottomColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7'),
+        borderRadius: 0
+      }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Memory Log</Text>
+        <Typography variant="subtitle" style={[styles.headerTitle, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>Memory Log</Typography>
         <View style={styles.headerActions}>
           <TouchableOpacity 
             style={styles.viewToggle}
@@ -322,17 +349,23 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
             <Ionicons name="add" size={24} color="#007AFF" />
           </TouchableOpacity>
         </View>
-      </View>
+      </Card>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Daily Prompt */}
-        <View style={styles.promptCard}>
+        <Card style={[styles.promptCard, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
           <View style={styles.promptHeader}>
             <Ionicons name="bulb-outline" size={20} color="#FFD60A" />
-            <Text style={styles.promptTitle}>Today's Reflection</Text>
+            <Typography variant="subtitle" style={[styles.promptTitle, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>Today's Reflection</Typography>
           </View>
-          <Text style={styles.promptText}>{getPromptForToday()}</Text>
-        </View>
+          <Typography variant="body" style={[styles.promptText, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#666')
+          }]}>{getPromptForToday()}</Typography>
+        </Card>
 
         {/* Stats */}
         <View style={styles.statsContainer}>
@@ -343,23 +376,33 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
 
         {/* Favorite Gratitude */}
         {stats.favoriteGratitude.length > 0 && (
-          <View style={styles.favoriteSection}>
-            <Text style={styles.sectionTitle}>Most Grateful For</Text>
+          <Card style={[styles.favoriteSection, {
+            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+          }]}>
+            <Typography variant="title" style={[styles.sectionTitle, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>Most Grateful For</Typography>
             <View style={styles.favoriteList}>
               {stats.favoriteGratitude.map((item, index) => (
                 <View key={index} style={styles.favoriteItem}>
-                  <Text style={styles.favoriteText}>#{index + 1} {item}</Text>
+                  <Typography variant="body" style={[styles.favoriteText, {
+                    color: safeThemeAccess(theme, t => t.colors.accent, '#FF2D55')
+                  }]}>#{index + 1} {item}</Typography>
                 </View>
               ))}
             </View>
-          </View>
+          </Card>
         )}
 
         {/* Memories List */}
-        <View style={styles.memoriesSection}>
-          <Text style={styles.sectionTitle}>
+        <Card style={[styles.memoriesSection, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
+          <Typography variant="title" style={[styles.sectionTitle, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>
             Your Memories ({memoryEntries.length})
-          </Text>
+          </Typography>
           
           {memoryEntries.length > 0 ? (
             <FlatList
@@ -373,19 +416,24 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="heart-outline" size={64} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>No memories yet</Text>
-              <Text style={styles.emptySubtitle}>
+              <Typography variant="title" style={[styles.emptyTitle, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>No memories yet</Typography>
+              <Typography variant="body" style={[styles.emptySubtitle, {
+                color: safeThemeAccess(theme, t => t.colors.placeholder, '#666')
+              }]}>
                 Start your gratitude journey by adding your first memory
-              </Text>
-              <TouchableOpacity 
+              </Typography>
+              <PaperButton 
+                variant="primary"
                 style={styles.emptyButton}
                 onPress={() => setShowAddModal(true)}
               >
-                <Text style={styles.emptyButtonText}>Add Memory</Text>
-              </TouchableOpacity>
+                <Typography variant="body" style={styles.emptyButtonText}>Add Memory</Typography>
+              </PaperButton>
             </View>
           )}
-        </View>
+        </Card>
       </ScrollView>
 
       {/* Add Memory Modal */}
@@ -395,26 +443,43 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
         presentationStyle="pageSheet"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <PaperBackground variant="lined" showMargin={true} intensity="light">
+          <Card style={[styles.modalHeader, {
+            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+            borderBottomColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7'),
+            borderRadius: 0
+          }]}>
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <Text style={styles.modalCancel}>Cancel</Text>
+              <Typography variant="body" style={[styles.modalCancel, {
+                color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+              }]}>Cancel</Typography>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>New Memory</Text>
+            <Typography variant="subtitle" style={[styles.modalTitle, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>New Memory</Typography>
             <TouchableOpacity onPress={handleSaveMemory}>
-              <Text style={styles.modalSave}>Save</Text>
+              <Typography variant="body" style={[styles.modalSave, {
+                color: safeThemeAccess(theme, t => t.colors.accent, '#007AFF')
+              }]}>Save</Typography>
             </TouchableOpacity>
-          </View>
+          </Card>
 
           <ScrollView style={styles.modalContent}>
             {/* Memory Content */}
             <View style={styles.formSection}>
-              <Text style={styles.formLabel}>What happened?</Text>
+              <Typography variant="subtitle" style={[styles.formLabel, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>What happened?</Typography>
               <TextInput
-                style={styles.memoryInput}
+                style={[styles.memoryInput, {
+                  backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+                  borderColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7'),
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}
                 value={newMemoryContent}
                 onChangeText={setNewMemoryContent}
                 placeholder="Describe your memory..."
+                placeholderTextColor={safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')}
                 multiline
                 maxLength={500}
               />
@@ -422,19 +487,27 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
 
             {/* Mood Selection */}
             <View style={styles.formSection}>
-              <Text style={styles.formLabel}>How did you feel?</Text>
+              <Typography variant="subtitle" style={[styles.formLabel, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>How did you feel?</Typography>
               <View style={styles.moodSelector}>
                 {(['excellent', 'good', 'neutral', 'poor'] as const).map((mood) => (
                   <TouchableOpacity
                     key={mood}
                     style={[
                       styles.moodOption,
+                      {
+                        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+                        borderColor: selectedMood === mood ? '#FF2D55' : safeThemeAccess(theme, t => t.colors.border, '#E5E5E7')
+                      },
                       selectedMood === mood && styles.moodOptionSelected
                     ]}
                     onPress={() => setSelectedMood(mood)}
                   >
-                    <Text style={styles.moodOptionEmoji}>{getMoodEmoji(mood)}</Text>
-                    <Text style={styles.moodOptionLabel}>{mood}</Text>
+                    <Typography variant="body" style={styles.moodOptionEmoji}>{getMoodEmoji(mood)}</Typography>
+                    <Typography variant="caption" style={[styles.moodOptionLabel, {
+                      color: safeThemeAccess(theme, t => t.colors.placeholder, '#666')
+                    }]}>{mood}</Typography>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -442,7 +515,9 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
 
             {/* Photo Selection */}
             <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Add a photo (optional)</Text>
+              <Typography variant="subtitle" style={[styles.formLabel, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>Add a photo (optional)</Typography>
               <View style={styles.photoSection}>
                 {selectedPhoto ? (
                   <View style={styles.photoPreview}>
@@ -456,13 +531,19 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
                   </View>
                 ) : (
                   <View style={styles.photoButtons}>
-                    <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
+                    <TouchableOpacity style={[styles.photoButton, {
+                      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+                      borderColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7')
+                    }]} onPress={handleTakePhoto}>
                       <Ionicons name="camera" size={24} color="#007AFF" />
-                      <Text style={styles.photoButtonText}>Take Photo</Text>
+                      <Typography variant="body" style={styles.photoButtonText}>Take Photo</Typography>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoButton} onPress={handleAddPhoto}>
+                    <TouchableOpacity style={[styles.photoButton, {
+                      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+                      borderColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7')
+                    }]} onPress={handleAddPhoto}>
                       <Ionicons name="images" size={24} color="#007AFF" />
-                      <Text style={styles.photoButtonText}>Choose Photo</Text>
+                      <Typography variant="body" style={styles.photoButtonText}>Choose Photo</Typography>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -472,7 +553,9 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
             {/* Gratitude Items */}
             <View style={styles.formSection}>
               <View style={styles.gratitudeHeader}>
-                <Text style={styles.formLabel}>What are you grateful for?</Text>
+                <Typography variant="subtitle" style={[styles.formLabel, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>What are you grateful for?</Typography>
                 <TouchableOpacity onPress={addGratitudeItem}>
                   <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
                 </TouchableOpacity>
@@ -480,10 +563,15 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
               {gratitudeItems.map((item, index) => (
                 <View key={index} style={styles.gratitudeInputContainer}>
                   <TextInput
-                    style={styles.gratitudeInput}
+                    style={[styles.gratitudeInput, {
+                      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+                      borderColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7'),
+                      color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                    }]}
                     value={item}
                     onChangeText={(value) => updateGratitudeItem(index, value)}
                     placeholder={`Gratitude item ${index + 1}...`}
+                    placeholderTextColor={safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')}
                     maxLength={100}
                   />
                   {gratitudeItems.length > 1 && (
@@ -495,16 +583,15 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
               ))}
             </View>
           </ScrollView>
-        </SafeAreaView>
+        </PaperBackground>
       </Modal>
-    </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
   },
   header: {
     flexDirection: 'row',
@@ -755,10 +842,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   // Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#FAF7F0',
-  },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
