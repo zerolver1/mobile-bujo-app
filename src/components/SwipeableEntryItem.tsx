@@ -204,14 +204,6 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
     );
   };
 
-  const getRightActions = () => {
-    const { rightShort, rightLong } = swipeConfig;
-    const actions = [];
-    if (rightShort) actions.push(rightShort);
-    if (rightLong) actions.push(rightLong);
-    return actions;
-  };
-
   const renderRightActions = () => {
     const actions = getRightActions();
     if (actions.length === 0) return null;
