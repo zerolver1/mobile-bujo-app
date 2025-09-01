@@ -101,6 +101,66 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
         </Card>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* BuJo Academy Launch */}
+        <Card variant="elevated" padding="lg" style={[styles.section, styles.academySection]}>
+          <View style={styles.academyHeader}>
+            <View style={styles.academyIcon}>
+              <Ionicons name="school" size={32} color="#007AFF" />
+            </View>
+            <View style={styles.academyTextContainer}>
+              <Typography variant="title2" color="text" style={styles.academyTitle}>New to Bullet Journaling?</Typography>
+              <Typography variant="body" style={styles.academySubtitle}>
+                Start with our interactive learning path to master the fundamentals
+              </Typography>
+            </View>
+          </View>
+          
+          <View style={styles.learningPaths}>
+            <TouchableOpacity 
+              style={[styles.pathCard, styles.quickStartCard]}
+              onPress={() => navigation.navigate('TutorialLaunch', { mode: 'quickStart' })}
+            >
+              <View style={styles.pathHeader}>
+                <Ionicons name="flash" size={24} color="#FF9500" />
+                <Typography variant="headline" style={styles.pathTitle}>Quick Start</Typography>
+              </View>
+              <Typography variant="body" style={styles.pathDescription}>
+                Learn the essentials in 15 minutes
+              </Typography>
+              <Typography variant="caption" style={styles.pathDetails}>
+                3 core lessons • Perfect for beginners
+              </Typography>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.pathCard, styles.completeCard]}
+              onPress={() => navigation.navigate('TutorialLaunch', { mode: 'complete' })}
+            >
+              <View style={styles.pathHeader}>
+                <Ionicons name="trophy" size={24} color="#34C759" />
+                <Typography variant="headline" style={styles.pathTitle}>Complete Course</Typography>
+              </View>
+              <Typography variant="body" style={styles.pathDescription}>
+                Master all concepts in 45 minutes
+              </Typography>
+              <Typography variant="caption" style={styles.pathDetails}>
+                8 comprehensive lessons • Advanced techniques
+              </Typography>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.practiceButton}
+            onPress={() => navigation.navigate('TutorialLaunch', { mode: 'practice' })}
+          >
+            <Ionicons name="create" size={20} color="#5856D6" />
+            <Typography variant="body" style={styles.practiceButtonText}>
+              Just want to practice? Try our interactive exercises
+            </Typography>
+            <Ionicons name="chevron-forward" size={16} color="#5856D6" />
+          </TouchableOpacity>
+        </Card>
+
         {/* Introduction */}
         <Card variant="elevated" padding="lg" style={styles.section}>
           <Typography variant="title2" color="text" style={styles.sectionTitle}>Digital Enhancement, Not Replacement</Typography>
@@ -1160,5 +1220,102 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
     fontStyle: 'italic',
+  },
+  // Academy Launch Styles
+  academySection: {
+    backgroundColor: '#F0F8FF',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+  },
+  academyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  academyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
+  },
+  academyTextContainer: {
+    flex: 1,
+  },
+  academyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  academySubtitle: {
+    fontSize: 15,
+    color: '#666666',
+    lineHeight: 20,
+  },
+  learningPaths: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: PAPER_DESIGN_TOKENS.spacing.md,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  pathCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: PAPER_DESIGN_TOKENS.spacing.md,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  quickStartCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9500',
+  },
+  completeCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#34C759',
+  },
+  pathHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  pathTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginLeft: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  pathDescription: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+    lineHeight: 18,
+  },
+  pathDetails: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  practiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F3FF',
+    borderRadius: 8,
+    padding: PAPER_DESIGN_TOKENS.spacing.md,
+    borderWidth: 1,
+    borderColor: '#5856D6',
+  },
+  practiceButtonText: {
+    fontSize: 14,
+    color: '#5856D6',
+    fontWeight: '500',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xs,
+    flex: 1,
+    textAlign: 'center',
   },
 });

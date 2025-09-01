@@ -18,6 +18,8 @@ import { EntryReviewScreen } from '../screens/main/EntryReviewScreen';
 import { QuickCaptureScreen } from '../screens/main/QuickCaptureScreen';
 import { BuJoGuideScreen } from '../screens/settings/BuJoGuideScreen';
 import { AppleSyncSettingsScreen } from '../screens/settings/AppleSyncSettingsScreen';
+import { TutorialLaunchScreen } from '../screens/tutorial/TutorialLaunchScreen';
+import { CoreSignifiersScreen } from '../screens/tutorial/lessons/L01_CoreSignifiersScreen';
 import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
 import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
 import { MonthlyLogScreen } from '../screens/collections/MonthlyLogScreen';
@@ -51,6 +53,10 @@ export type RootStackParamList = {
   DesignSystem: undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
+  // Tutorial System Routes
+  TutorialLaunch: { mode: 'quickStart' | 'complete' | 'practice' };
+  TutorialLesson: { lessonId: string; mode: 'quickStart' | 'complete'; fromGuide?: boolean };
+  TutorialPractice: { exerciseType: string };
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -156,6 +162,22 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="BuJoGuide" 
         component={BuJoGuideScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TutorialLaunch" 
+        component={TutorialLaunchScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TutorialLesson" 
+        component={CoreSignifiersScreen}
         options={{
           headerShown: false,
           presentation: 'card',
