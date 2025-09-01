@@ -19,7 +19,8 @@ import { QuickCaptureScreen } from '../screens/main/QuickCaptureScreen';
 import { BuJoGuideScreen } from '../screens/settings/BuJoGuideScreen';
 import { AppleSyncSettingsScreen } from '../screens/settings/AppleSyncSettingsScreen';
 import { TutorialLaunchScreen } from '../screens/tutorial/TutorialLaunchScreen';
-import { CoreSignifiersScreen } from '../screens/tutorial/lessons/L01_CoreSignifiersScreen';
+import { TutorialLessonScreen } from '../screens/tutorial/TutorialLessonScreen';
+import { TutorialPracticeScreen } from '../screens/tutorial/TutorialPracticeScreen';
 import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
 import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
 import { MonthlyLogScreen } from '../screens/collections/MonthlyLogScreen';
@@ -177,7 +178,15 @@ const RootNavigator: React.FC = () => {
       />
       <Stack.Screen 
         name="TutorialLesson" 
-        component={CoreSignifiersScreen}
+        component={TutorialLessonScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TutorialPractice" 
+        component={TutorialPracticeScreen}
         options={{
           headerShown: false,
           presentation: 'card',
