@@ -16,6 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface MemoryLogScreenProps {
   navigation: any;

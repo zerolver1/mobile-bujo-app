@@ -12,6 +12,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry, BuJoCollection } from '../../types/BuJo';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card } from '../../components/ui/paperComponents';
+import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface CollectionDetailScreenProps {
   navigation: any;
@@ -31,6 +35,7 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
   route 
 }) => {
   const { collection } = route.params;
+  const { theme } = useTheme();
   const { 
     entries, 
     updateCollection,
@@ -102,21 +107,20 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
   };
 
   const renderEntryItem = ({ item, showRemove = false }: { item: BuJoEntry; showRemove?: boolean }) => (
-    <View style={styles.entryContainer}>
+    <Card style={[styles.entryContainer, {
+      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+    }]}>
       <View style={styles.bulletContainer}>
-        <Text style={styles.bullet}>
-          {item.type === 'task' && item.status === 'complete' ? '✓' :
-           item.type === 'task' ? '•' :
-           item.type === 'event' ? '○' : '—'}
-        </Text>
+        <BuJoSymbol type={item.type} status={item.status} style={styles.bullet} />
       </View>
       <View style={styles.entryContent}>
-        <Text style={[
+        <Typography variant="body" style={[
           styles.entryText,
-          item.status === 'complete' && styles.completedText
+          item.status === 'complete' && styles.completedText,
+          { color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E') }
         ]}>
           {item.content}
-        </Text>
+        </Typography>
         {(item.tags.length > 0 || item.contexts.length > 0) && (
           <View style={styles.tagContainer}>
             {item.contexts.map(ctx => (
@@ -127,9 +131,11 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
             ))}
           </View>
         )}
-        <Text style={styles.dateText}>
+        <Typography variant="caption" style={[styles.dateText, {
+          color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+        }]}>
           {new Date(item.collectionDate).toLocaleDateString()}
-        </Text>
+        </Typography>
       </View>
       {showRemove && (
         <TouchableOpacity
@@ -139,7 +145,7 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
           <Ionicons name="close-circle" size={20} color="#FF3B30" />
         </TouchableOpacity>
       )}
-    </View>
+    </Card>
   );
 
   const renderAssignmentEntryItem = ({ item }: { item: EntryWithSelection }) => (
@@ -161,15 +167,18 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
         </View>
       </View>
       <View style={styles.entryContent}>
-        <Text style={[
+        <Typography variant="body" style={[
           styles.entryText,
-          item.status === 'complete' && styles.completedText
+          item.status === 'complete' && styles.completedText,
+          { color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E') }
         ]}>
           {item.content}
-        </Text>
-        <Text style={styles.dateText}>
+        </Typography>
+        <Typography variant="caption" style={[styles.dateText, {
+          color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+        }]}>
           {new Date(item.collectionDate).toLocaleDateString()}
-        </Text>
+        </Typography>
       </View>
     </TouchableOpacity>
   );
@@ -181,25 +190,34 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={() => setShowAssignModal(false)}
     >
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
+      <PaperBackground>
+        <SafeAreaView style={[styles.modalContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+        }]}>
+        <Card style={[styles.modalHeader, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+          borderRadius: 0
+        }]}>
           <TouchableOpacity onPress={() => setShowAssignModal(false)}>
             <Text style={styles.cancelButton}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Assign Entries</Text>
+          <Typography variant="subtitle" style={styles.modalTitle}>Assign Entries</Typography>
           <TouchableOpacity onPress={handleAssignEntries}>
             <Text style={styles.saveButton}>Save</Text>
           </TouchableOpacity>
-        </View>
+        </Card>
         
-        <View style={styles.modalSubheader}>
-          <Text style={styles.modalSubtitle}>
+        <Card style={[styles.modalSubheader, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+          borderRadius: 0
+        }]}>
+          <Typography variant="caption" style={styles.modalSubtitle}>
             Select entries to add to "{collection.type === 'custom' ? collection.name : collection.type}"
-          </Text>
-          <Text style={styles.selectionCount}>
+          </Typography>
+          <Typography variant="caption" style={styles.selectionCount}>
             {entriesWithSelection.filter(e => e.isSelected).length} selected
-          </Text>
-        </View>
+          </Typography>
+        </Card>
         
         <FlatList
           data={entriesWithSelection}
@@ -208,7 +226,8 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
           contentContainerStyle={styles.modalContent}
           showsVerticalScrollIndicator={false}
         />
-      </SafeAreaView>
+        </SafeAreaView>
+      </PaperBackground>
     </Modal>
   );
 
@@ -223,21 +242,30 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <Card style={[styles.header, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+        borderRadius: 0
+      }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{getCollectionTitle()}</Text>
+        <Typography variant="subtitle" style={styles.headerTitle}>{getCollectionTitle()}</Typography>
         <TouchableOpacity onPress={() => setShowAssignModal(true)}>
           <Ionicons name="add" size={24} color="#007AFF" />
         </TouchableOpacity>
-      </View>
+      </Card>
 
       {/* Collection Info */}
-      <View style={styles.collectionInfo}>
-        <Text style={styles.collectionDate}>
+      <Card style={[styles.collectionInfo, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+        borderRadius: 0
+      }]}>
+        <Typography variant="body" style={styles.collectionDate}>
           {collection.type === 'daily' 
             ? new Date(collection.date).toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -247,11 +275,11 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
               })
             : collection.date
           }
-        </Text>
-        <Text style={styles.entryCount}>
+        </Typography>
+        <Typography variant="caption" style={styles.entryCount}>
           {collectionEntries.length} entries
-        </Text>
-      </View>
+        </Typography>
+      </Card>
 
       {/* Entries List */}
       {collectionEntries.length > 0 ? (
@@ -265,15 +293,18 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="document-outline" size={48} color="#C7C7CC" />
-          <Text style={styles.emptyTitle}>No Entries</Text>
-          <Text style={styles.emptySubtitle}>
+          <Typography variant="title" style={styles.emptyTitle}>No Entries</Typography>
+          <Typography variant="body" style={[styles.emptySubtitle, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>
             Tap the + button to add entries to this collection
-          </Text>
+          </Typography>
         </View>
       )}
 
       {renderAssignModal()}
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

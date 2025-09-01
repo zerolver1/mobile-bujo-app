@@ -22,6 +22,8 @@ import {
   SWIPE_THRESHOLDS,
   SwipeAction,
 } from '../utils/swipeActions';
+import { useTheme } from '../theme';
+import { safeThemeAccess } from '../theme/paperStyleUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -40,6 +42,7 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   showDate = false,
   isCompact = false,
 }) => {
+  const { theme } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
   const actionOpacity = useRef(new Animated.Value(0)).current;
   const currentAction = useRef<SwipeAction | null>(null);
@@ -251,7 +254,9 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {
+      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
+    }]}>
       {/* Background Actions */}
       {renderLeftActions()}
       {renderRightActions()}
@@ -268,6 +273,7 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
             styles.entryContainer,
             {
               transform: [{ translateX }],
+              backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
             },
           ]}
         >
@@ -290,7 +296,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   entryContainer: {
-    backgroundColor: '#FFFFFF',
     zIndex: 2,
   },
   actionsContainer: {

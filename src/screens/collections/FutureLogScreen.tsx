@@ -12,6 +12,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry, QuarterlyPlan, QuarterlyGoal } from '../../types/BuJo';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface FutureLogScreenProps {
   navigation: any;
@@ -24,6 +28,7 @@ interface MonthData {
 }
 
 export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { entries, quarterlyPlans, addQuarterlyPlan, updateQuarterlyPlan, getQuarterlyPlan } = useBuJoStore();
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4' | null>(null);
@@ -63,11 +68,13 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
 
   const getEntryTypeColor = (type: string) => {
     switch (type) {
-      case 'task': return '#007AFF';
-      case 'event': return '#FF3B30';
-      case 'note': return '#32D74B';
-      case 'idea': return '#FFD60A';
-      default: return '#8E8E93';
+      case 'task': return safeThemeAccess(theme, t => t.colors.bujo?.task, '#2B2B2B');
+      case 'event': return safeThemeAccess(theme, t => t.colors.bujo?.event, '#0F2A44');
+      case 'note': return safeThemeAccess(theme, t => t.colors.bujo?.note, '#6B7280');
+      case 'inspiration': return safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308');
+      case 'research': return safeThemeAccess(theme, t => t.colors.bujo?.research, '#7C3AED');
+      case 'memory': return safeThemeAccess(theme, t => t.colors.bujo?.memory, '#BE185D');
+      default: return safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280');
     }
   };
 
@@ -244,49 +251,50 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
   };
 
   const renderMonthCard = (monthData: MonthData, index: number) => (
-    <View key={`${monthData.month}-${monthData.year}`} style={styles.monthCard}>
+    <Card key={`${monthData.month}-${monthData.year}`} variant="elevated" padding="lg" style={styles.monthCard}>
       <View style={styles.monthHeader}>
-        <Text style={styles.monthTitle}>
+        <Typography variant="headline" color="text">
           {monthData.month} {monthData.year}
-        </Text>
-        <Text style={styles.entryCount}>
+        </Typography>
+        <Typography variant="caption" color="textSecondary">
           {monthData.entries.length} {monthData.entries.length === 1 ? 'entry' : 'entries'}
-        </Text>
+        </Typography>
       </View>
 
       <View style={styles.entriesContainer}>
         {monthData.entries.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={24} color="#C7C7CC" />
-            <Text style={styles.emptyText}>No future entries</Text>
+            <Ionicons name="calendar-outline" size={24} color={safeThemeAccess(theme, t => t.colors.textTertiary, '#C7C7CC')} />
+            <Typography variant="body" color="textSecondary">No future entries</Typography>
           </View>
         ) : (
           monthData.entries.slice(0, 5).map((entry) => (
             <TouchableOpacity key={entry.id} style={styles.entryItem}>
-              <Text
+              <Typography
+                variant="body"
                 style={[
                   styles.bullet,
                   { color: getEntryTypeColor(entry.type) }
                 ]}
               >
                 {getBulletSymbol(entry)}
-              </Text>
+              </Typography>
               <View style={styles.entryContent}>
-                <Text style={styles.entryText}>{entry.content}</Text>
+                <Typography variant="body" color="text">{entry.content}</Typography>
                 <View style={styles.entryMeta}>
-                  <Text style={styles.entryDate}>
+                  <Typography variant="caption" color="textSecondary">
                     {new Date(entry.collectionDate).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric'
                     })}
-                  </Text>
+                  </Typography>
                   {(entry.tags.length > 0 || entry.contexts.length > 0) && (
                     <View style={styles.tagContainer}>
                       {entry.contexts.slice(0, 2).map(ctx => (
-                        <Text key={ctx} style={styles.contextTag}>@{ctx}</Text>
+                        <Typography key={ctx} variant="caption" style={styles.contextTag}>@{ctx}</Typography>
                       ))}
                       {entry.tags.slice(0, 2).map(tag => (
-                        <Text key={tag} style={styles.hashTag}>#{tag}</Text>
+                        <Typography key={tag} variant="caption" style={styles.hashTag}>#{tag}</Typography>
                       ))}
                     </View>
                   )}
@@ -298,47 +306,48 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
         
         {monthData.entries.length > 5 && (
           <TouchableOpacity style={styles.showMoreButton}>
-            <Text style={styles.showMoreText}>
+            <Typography variant="caption" color="primary">
               +{monthData.entries.length - 5} more entries
-            </Text>
+            </Typography>
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </Card>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Future Log - {currentYear}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('QuickCapture')}>
-          <Ionicons name="add" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="elevated" padding="md" style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+          </TouchableOpacity>
+          <Typography variant="headline" color="text">Future Log - {currentYear}</Typography>
+          <TouchableOpacity onPress={() => navigation.navigate('QuickCapture')}>
+            <Ionicons name="add" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+          </TouchableOpacity>
+        </Card>
 
-      {/* View Mode Toggle */}
-      <View style={styles.viewModeContainer}>
-        <TouchableOpacity 
-          style={[styles.viewModeButton, viewMode === 'quarters' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('quarters')}
-        >
-          <Text style={[styles.viewModeText, viewMode === 'quarters' && styles.viewModeTextActive]}>
-            Quarterly
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.viewModeButton, viewMode === 'months' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('months')}
-        >
-          <Text style={[styles.viewModeText, viewMode === 'months' && styles.viewModeTextActive]}>
-            Monthly
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* View Mode Toggle */}
+        <Card variant="flat" padding="sm" style={styles.viewModeContainer}>
+          <TouchableOpacity 
+            style={[styles.viewModeButton, viewMode === 'quarters' && styles.viewModeButtonActive]}
+            onPress={() => setViewMode('quarters')}
+          >
+            <Typography variant="body" color={viewMode === 'quarters' ? 'text' : 'textSecondary'}>
+              Quarterly
+            </Typography>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.viewModeButton, viewMode === 'months' && styles.viewModeButtonActive]}
+            onPress={() => setViewMode('months')}
+          >
+            <Typography variant="body" color={viewMode === 'months' ? 'text' : 'textSecondary'}>
+              Monthly
+            </Typography>
+          </TouchableOpacity>
+        </Card>
 
       {/* Content */}
       <ScrollView 
@@ -589,7 +598,8 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

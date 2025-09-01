@@ -123,6 +123,8 @@ export const BuJoSymbol: React.FC<BuJoSymbolProps> = ({
           style: 'regular',
         };
       default:
+        // Fallback for unknown types - use basic bullet
+        console.warn(`Unknown BuJo entry type: ${type}`, { type, status });
         return { 
           symbol: '•', 
           color: colors.task,

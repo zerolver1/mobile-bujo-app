@@ -8,6 +8,15 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../theme';
+import { 
+  PaperBackground, 
+  Typography, 
+  Card, 
+  PaperButton,
+  PAPER_DESIGN_TOKENS 
+} from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface BuJoGuideScreenProps {
   navigation: any;
@@ -15,6 +24,7 @@ interface BuJoGuideScreenProps {
 
 export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) => {
   const [activeExample, setActiveExample] = useState<string | null>(null);
+  const { theme } = useTheme();
   const bulletTypes = [
     {
       symbol: '•',
@@ -79,108 +89,110 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bullet Journal Guide</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="elevated" padding="md" style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+          </TouchableOpacity>
+          <Typography variant="headline" color="text">Bullet Journal Guide</Typography>
+          <View style={{ width: 24 }} />
+        </Card>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Introduction */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Digital Enhancement, Not Replacement</Text>
-          <Text style={styles.text}>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title2" color="text" style={styles.sectionTitle}>Digital Enhancement, Not Replacement</Typography>
+          <Typography variant="body" style={styles.text}>
             This app preserves your handwritten bullet journal system while adding digital convenience. 
             Scan your pages, review the results, and sync with your digital tools—all while keeping 
             paper as your source of truth.
-          </Text>
-        </View>
+          </Typography>
+        </Card>
 
         {/* How It Works */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How It Works</Text>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>How It Works</Typography>
           <View style={styles.stepContainer}>
             <View style={styles.step}>
               <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
+                <Typography variant="headline" style={styles.stepNumberText}>1</Typography>
               </View>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Scan Your Page</Text>
-                <Text style={styles.stepText}>
+                <Typography variant="headline" style={styles.stepTitle}>Scan Your Page</Typography>
+                <Typography variant="body" style={styles.stepText}>
                   Use the camera to capture your handwritten bullet journal entries
-                </Text>
+                </Typography>
               </View>
             </View>
             
             <View style={styles.step}>
               <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
+                <Typography variant="headline" style={styles.stepNumberText}>2</Typography>
               </View>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>AI Recognition</Text>
-                <Text style={styles.stepText}>
+                <Typography variant="headline" style={styles.stepTitle}>AI Recognition</Typography>
+                <Typography variant="body" style={styles.stepText}>
                   Advanced OCR detects your bullets and understands your notation
-                </Text>
+                </Typography>
               </View>
             </View>
             
             <View style={styles.step}>
               <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
+                <Typography variant="headline" style={styles.stepNumberText}>3</Typography>
               </View>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Quick Review</Text>
-                <Text style={styles.stepText}>
+                <Typography variant="headline" style={styles.stepTitle}>Quick Review</Typography>
+                <Typography variant="body" style={styles.stepText}>
                   Confirm what was detected or make quick corrections
-                </Text>
+                </Typography>
               </View>
             </View>
             
             <View style={styles.step}>
               <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>4</Text>
+                <Typography variant="headline" style={styles.stepNumberText}>4</Typography>
               </View>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Digital Sync</Text>
-                <Text style={styles.stepText}>
+                <Typography variant="headline" style={styles.stepTitle}>Digital Sync</Typography>
+                <Typography variant="body" style={styles.stepText}>
                   Tasks sync to Reminders, events to Calendar automatically
-                </Text>
+                </Typography>
               </View>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Bullet Reference */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bullet Journal Notation</Text>
-          <Text style={styles.text}>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>Bullet Journal Notation</Typography>
+          <Typography variant="body" style={styles.text}>
             The app recognizes all official Bullet Journal symbols, plus common handwriting variations:
-          </Text>
+          </Typography>
           
           <View style={styles.bulletGrid}>
             {bulletTypes.map((bullet, index) => (
               <View key={index} style={styles.bulletItem}>
                 <View style={[styles.bulletSymbol, { backgroundColor: bullet.color }]}>
-                  <Text style={styles.bulletSymbolText}>{bullet.symbol}</Text>
+                  <Typography variant="body" style={styles.bulletSymbolText}>{bullet.symbol}</Typography>
                 </View>
                 <View style={styles.bulletInfo}>
-                  <Text style={styles.bulletName}>{bullet.name}</Text>
-                  <Text style={styles.bulletDescription}>{bullet.description}</Text>
+                  <Typography variant="subtitle" style={styles.bulletName}>{bullet.name}</Typography>
+                  <Typography variant="caption" style={styles.bulletDescription}>{bullet.description}</Typography>
                 </View>
               </View>
             ))}
           </View>
-        </View>
+        </Card>
 
         {/* Interactive Examples */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Interactive Examples</Text>
-          <Text style={styles.text}>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>Interactive Examples</Typography>
+          <Typography variant="body" style={styles.text}>
             Tap on each example to see how the app would interpret your handwriting:
-          </Text>
+          </Typography>
 
           {/* Daily Log Example */}
           <TouchableOpacity
@@ -191,7 +203,7 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
             onPress={() => setActiveExample(activeExample === 'daily' ? null : 'daily')}
           >
             <View style={styles.exampleHeader}>
-              <Text style={styles.exampleTitle}>📅 Daily Log Example</Text>
+              <Typography variant="subtitle" style={styles.exampleTitle}>📅 Daily Log Example</Typography>
               <Ionicons 
                 name={activeExample === 'daily' ? 'chevron-up' : 'chevron-down'} 
                 size={20} 
@@ -202,66 +214,66 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
             {activeExample === 'daily' && (
               <View style={styles.exampleContent}>
                 <View style={styles.handwritingExample}>
-                  <Text style={styles.handwritingTitle}>What you write:</Text>
-                  <Text style={styles.handwritingText}>• Buy groceries @store #food</Text>
-                  <Text style={styles.handwritingText}>○ Meeting with Sarah 2:30pm</Text>
-                  <Text style={styles.handwritingText}>— Great idea for weekend project</Text>
-                  <Text style={styles.handwritingText}>★ Remember to call mom</Text>
-                  <Text style={styles.handwritingText}>& Research React Native performance</Text>
-                  <Text style={styles.handwritingText}>◇ Grateful for sunny weather</Text>
+                  <Typography variant="subtitle" style={styles.handwritingTitle}>What you write:</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>• Buy groceries @store #food</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>○ Meeting with Sarah 2:30pm</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>— Great idea for weekend project</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>★ Remember to call mom</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>& Research React Native performance</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>◇ Grateful for sunny weather</Typography>
                 </View>
                 
                 <View style={styles.digitalExample}>
-                  <Text style={styles.digitalTitle}>App interprets as:</Text>
+                  <Typography variant="subtitle" style={styles.digitalTitle}>App interprets as:</Typography>
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#007AFF' }]}>•</Text>
+                    <Typography variant="body" style={[styles.bullet, { color: '#007AFF' }]}>•</Typography>
                     <View style={styles.entryDetails}>
-                      <Text style={styles.entryText}>Buy groceries</Text>
+                      <Typography variant="body" style={styles.entryText}>Buy groceries</Typography>
                       <View style={styles.entryTags}>
-                        <Text style={styles.contextTag}>@store</Text>
-                        <Text style={styles.hashTag}>#food</Text>
+                        <Typography variant="caption" style={styles.contextTag}>@store</Typography>
+                        <Typography variant="caption" style={styles.hashTag}>#food</Typography>
                       </View>
-                      <Text style={styles.entryType}>Task • Incomplete</Text>
+                      <Typography variant="caption" style={styles.entryType}>Task • Incomplete</Typography>
                     </View>
                   </View>
                   
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#FF3B30' }]}>○</Text>
+                    <Typography variant="body" style={[styles.bullet, { color: '#FF3B30' }]}>○</Typography>
                     <View style={styles.entryDetails}>
-                      <Text style={styles.entryText}>Meeting with Sarah 2:30pm</Text>
-                      <Text style={styles.entryType}>Event • 2:30 PM</Text>
+                      <Typography variant="body" style={styles.entryText}>Meeting with Sarah 2:30pm</Typography>
+                      <Typography variant="caption" style={styles.entryType}>Event • 2:30 PM</Typography>
                     </View>
                   </View>
                   
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#32D74B' }]}>—</Text>
+                    <Typography variant="body" style={[styles.bullet, { color: '#32D74B' }]}>—</Typography>
                     <View style={styles.entryDetails}>
-                      <Text style={styles.entryText}>Great idea for weekend project</Text>
-                      <Text style={styles.entryType}>Note</Text>
+                      <Typography variant="body" style={styles.entryText}>Great idea for weekend project</Typography>
+                      <Typography variant="caption" style={styles.entryType}>Note</Typography>
                     </View>
                   </View>
 
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#FFD60A' }]}>★</Text>
+                    <Typography variant="body" style={[styles.bullet, { color: '#FFD60A' }]}>★</Typography>
                     <View style={styles.entryDetails}>
-                      <Text style={styles.entryText}>Remember to call mom</Text>
-                      <Text style={styles.entryType}>Inspiration</Text>
+                      <Typography variant="body" style={styles.entryText}>Remember to call mom</Typography>
+                      <Typography variant="caption" style={styles.entryType}>Inspiration</Typography>
                     </View>
                   </View>
 
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#5856D6' }]}>& </Text>
+                    <Typography variant="body" style={[styles.bullet, { color: '#5856D6' }]}>& </Typography>
                     <View style={styles.entryDetails}>
-                      <Text style={styles.entryText}>Research React Native performance</Text>
-                      <Text style={styles.entryType}>Research</Text>
+                      <Typography variant="body" style={styles.entryText}>Research React Native performance</Typography>
+                      <Typography variant="caption" style={styles.entryType}>Research</Typography>
                     </View>
                   </View>
 
                   <View style={styles.digitalEntry}>
-                    <Text style={[styles.bullet, { color: '#FF2D55' }]}>◇</Text>
+                    <Typography variant="body" style={[styles.bullet, { color: '#FF2D55' }]}>◇</Typography>
                     <View style={styles.entryDetails}>
-                      <Text style={styles.entryText}>Grateful for sunny weather</Text>
-                      <Text style={styles.entryType}>Memory • Gratitude</Text>
+                      <Typography variant="body" style={styles.entryText}>Grateful for sunny weather</Typography>
+                      <Typography variant="caption" style={styles.entryType}>Memory • Gratitude</Typography>
                     </View>
                   </View>
                 </View>
@@ -278,7 +290,7 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
             onPress={() => setActiveExample(activeExample === 'migration' ? null : 'migration')}
           >
             <View style={styles.exampleHeader}>
-              <Text style={styles.exampleTitle}>🔄 Migration Example</Text>
+              <Typography variant="subtitle" style={styles.exampleTitle}>🔄 Migration Example</Typography>
               <Ionicons 
                 name={activeExample === 'migration' ? 'chevron-up' : 'chevron-down'} 
                 size={20} 
@@ -289,31 +301,31 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
             {activeExample === 'migration' && (
               <View style={styles.exampleContent}>
                 <View style={styles.handwritingExample}>
-                  <Text style={styles.handwritingTitle}>Monthly review notation:</Text>
-                  <Text style={styles.handwritingText}>X Finish quarterly report</Text>
-                  <Text style={styles.handwritingText}>{'> Plan vacation for summer'}</Text>
-                  <Text style={styles.handwritingText}>{'< Doctor appointment'}</Text>
-                  <Text style={styles.handwritingText}>~ Old project idea</Text>
+                  <Typography variant="subtitle" style={styles.handwritingTitle}>Monthly review notation:</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>X Finish quarterly report</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>{'> Plan vacation for summer'}</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>{'< Doctor appointment'}</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>~ Old project idea</Typography>
                 </View>
                 
                 <View style={styles.digitalExample}>
-                  <Text style={styles.digitalTitle}>App understands:</Text>
+                  <Typography variant="subtitle" style={styles.digitalTitle}>App understands:</Typography>
                   <View style={styles.migrationGrid}>
                     <View style={styles.migrationItem}>
-                      <Text style={[styles.bullet, { color: '#34C759' }]}>X</Text>
-                      <Text style={styles.migrationLabel}>Completed ✓</Text>
+                      <Typography variant="body" style={[styles.bullet, { color: '#34C759' }]}>X</Typography>
+                      <Typography variant="caption" style={styles.migrationLabel}>Completed ✓</Typography>
                     </View>
                     <View style={styles.migrationItem}>
-                      <Text style={[styles.bullet, { color: '#FF9500' }]}>{'>'}</Text>
-                      <Text style={styles.migrationLabel}>Migrated to next month</Text>
+                      <Typography variant="body" style={[styles.bullet, { color: '#FF9500' }]}>{'>'}</Typography>
+                      <Typography variant="caption" style={styles.migrationLabel}>Migrated to next month</Typography>
                     </View>
                     <View style={styles.migrationItem}>
-                      <Text style={[styles.bullet, { color: '#5856D6' }]}>{'<'}</Text>
-                      <Text style={styles.migrationLabel}>Scheduled for future</Text>
+                      <Typography variant="body" style={[styles.bullet, { color: '#5856D6' }]}>{'<'}</Typography>
+                      <Typography variant="caption" style={styles.migrationLabel}>Scheduled for future</Typography>
                     </View>
                     <View style={styles.migrationItem}>
-                      <Text style={[styles.bullet, { color: '#8E8E93' }]}>~</Text>
-                      <Text style={styles.migrationLabel}>Irrelevant/cancelled</Text>
+                      <Typography variant="body" style={[styles.bullet, { color: '#8E8E93' }]}>~</Typography>
+                      <Typography variant="caption" style={styles.migrationLabel}>Irrelevant/cancelled</Typography>
                     </View>
                   </View>
                 </View>
@@ -330,7 +342,7 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
             onPress={() => setActiveExample(activeExample === 'collections' ? null : 'collections')}
           >
             <View style={styles.exampleHeader}>
-              <Text style={styles.exampleTitle}>📚 Collections & Tags</Text>
+              <Typography variant="subtitle" style={styles.exampleTitle}>📚 Collections & Tags</Typography>
               <Ionicons 
                 name={activeExample === 'collections' ? 'chevron-up' : 'chevron-down'} 
                 size={20} 
@@ -341,37 +353,37 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
             {activeExample === 'collections' && (
               <View style={styles.exampleContent}>
                 <View style={styles.handwritingExample}>
-                  <Text style={styles.handwritingTitle}>Your notation system:</Text>
-                  <Text style={styles.handwritingText}>• Read "Atomic Habits" @home #books #growth</Text>
-                  <Text style={styles.handwritingText}>• Workout routine @gym #fitness #morning</Text>
-                  <Text style={styles.handwritingText}>○ Team standup @office #work</Text>
+                  <Typography variant="subtitle" style={styles.handwritingTitle}>Your notation system:</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>• Read "Atomic Habits" @home #books #growth</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>• Workout routine @gym #fitness #morning</Typography>
+                  <Typography variant="body" style={styles.handwritingText}>○ Team standup @office #work</Typography>
                 </View>
                 
                 <View style={styles.digitalExample}>
-                  <Text style={styles.digitalTitle}>Smart organization:</Text>
+                  <Typography variant="subtitle" style={styles.digitalTitle}>Smart organization:</Typography>
                   <View style={styles.organizationGrid}>
                     <View style={styles.orgItem}>
-                      <Text style={styles.orgTitle}>Contexts (@)</Text>
-                      <Text style={styles.orgList}>@home, @gym, @office</Text>
+                      <Typography variant="subtitle" style={styles.orgTitle}>Contexts (@)</Typography>
+                      <Typography variant="body" style={styles.orgList}>@home, @gym, @office</Typography>
                     </View>
                     <View style={styles.orgItem}>
-                      <Text style={styles.orgTitle}>Topics (#)</Text>
-                      <Text style={styles.orgList}>#books, #fitness, #work</Text>
+                      <Typography variant="subtitle" style={styles.orgTitle}>Topics (#)</Typography>
+                      <Typography variant="body" style={styles.orgList}>#books, #fitness, #work</Typography>
                     </View>
                     <View style={styles.orgItem}>
-                      <Text style={styles.orgTitle}>Auto-Collections</Text>
-                      <Text style={styles.orgList}>Personal Growth, Health & Fitness</Text>
+                      <Typography variant="subtitle" style={styles.orgTitle}>Auto-Collections</Typography>
+                      <Typography variant="body" style={styles.orgList}>Personal Growth, Health & Fitness</Typography>
                     </View>
                   </View>
                 </View>
               </View>
             )}
           </TouchableOpacity>
-        </View>
+        </Card>
 
         {/* App Features Guide */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Using This App</Text>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>Using This App</Typography>
           
           <View style={styles.featureGrid}>
             <TouchableOpacity 
@@ -381,10 +393,10 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
               <View style={[styles.featureIcon, { backgroundColor: '#E3F2FD' }]}>
                 <Ionicons name="camera" size={24} color="#007AFF" />
               </View>
-              <Text style={styles.featureTitle}>Quick Scan</Text>
-              <Text style={styles.featureDescription}>
+              <Typography variant="subtitle" style={styles.featureTitle}>Quick Scan</Typography>
+              <Typography variant="body" style={styles.featureDescription}>
                 Tap the camera icon to quickly capture and process your journal pages
-              </Text>
+              </Typography>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -394,247 +406,227 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
               <View style={[styles.featureIcon, { backgroundColor: '#FFF3E0' }]}>
                 <Ionicons name="library" size={24} color="#FF9500" />
               </View>
-              <Text style={styles.featureTitle}>Collections</Text>
-              <Text style={styles.featureDescription}>
+              <Typography variant="subtitle" style={styles.featureTitle}>Collections</Typography>
+              <Typography variant="body" style={styles.featureDescription}>
                 Organize entries by month, project, or custom categories
-              </Text>
+              </Typography>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.featureCard}>
               <View style={[styles.featureIcon, { backgroundColor: '#E8F5E8' }]}>
                 <Ionicons name="sync" size={24} color="#34C759" />
               </View>
-              <Text style={styles.featureTitle}>Smart Sync</Text>
-              <Text style={styles.featureDescription}>
+              <Typography variant="subtitle" style={styles.featureTitle}>Smart Sync</Typography>
+              <Typography variant="body" style={styles.featureDescription}>
                 Tasks automatically sync to Reminders, events to Calendar
-              </Text>
+              </Typography>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.featureCard}>
               <View style={[styles.featureIcon, { backgroundColor: '#FCE4EC' }]}>
                 <Ionicons name="search" size={24} color="#E91E63" />
               </View>
-              <Text style={styles.featureTitle}>Smart Search</Text>
-              <Text style={styles.featureDescription}>
+              <Typography variant="subtitle" style={styles.featureTitle}>Smart Search</Typography>
+              <Typography variant="body" style={styles.featureDescription}>
                 Find entries by text, tags, contexts, or date ranges
-              </Text>
+              </Typography>
             </TouchableOpacity>
           </View>
-        </View>
+        </Card>
 
         {/* Getting Started */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Getting Started</Text>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>Getting Started</Typography>
           
           <View style={styles.gettingStartedList}>
             <View style={styles.gettingStartedItem}>
               <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>1</Text>
+                <Typography variant="headline" style={styles.stepBadgeText}>1</Typography>
               </View>
               <View style={styles.stepInfo}>
-                <Text style={styles.stepInfoTitle}>Write Your First Page</Text>
-                <Text style={styles.stepInfoText}>
+                <Typography variant="headline" style={styles.stepInfoTitle}>Write Your First Page</Typography>
+                <Typography variant="body" style={styles.stepInfoText}>
                   Use standard bullet journal notation in your physical journal
-                </Text>
+                </Typography>
               </View>
             </View>
             
             <View style={styles.gettingStartedItem}>
               <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>2</Text>
+                <Typography variant="headline" style={styles.stepBadgeText}>2</Typography>
               </View>
               <View style={styles.stepInfo}>
-                <Text style={styles.stepInfoTitle}>Scan with Camera</Text>
-                <Text style={styles.stepInfoText}>
+                <Typography variant="headline" style={styles.stepInfoTitle}>Scan with Camera</Typography>
+                <Typography variant="body" style={styles.stepInfoText}>
                   Tap the camera icon and capture your page in good lighting
-                </Text>
+                </Typography>
               </View>
             </View>
             
             <View style={styles.gettingStartedItem}>
               <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>3</Text>
+                <Typography variant="headline" style={styles.stepBadgeText}>3</Typography>
               </View>
               <View style={styles.stepInfo}>
-                <Text style={styles.stepInfoTitle}>Review Results</Text>
-                <Text style={styles.stepInfoText}>
+                <Typography variant="headline" style={styles.stepInfoTitle}>Review Results</Typography>
+                <Typography variant="body" style={styles.stepInfoText}>
                   Check the detected entries and make any quick corrections
-                </Text>
+                </Typography>
               </View>
             </View>
             
             <View style={styles.gettingStartedItem}>
               <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>4</Text>
+                <Typography variant="headline" style={styles.stepBadgeText}>4</Typography>
               </View>
               <View style={styles.stepInfo}>
-                <Text style={styles.stepInfoTitle}>Enjoy Digital Benefits</Text>
-                <Text style={styles.stepInfoText}>
+                <Typography variant="headline" style={styles.stepInfoTitle}>Enjoy Digital Benefits</Typography>
+                <Typography variant="body" style={styles.stepInfoText}>
                   Search, organize, and sync while keeping your analog workflow
-                </Text>
+                </Typography>
               </View>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* OCR Tips */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tips for Best Results</Text>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>Tips for Best Results</Typography>
           
           <View style={styles.tipItem}>
             <Ionicons name="create-outline" size={20} color="#007AFF" />
             <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Write Clearly</Text>
-              <Text style={styles.tipText}>
+              <Typography variant="headline" style={styles.tipTitle}>Write Clearly</Typography>
+              <Typography variant="body" style={styles.tipText}>
                 Make your bullets distinct and leave space between symbol and text
-              </Text>
+              </Typography>
             </View>
           </View>
           
           <View style={styles.tipItem}>
             <Ionicons name="sunny-outline" size={20} color="#007AFF" />
             <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Good Lighting</Text>
-              <Text style={styles.tipText}>
+              <Typography variant="headline" style={styles.tipTitle}>Good Lighting</Typography>
+              <Typography variant="body" style={styles.tipText}>
                 Scan in bright, even light to help the camera capture details
-              </Text>
+              </Typography>
             </View>
           </View>
           
           <View style={styles.tipItem}>
             <Ionicons name="crop-outline" size={20} color="#007AFF" />
             <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Frame Your Page</Text>
-              <Text style={styles.tipText}>
+              <Typography variant="headline" style={styles.tipTitle}>Frame Your Page</Typography>
+              <Typography variant="body" style={styles.tipText}>
                 Keep the entire page visible and minimize shadows
-              </Text>
+              </Typography>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Philosophy */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>The BuJo Pro Philosophy</Text>
-          <Text style={styles.text}>
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>The BuJo Pro Philosophy</Typography>
+          <Typography variant="body" style={styles.text}>
             Bullet journaling works because it's tactile, immediate, and personal. This app doesn't 
             try to replace that—it enhances it. Your paper journal remains your primary system, 
             while this app helps you get the benefits of digital organization without losing the 
             analog experience you love.
-          </Text>
+          </Typography>
           
           <View style={styles.philosophyGrid}>
             <View style={styles.philosophyItem}>
-              <Text style={styles.philosophyTitle}>📝 Paper First</Text>
-              <Text style={styles.philosophyText}>
+              <Typography variant="headline" style={styles.philosophyTitle}>📝 Paper First</Typography>
+              <Typography variant="body" style={styles.philosophyText}>
                 Your handwritten journal is always the source of truth
-              </Text>
+              </Typography>
             </View>
             
             <View style={styles.philosophyItem}>
-              <Text style={styles.philosophyTitle}>🔄 Seamless Sync</Text>
-              <Text style={styles.philosophyText}>
+              <Typography variant="headline" style={styles.philosophyTitle}>🔄 Seamless Sync</Typography>
+              <Typography variant="body" style={styles.philosophyText}>
                 Digital tools work with your system, not against it
-              </Text>
+              </Typography>
             </View>
             
             <View style={styles.philosophyItem}>
-              <Text style={styles.philosophyTitle}>⚡ Quick Capture</Text>
-              <Text style={styles.philosophyText}>
+              <Typography variant="headline" style={styles.philosophyTitle}>⚡ Quick Capture</Typography>
+              <Typography variant="body" style={styles.philosophyText}>
                 Fast scanning and minimal review keeps you flowing
-              </Text>
+              </Typography>
             </View>
             
             <View style={styles.philosophyItem}>
-              <Text style={styles.philosophyTitle}>🎯 Respect Method</Text>
-              <Text style={styles.philosophyText}>
+              <Typography variant="headline" style={styles.philosophyTitle}>🎯 Respect Method</Typography>
+              <Typography variant="body" style={styles.philosophyText}>
                 Official BuJo notation preserved exactly as you write it
-              </Text>
+              </Typography>
             </View>
           </View>
-        </View>
+        </Card>
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
   },
   content: {
     flex: 1,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   section: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 12,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
   },
   text: {
-    fontSize: 16,
     lineHeight: 24,
-    color: '#1C1C1E',
   },
   stepContainer: {
-    marginTop: 16,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   step: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl,
     alignItems: 'flex-start',
   },
   stepNumber: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0F2A44', // Paper ink primary color
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.lg,
     marginTop: 2,
   },
   stepNumberText: {
-    fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   stepText: {
-    fontSize: 16,
     lineHeight: 22,
-    color: '#8E8E93',
   },
   bulletGrid: {
     marginTop: 16,

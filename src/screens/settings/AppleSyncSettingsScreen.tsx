@@ -13,6 +13,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppleSync } from '../../hooks/useAppleSync';
 import { appleIntegrationService } from '../../services/apple-integration/AppleIntegrationService';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface AppleSyncSettingsScreenProps {
   navigation: any;
@@ -22,6 +25,7 @@ export const AppleSyncSettingsScreen: React.FC<AppleSyncSettingsScreenProps> = (
   navigation 
 }) => {
   const { syncState, startSync, stopSync, performManualSync } = useAppleSync();
+  const { theme } = useTheme();
   const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
   const [permissions, setPermissions] = useState({ reminders: false, calendar: false });
   
@@ -86,21 +90,29 @@ export const AppleSyncSettingsScreen: React.FC<AppleSyncSettingsScreenProps> = (
   const renderSyncStatus = () => {
     if (syncState.isSyncing) {
       return (
-        <View style={styles.statusContainer}>
+        <Card style={[styles.statusContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
           <ActivityIndicator size="small" color="#007AFF" />
-          <Text style={styles.statusText}>Syncing...</Text>
-        </View>
+          <Typography variant="caption" style={[styles.statusText, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>Syncing...</Typography>
+        </Card>
       );
     }
     
     if (syncState.lastSync) {
       return (
-        <View style={styles.statusContainer}>
+        <Card style={[styles.statusContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
           <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-          <Text style={styles.statusText}>
+          <Typography variant="caption" style={[styles.statusText, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>
             Last sync: {syncState.lastSync.toLocaleTimeString()}
-          </Text>
-        </View>
+          </Typography>
+        </Card>
       );
     }
     
@@ -108,27 +120,41 @@ export const AppleSyncSettingsScreen: React.FC<AppleSyncSettingsScreenProps> = (
   };
   
   return (
-    <SafeAreaView style={styles.container}>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <Card style={[styles.header, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+        borderRadius: 0
+      }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Apple Sync</Text>
+        <Typography variant="subtitle" style={styles.headerTitle}>Apple Sync</Typography>
         <View style={{ width: 24 }} />
-      </View>
+      </Card>
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Sync Status */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sync Status</Text>
+          <Typography variant="title" style={[styles.sectionTitle, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>Sync Status</Typography>
           
-          <View style={styles.settingRow}>
+          <Card style={[styles.settingRow, {
+            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+          }]}>
             <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Auto Sync</Text>
-              <Text style={styles.settingDescription}>
+              <Typography variant="body" style={[styles.settingLabel, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>Auto Sync</Typography>
+              <Typography variant="caption" style={[styles.settingDescription, {
+                color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+              }]}>
                 Automatically sync with Apple Reminders and Calendar every 5 minutes
-              </Text>
+              </Typography>
             </View>
             <Switch
               value={syncState.isRunning}
@@ -136,75 +162,102 @@ export const AppleSyncSettingsScreen: React.FC<AppleSyncSettingsScreenProps> = (
               trackColor={{ false: '#E5E5E7', true: '#007AFF' }}
               thumbColor="#FFFFFF"
             />
-          </View>
+          </Card>
           
           {renderSyncStatus()}
           
           {syncState.syncStats.total > 0 && (
-            <View style={styles.statsContainer}>
+            <Card style={[styles.statsContainer, {
+              backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+            }]}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{syncState.syncStats.total}</Text>
-                <Text style={styles.statLabel}>Total</Text>
+                <Typography variant="title" style={[styles.statNumber, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>{syncState.syncStats.total}</Typography>
+                <Typography variant="caption" style={[styles.statLabel, {
+                  color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+                }]}>Total</Typography>
               </View>
               <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: '#34C759' }]}>
+                <Typography variant="title" style={[styles.statNumber, { color: '#34C759' }]}>
                   {syncState.syncStats.synced}
-                </Text>
-                <Text style={styles.statLabel}>Synced</Text>
+                </Typography>
+                <Typography variant="caption" style={[styles.statLabel, {
+                  color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+                }]}>Synced</Typography>
               </View>
               <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: '#FF3B30' }]}>
+                <Typography variant="title" style={[styles.statNumber, { color: '#FF3B30' }]}>
                   {syncState.syncStats.errors}
-                </Text>
-                <Text style={styles.statLabel}>Errors</Text>
+                </Typography>
+                <Typography variant="caption" style={[styles.statLabel, {
+                  color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+                }]}>Errors</Typography>
               </View>
-            </View>
+            </Card>
           )}
         </View>
         
         {/* Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Actions</Text>
+          <Typography variant="title" style={[styles.sectionTitle, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>Actions</Typography>
           
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleRequestPermissions}
-            disabled={isRequestingPermissions}
-          >
+          <Card style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButtonTouchable}
+              onPress={handleRequestPermissions}
+              disabled={isRequestingPermissions}
+            >
             <Ionicons name="key-outline" size={20} color="#007AFF" />
-            <Text style={styles.actionButtonText}>
-              {isRequestingPermissions ? 'Requesting...' : 'Request Permissions'}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-          </TouchableOpacity>
+              <Typography variant="body" style={[styles.actionButtonText, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>
+                {isRequestingPermissions ? 'Requesting...' : 'Request Permissions'}
+              </Typography>
+              <Ionicons name="chevron-forward" size={16} color={safeThemeAccess(theme, t => t.colors.placeholder, '#C7C7CC')} />
+            </TouchableOpacity>
+          </Card>
           
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleManualSync}
-            disabled={syncState.isSyncing}
-          >
+          <Card style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButtonTouchable}
+              onPress={handleManualSync}
+              disabled={syncState.isSyncing}
+            >
             <Ionicons name="sync-outline" size={20} color="#007AFF" />
-            <Text style={styles.actionButtonText}>
-              {syncState.isSyncing ? 'Syncing...' : 'Sync Now'}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-          </TouchableOpacity>
+              <Typography variant="body" style={[styles.actionButtonText, {
+                color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+              }]}>
+                {syncState.isSyncing ? 'Syncing...' : 'Sync Now'}
+              </Typography>
+              <Ionicons name="chevron-forward" size={16} color={safeThemeAccess(theme, t => t.colors.placeholder, '#C7C7CC')} />
+            </TouchableOpacity>
+          </Card>
         </View>
         
         {/* Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How It Works</Text>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>
+          <Typography variant="title" style={[styles.sectionTitle, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>How It Works</Typography>
+          <Card style={[styles.infoContainer, {
+            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F2F2F7')
+          }]}>
+            <Typography variant="body" style={[styles.infoText, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>
               • Tasks are synced to Apple Reminders with due dates and completion status{'\n'}
               • Events are synced to Apple Calendar with times and locations{'\n'}
               • Changes in Apple apps are synced back to your bullet journal{'\n'}
               • Sync happens automatically when enabled or when you return to the app
-            </Text>
-          </View>
+            </Typography>
+          </Card>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

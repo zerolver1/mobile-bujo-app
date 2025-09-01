@@ -21,6 +21,9 @@ import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
 import { OCREntryMapper } from '../../services/utils/OCREntryMapper';
 import { useProcessingStore } from '../../stores/ProcessingStore';
 import { ImageMetadataService, ImageMetadata } from '../../services/utils/ImageMetadataService';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface CaptureScreenProps {
   navigation?: any;
@@ -30,6 +33,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [processing, setProcessing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const { theme } = useTheme();
 
   const { addScan } = useBuJoStore();
   const { canPerformScan, trackScan, triggerPaywall } = useSubscriptionStore();
@@ -330,28 +334,42 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   if (!permission) {
     return (
-      <View style={styles.permissionContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.permissionText}>Requesting camera permission...</Text>
-      </View>
+      <PaperBackground>
+        <View style={[styles.permissionContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+        }]}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Typography variant="body" style={[styles.permissionText, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>Requesting camera permission...</Typography>
+        </View>
+      </PaperBackground>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
-        <Ionicons name="camera-outline" size={64} color="#8E8E93" />
-        <Text style={styles.permissionTitle}>Camera Access Required</Text>
-        <Text style={styles.permissionText}>
-          We need camera access to scan your bullet journal pages.
-        </Text>
-        <TouchableOpacity 
-          style={styles.primaryButton}
-          onPress={requestPermission}
-        >
-          <Text style={styles.primaryButtonText}>Grant Permission</Text>
-        </TouchableOpacity>
-      </View>
+      <PaperBackground>
+        <View style={[styles.permissionContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+        }]}>
+          <Ionicons name="camera-outline" size={64} color={safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')} />
+          <Typography variant="title" style={[styles.permissionTitle, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>Camera Access Required</Typography>
+          <Typography variant="body" style={[styles.permissionText, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>
+            We need camera access to scan your bullet journal pages.
+          </Typography>
+          <PaperButton 
+            variant="primary"
+            onPress={requestPermission}
+          >
+            Grant Permission
+          </PaperButton>
+        </View>
+      </PaperBackground>
     );
   }
 
@@ -388,8 +406,10 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
           onPress={handlePickImage}
           disabled={processing}
         >
-          <Ionicons name="images-outline" size={24} color="#007AFF" />
-          <Text style={styles.secondaryButtonText}>Library</Text>
+          <Ionicons name="images-outline" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#007AFF')} />
+          <Typography variant="caption" style={[styles.secondaryButtonText, {
+            color: safeThemeAccess(theme, t => t.colors.primary, '#007AFF')
+          }]}>Library</Typography>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -408,12 +428,15 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
       </View>
 
       {/* Tips */}
-      <View style={styles.tipsContainer}>
-        <Text style={styles.tipsTitle}>Tips for best results:</Text>
-        <Text style={styles.tipItem}>• Ensure good lighting</Text>
-        <Text style={styles.tipItem}>• Keep page flat and straight</Text>
-        <Text style={styles.tipItem}>• Avoid shadows on the page</Text>
-      </View>
+      <Card style={[styles.tipsContainer, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#1C1C1E'),
+        borderRadius: 0
+      }]}>
+        <Typography variant="subtitle" style={styles.tipsTitle}>Tips for best results:</Typography>
+        <Typography variant="body" style={styles.tipItem}>• Ensure good lighting</Typography>
+        <Typography variant="body" style={styles.tipItem}>• Keep page flat and straight</Typography>
+        <Typography variant="body" style={styles.tipItem}>• Avoid shadows on the page</Typography>
+      </Card>
 
     </SafeAreaView>
   );

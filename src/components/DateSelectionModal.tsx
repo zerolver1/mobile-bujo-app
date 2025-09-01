@@ -9,6 +9,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme';
+import { Typography, Card, PaperButton } from './ui/paperComponents';
+import { safeThemeAccess } from '../theme/paperStyleUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -31,6 +34,7 @@ export const DateSelectionModal: React.FC<DateSelectionModalProps> = ({
   showBatchOption = false,
   onBatchSelect,
 }) => {
+  const { theme } = useTheme();
   const [selectedDate, setSelectedDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<'quick' | 'calendar'>('quick');
 

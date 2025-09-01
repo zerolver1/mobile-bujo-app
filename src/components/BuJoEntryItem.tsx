@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../types/BuJo';
 import { BuJoSymbol } from './ui/BuJoSymbols';
 import { Typography } from './ui/Typography';
-import { Card } from './ui/Card';
 import { useTheme } from '../theme';
 import { PAPER_DESIGN_TOKENS } from '../theme/paperDesignTokens';
 import { safeThemeAccess } from '../theme/paperStyleUtils';
@@ -87,16 +86,23 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
   const isInactive = isCompleted || isCancelled;
 
   return (
-    <Card 
-      variant="elevated" 
-      padding="md"
+    <View 
       style={[
         styles.container, 
         isCompact && styles.compactContainer,
         isInactive && styles.inactiveContainer,
-        // Force paper background color
+        // Force paper background with warm paper shadow
         { 
-          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8') 
+          backgroundColor: theme?.colors?.surface || '#F5F2E8',
+          borderRadius: 12,
+          padding: 12,
+          marginHorizontal: 16,
+          marginVertical: 4,
+          shadowColor: theme?.isDark ? '#000000' : 'rgba(139, 69, 19, 0.08)',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: theme?.isDark ? 0.25 : 0.1,
+          shadowRadius: 3,
+          elevation: 2,
         }
       ]}
     >
@@ -261,14 +267,13 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
           </TouchableOpacity>
         )}
       </TouchableOpacity>
-    </Card>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
-    marginVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    // Margins now handled in inline styles
   },
   touchable: {
     flexDirection: 'row',

@@ -11,6 +11,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface MonthlyLogScreenProps {
   navigation: any;
@@ -26,6 +29,7 @@ interface CalendarDay {
 }
 
 export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { entries } = useBuJoStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -121,15 +125,17 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
       ]}
       onPress={() => selectDate(item)}
     >
-      <Text
+      <Typography
+        variant="body"
         style={[
           styles.dayNumber,
           !item.isCurrentMonth && styles.dayNumberInactive,
           item.isToday && styles.dayNumberToday,
+          { color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E') }
         ]}
       >
         {item.dayNumber}
-      </Text>
+      </Typography>
       
       {item.entries.length > 0 && (
         <View style={styles.entriesPreview}>
@@ -159,30 +165,40 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
 
     if (!selectedDay || selectedDay.entries.length === 0) {
       return (
-        <View style={styles.selectedDateContainer}>
-          <Text style={styles.selectedDateTitle}>
+        <Card style={[styles.selectedDateContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
+          <Typography variant="subtitle" style={[styles.selectedDateTitle, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>
             {selectedDate.toLocaleDateString('en-US', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
             })}
-          </Text>
-          <Text style={styles.noEntriesText}>No entries for this day</Text>
-        </View>
+          </Typography>
+          <Typography variant="body" style={[styles.noEntriesText, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>No entries for this day</Typography>
+        </Card>
       );
     }
 
     return (
-      <View style={styles.selectedDateContainer}>
-        <Text style={styles.selectedDateTitle}>
+      <Card style={[styles.selectedDateContainer, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+      }]}>
+        <Typography variant="subtitle" style={[styles.selectedDateTitle, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>
           {selectedDate.toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
             day: 'numeric' 
           })}
-        </Text>
+        </Typography>
         
         <ScrollView style={styles.entriesList}>
           {selectedDay.entries.map((entry) => (
@@ -196,14 +212,16 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
                 {getBulletSymbol(entry)}
               </Text>
               <View style={styles.entryContent}>
-                <Text
+                <Typography
+                  variant="body"
                   style={[
                     styles.entryText,
-                    entry.status === 'complete' && styles.completedText
+                    entry.status === 'complete' && styles.completedText,
+                    { color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E') }
                   ]}
                 >
                   {entry.content}
-                </Text>
+                </Typography>
                 {(entry.tags.length > 0 || entry.contexts.length > 0) && (
                   <View style={styles.tagContainer}>
                     {entry.contexts.map(ctx => (
@@ -218,14 +236,20 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
+      </Card>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
+        {/* Header */}
+        <Card style={[styles.header, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+          borderRadius: 0
+        }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
@@ -233,27 +257,31 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
           <TouchableOpacity onPress={() => navigateMonth('prev')}>
             <Ionicons name="chevron-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+          <Typography variant="subtitle" style={styles.headerTitle}>
             {currentDate.toLocaleDateString('en-US', { 
               year: 'numeric', 
               month: 'long' 
             })}
-          </Text>
+          </Typography>
           <TouchableOpacity onPress={() => navigateMonth('next')}>
             <Ionicons name="chevron-forward" size={24} color="#007AFF" />
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => setCurrentDate(new Date())}>
-          <Text style={styles.todayButton}>Today</Text>
+          <Typography variant="caption" style={styles.todayButton}>Today</Typography>
         </TouchableOpacity>
-      </View>
+        </Card>
 
-      {/* Calendar Grid */}
-      <View style={styles.calendarContainer}>
+        {/* Calendar Grid */}
+        <Card style={[styles.calendarContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
         {/* Day Labels */}
         <View style={styles.dayLabelsContainer}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <Text key={day} style={styles.dayLabel}>{day}</Text>
+            <Typography key={day} variant="caption" style={[styles.dayLabel, {
+              color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+            }]}>{day}</Typography>
           ))}
         </View>
 
@@ -266,11 +294,12 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
           scrollEnabled={false}
           contentContainerStyle={styles.calendarGrid}
         />
-      </View>
+        </Card>
 
-      {/* Selected Date Details */}
-      {renderSelectedDateEntries()}
-    </SafeAreaView>
+        {/* Selected Date Details */}
+        {renderSelectedDateEntries()}
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

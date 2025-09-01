@@ -12,6 +12,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../../types/BuJo';
 import { useBuJoStore } from '../../stores/BuJoStore';
+import { useTheme } from '../../theme';
+import { PaperBackground, PaperButton, Typography, Card } from '../../components/ui/paperComponents';
+import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface QuickCaptureScreenProps {
   navigation: any;
@@ -23,6 +27,7 @@ interface QuickCaptureScreenProps {
 }
 
 export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const editEntry = route?.params?.editEntry;
   const [content, setContent] = useState(editEntry?.content || '');
   const [selectedBullet, setSelectedBullet] = useState(editEntry ? getBulletIndex(editEntry) : 0);
@@ -56,27 +61,41 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
 
   const bullets = [
     // Tasks - Follow BuJo methodology: Only create incomplete tasks, complete through swipe/tap
-    { symbol: '•', type: 'task' as const, status: 'incomplete' as const, label: 'Task', color: '#1C1C1E', description: 'Things you need to do' },
+    { symbol: '•', type: 'task' as const, status: 'incomplete' as const, label: 'Task', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.task, '#2B2B2B'), description: 'Things you need to do' },
     
     // Task Status Indicators - For editing existing tasks only
-    { symbol: '✗', type: 'task' as const, status: 'complete' as const, label: 'Complete', color: '#34C759', description: 'Task completed' },
-    { symbol: '>', type: 'task' as const, status: 'migrated' as const, label: 'Migrated', color: '#FF9500', description: 'Task migrated to future' },
-    { symbol: '<', type: 'task' as const, status: 'scheduled' as const, label: 'Scheduled', color: '#007AFF', description: 'Task scheduled in calendar' },
-    { symbol: '/', type: 'task' as const, status: 'cancelled' as const, label: 'Cancelled', color: '#8E8E93', description: 'Task no longer relevant' },
+    { symbol: '✗', type: 'task' as const, status: 'complete' as const, label: 'Complete', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.taskComplete, '#15803D'), description: 'Task completed' },
+    { symbol: '>', type: 'task' as const, status: 'migrated' as const, label: 'Migrated', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.taskMigrated, '#D97706'), description: 'Task migrated to future' },
+    { symbol: '<', type: 'task' as const, status: 'scheduled' as const, label: 'Scheduled', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.taskScheduled, '#1E40AF'), description: 'Task scheduled in calendar' },
+    { symbol: '—', type: 'task' as const, status: 'cancelled' as const, label: 'Cancelled', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.taskCancelled, '#9CA3AF'), description: 'Task no longer relevant' },
     
     // Other Entry Types - Always incomplete when created
-    { symbol: '○', type: 'event' as const, status: 'incomplete' as const, label: 'Event', color: '#007AFF', description: 'Appointments and experiences' },
-    { symbol: '—', type: 'note' as const, status: 'incomplete' as const, label: 'Note', color: '#8E8E93', description: 'Ideas, thoughts, observations' },
-    { symbol: '★', type: 'inspiration' as const, status: 'incomplete' as const, label: 'Inspiration', color: '#FFD60A', description: 'Ideas that inspire action' },
-    { symbol: '&', type: 'research' as const, status: 'incomplete' as const, label: 'Research', color: '#5856D6', description: 'Things to investigate or explore' },
-    { symbol: '◇', type: 'memory' as const, status: 'incomplete' as const, label: 'Memory', color: '#FF2D55', description: 'Gratitude, memories, and reflections' },
+    { symbol: '○', type: 'event' as const, status: 'incomplete' as const, label: 'Event', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.event, '#0F2A44'), description: 'Appointments and experiences' },
+    { symbol: '–', type: 'note' as const, status: 'incomplete' as const, label: 'Note', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.note, '#6B7280'), description: 'Ideas, thoughts, observations' },
+    { symbol: '!', type: 'inspiration' as const, status: 'incomplete' as const, label: 'Inspiration', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308'), description: 'Ideas that inspire action' },
+    { symbol: '?', type: 'research' as const, status: 'incomplete' as const, label: 'Research', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.research, '#7C3AED'), description: 'Things to investigate or explore' },
+    { symbol: '◇', type: 'memory' as const, status: 'incomplete' as const, label: 'Memory', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.memory, '#BE185D'), description: 'Gratitude, memories, and reflections' },
   ];
   
   const priorities = [
-    { level: 'none' as const, symbol: '', label: 'None', color: '#8E8E93' },
-    { level: 'low' as const, symbol: '∘', label: 'Low', color: '#34C759' },
-    { level: 'medium' as const, symbol: '*', label: 'Medium', color: '#FF9500' },
-    { level: 'high' as const, symbol: '!', label: 'High', color: '#FF3B30' },
+    { level: 'none' as const, symbol: '', label: 'None', 
+      color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') },
+    { level: 'low' as const, symbol: '↓', label: 'Low', 
+      color: safeThemeAccess(theme, t => t.colors.textTertiary, '#9CA3AF') },
+    { level: 'medium' as const, symbol: '*', label: 'Medium', 
+      color: safeThemeAccess(theme, t => t.colors.warning, '#D97706') },
+    { level: 'high' as const, symbol: '!', label: 'High', 
+      color: safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308') },
   ];
 
   const currentBullet = bullets[selectedBullet];
@@ -177,210 +196,223 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>
-          {editEntry ? 'Edit Entry' : 'Quick Capture'}
-        </Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButtonContainer}>
-          <Text style={[styles.saveBulletSymbol, { color: currentBullet.color }]}>
-            {currentBullet.symbol}
-          </Text>
-          <Text style={styles.saveButton}>Save {currentBullet.label}</Text>
-        </TouchableOpacity>
-      </View>
+    <PaperBackground variant="lined" showMargin={false} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="elevated" padding="md" style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Typography variant="callout" color="textSecondary">Cancel</Typography>
+          </TouchableOpacity>
+          <Typography variant="headline" color="text">
+            {editEntry ? 'Edit Entry' : 'Quick Capture'}
+          </Typography>
+          <PaperButton 
+            variant="ink" 
+            size="sm" 
+            onPress={handleSave}
+            style={styles.saveButtonContainer}
+          >
+            <BuJoSymbol type={currentBullet.type} status={currentBullet.status} size="sm" />
+            <Typography variant="callout" style={styles.saveButtonText}>
+              Save {currentBullet.label}
+            </Typography>
+          </PaperButton>
+        </Card>
 
-      <ScrollView style={styles.content}>
-        {/* Bullet Type Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Entry Type</Text>
-          <View style={styles.bulletGrid}>
-            {bullets.map((bullet, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.bulletOption,
-                  selectedBullet === index && styles.selectedBulletOption
-                ]}
-                onPress={() => setSelectedBullet(index)}
-              >
-                <Text 
-                  style={[
-                    styles.bulletSymbol, 
-                    { color: bullet.color },
-                    selectedBullet === index && styles.selectedBulletSymbol
-                  ]}
-                >
-                  {bullet.symbol}
-                </Text>
-                <Text style={[
-                  styles.bulletLabel,
-                  selectedBullet === index && styles.selectedBulletLabel
-                ]}>
-                  {bullet.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          <View style={styles.bulletDescription}>
-            <Text style={styles.descriptionText}>
-              {currentBullet.description}
-            </Text>
-          </View>
-        </View>
-
-        {/* Priority Selection (for tasks only) */}
-        {currentBullet.type === 'task' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Priority</Text>
-            <View style={styles.priorityRow}>
-              {priorities.map((priorityOption) => (
+        <ScrollView style={styles.content}>
+          {/* Bullet Type Selection */}
+          <Card variant="elevated" padding="lg" style={styles.section}>
+            <Typography variant="title3" color="text" style={styles.sectionTitle}>Entry Type</Typography>
+            <View style={styles.bulletGrid}>
+              {bullets.map((bullet, index) => (
                 <TouchableOpacity
-                  key={priorityOption.level}
+                  key={index}
                   style={[
-                    styles.priorityOption,
-                    priority === priorityOption.level && styles.selectedPriorityOption
+                    styles.bulletOption,
+                    selectedBullet === index && styles.selectedBulletOption
                   ]}
-                  onPress={() => setPriority(priorityOption.level)}
+                  onPress={() => setSelectedBullet(index)}
                 >
-                  {priorityOption.symbol ? (
-                    <Text style={[styles.prioritySymbol, { color: priorityOption.color }]}>
-                      {priorityOption.symbol}
-                    </Text>
-                  ) : (
-                    <View style={styles.noPrioritySymbol} />
-                  )}
-                  <Text style={[
-                    styles.priorityLabel,
-                    priority === priorityOption.level && styles.selectedPriorityLabel
-                  ]}>
-                    {priorityOption.label}
-                  </Text>
+                  <BuJoSymbol 
+                    type={bullet.type} 
+                    status={bullet.status} 
+                    size="sm"
+                    style={styles.bulletSymbolContainer}
+                  />
+                  <Typography 
+                    variant="footnote" 
+                    style={[
+                      styles.bulletLabel,
+                      selectedBullet === index && { 
+                        color: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
+                      }
+                    ]}
+                  >
+                    {bullet.label}
+                  </Typography>
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-        )}
+            
+            <Card variant="flat" padding="md" style={styles.bulletDescription}>
+              <Typography variant="footnote" color="textSecondary">
+                {currentBullet.description}
+              </Typography>
+            </Card>
+          </Card>
 
-        {/* Content Input */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Content</Text>
-          <TextInput
-            style={styles.contentInput}
-            value={content}
-            onChangeText={setContent}
-            placeholder={`Enter your ${currentBullet.label.toLowerCase()}...`}
-            multiline
-            autoFocus={!editEntry}
-            textAlignVertical="top"
-          />
-          <Text style={styles.helpText}>
-            Use #tags and @contexts to organize your entries
-          </Text>
-        </View>
+          {/* Priority Selection (for tasks only) */}
+          {currentBullet.type === 'task' && (
+            <Card variant="elevated" padding="lg" style={styles.section}>
+              <Typography variant="title3" color="text" style={styles.sectionTitle}>Priority</Typography>
+              <View style={styles.priorityRow}>
+                {priorities.map((priorityOption) => (
+                  <TouchableOpacity
+                    key={priorityOption.level}
+                    style={[
+                      styles.priorityOption,
+                      priority === priorityOption.level && styles.selectedPriorityOption
+                    ]}
+                    onPress={() => setPriority(priorityOption.level)}
+                  >
+                    {priorityOption.symbol ? (
+                      <Typography 
+                        variant="callout" 
+                        style={[styles.prioritySymbol, { color: priorityOption.color }]}
+                      >
+                        {priorityOption.symbol}
+                      </Typography>
+                    ) : (
+                      <View style={styles.noPrioritySymbol} />
+                    )}
+                    <Typography 
+                      variant="caption1" 
+                      style={[
+                        styles.priorityLabel,
+                        priority === priorityOption.level && { 
+                          color: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
+                        }
+                      ]}
+                    >
+                      {priorityOption.label}
+                    </Typography>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Card>
+          )}
 
-        {/* Date Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Date</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
-            {getDateOptions().map((date) => (
-              <TouchableOpacity
-                key={date}
-                style={[
-                  styles.dateOption,
-                  targetDate === date && styles.selectedDateOption
-                ]}
-                onPress={() => setTargetDate(date)}
-              >
-                <Text style={[
-                  styles.dateLabel,
-                  targetDate === date && styles.selectedDateLabel
-                ]}>
-                  {formatDate(date)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+          {/* Content Input */}
+          <Card variant="elevated" padding="lg" style={styles.section}>
+            <Typography variant="title3" color="text" style={styles.sectionTitle}>Content</Typography>
+            <TextInput
+              style={[
+                styles.contentInput,
+                {
+                  backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8'),
+                  borderColor: safeThemeAccess(theme, t => t.colors.border, '#E8E3D5'),
+                  color: safeThemeAccess(theme, t => t.colors.text, '#2B2B2B')
+                }
+              ]}
+              value={content}
+              onChangeText={setContent}
+              placeholder={`Enter your ${currentBullet.label.toLowerCase()}...`}
+              placeholderTextColor={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')}
+              multiline
+              autoFocus={!editEntry}
+              textAlignVertical="top"
+            />
+            <Typography variant="caption1" color="textSecondary" style={styles.helpText}>
+              Use #tags and @contexts to organize your entries
+            </Typography>
+          </Card>
 
-        {/* Preview */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preview</Text>
-          <View style={styles.previewContainer}>
-            <Text style={[styles.bulletSymbol, { color: currentBullet.color }]}>
-              {currentBullet.symbol}
-            </Text>
-            {currentPriority.symbol && (
-              <Text style={[styles.prioritySymbol, { color: currentPriority.color }]}>
-                {currentPriority.symbol}
-              </Text>
-            )}
-            <Text style={styles.previewContent}>
-              {content || `Sample ${currentBullet.label.toLowerCase()}...`}
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Date Selection */}
+          <Card variant="elevated" padding="lg" style={styles.section}>
+            <Typography variant="title3" color="text" style={styles.sectionTitle}>Date</Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+              {getDateOptions().map((date) => (
+                <TouchableOpacity
+                  key={date}
+                  style={[
+                    styles.dateOption,
+                    targetDate === date && styles.selectedDateOption
+                  ]}
+                  onPress={() => setTargetDate(date)}
+                >
+                  <Typography 
+                    variant="footnote" 
+                    style={[
+                      styles.dateLabel,
+                      targetDate === date && { 
+                        color: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
+                      }
+                    ]}
+                  >
+                    {formatDate(date)}
+                  </Typography>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Card>
+
+          {/* Preview */}
+          <Card variant="elevated" padding="lg" style={styles.section}>
+            <Typography variant="title3" color="text" style={styles.sectionTitle}>Preview</Typography>
+            <Card variant="flat" padding="md" style={styles.previewContainer}>
+              <BuJoSymbol 
+                type={currentBullet.type} 
+                status={currentBullet.status} 
+                size="md"
+              />
+              {currentPriority.symbol && (
+                <Typography 
+                  variant="callout" 
+                  style={[styles.prioritySymbol, { color: currentPriority.color }]}
+                >
+                  {currentPriority.symbol}
+                </Typography>
+              )}
+              <Typography variant="callout" color="text" style={styles.previewContent}>
+                {content || `Sample ${currentBullet.label.toLowerCase()}...`}
+              </Typography>
+            </Card>
+          </Card>
+        </ScrollView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: 'transparent', // Let PaperBackground show through
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  cancelButton: {
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
+  saveButtonText: {
+    marginLeft: 4,
   },
   saveButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  saveBulletSymbol: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Menlo',
-  },
-  saveButton: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
   content: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
     marginBottom: 16,
   },
   bulletGrid: {
@@ -391,46 +423,26 @@ const styles = StyleSheet.create({
   bulletOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 2,
     borderColor: 'transparent',
     minWidth: 100,
+    marginBottom: 8,
+    marginRight: 8,
   },
   selectedBulletOption: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F7FF',
+    borderWidth: 2,
   },
-  bulletSymbol: {
-    fontSize: 18,
-    fontWeight: '600',
+  bulletSymbolContainer: {
     marginRight: 8,
-    fontFamily: 'Menlo', // Monospace for consistent alignment
-  },
-  selectedBulletSymbol: {
-    // Keep original color
   },
   bulletLabel: {
-    fontSize: 14,
-    color: '#1C1C1E',
     fontWeight: '500',
-  },
-  selectedBulletLabel: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
   bulletDescription: {
     marginTop: 12,
-    padding: 12,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 8,
-  },
-  descriptionText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    lineHeight: 18,
   },
   priorityRow: {
     flexDirection: 'row',
@@ -439,7 +451,6 @@ const styles = StyleSheet.create({
   priorityOption: {
     flexDirection: 'column',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
@@ -447,14 +458,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedPriorityOption: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F7FF',
+    borderWidth: 2,
   },
   prioritySymbol: {
-    fontSize: 16,
-    fontWeight: '600',
     marginBottom: 4,
-    fontFamily: 'Menlo',
+    fontWeight: '600',
   },
   noPrioritySymbol: {
     width: 16,
@@ -462,27 +470,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   priorityLabel: {
-    fontSize: 12,
-    color: '#1C1C1E',
     fontWeight: '500',
   },
-  selectedPriorityLabel: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
   contentInput: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1C1C1E',
     minHeight: 120,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
   },
   helpText: {
-    fontSize: 12,
-    color: '#8E8E93',
     marginTop: 8,
     lineHeight: 16,
   },
@@ -490,7 +487,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   dateOption: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -499,29 +495,17 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedDateOption: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F7FF',
+    borderWidth: 2,
   },
   dateLabel: {
-    fontSize: 14,
-    color: '#1C1C1E',
     fontWeight: '500',
-  },
-  selectedDateLabel: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
   previewContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
     gap: 8,
   },
   previewContent: {
-    fontSize: 16,
-    color: '#1C1C1E',
     flex: 1,
     lineHeight: 22,
   },

@@ -18,6 +18,8 @@ import { EntryReviewScreen } from '../screens/main/EntryReviewScreen';
 import { QuickCaptureScreen } from '../screens/main/QuickCaptureScreen';
 import { BuJoGuideScreen } from '../screens/settings/BuJoGuideScreen';
 import { AppleSyncSettingsScreen } from '../screens/settings/AppleSyncSettingsScreen';
+import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
+import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
 import { MonthlyLogScreen } from '../screens/collections/MonthlyLogScreen';
 import { FutureLogScreen } from '../screens/collections/FutureLogScreen';
 import { CustomCollectionsScreen } from '../screens/collections/CustomCollectionsScreen';
@@ -47,6 +49,8 @@ export type RootStackParamList = {
   Index: undefined;
   MemoryLog: undefined;
   DesignSystem: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -216,6 +220,22 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="DesignSystem" 
         component={DesignSystemScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="PrivacyPolicy" 
+        component={PrivacyPolicyScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TermsOfService" 
+        component={TermsOfServiceScreen}
         options={{
           headerShown: false,
           presentation: 'card',

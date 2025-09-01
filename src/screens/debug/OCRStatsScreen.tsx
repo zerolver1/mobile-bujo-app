@@ -10,8 +10,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { smartOCRService } from '../../services/ocr/SmartOCRService';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 export const OCRStatsScreen: React.FC = () => {
+  const { theme } = useTheme();
   const [stats, setStats] = useState<any>(null);
   const [serviceHealth, setServiceHealth] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,11 +62,19 @@ export const OCRStatsScreen: React.FC = () => {
   const StatCard: React.FC<{ title: string; value: string; subtitle?: string }> = ({ 
     title, value, subtitle 
   }) => (
-    <View style={styles.statCard}>
-      <Text style={styles.statTitle}>{title}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-      {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
-    </View>
+    <Card style={[styles.statCard, {
+      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+    }]}>
+      <Typography variant="caption" style={[styles.statTitle, {
+        color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+      }]}>{title}</Typography>
+      <Typography variant="title" style={[styles.statValue, {
+        color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+      }]}>{value}</Typography>
+      {subtitle && <Typography variant="caption" style={[styles.statSubtitle, {
+        color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+      }]}>{subtitle}</Typography>}
+    </Card>
   );
 
   const ServiceCard: React.FC<{ 
@@ -70,47 +82,77 @@ export const OCRStatsScreen: React.FC = () => {
     health: any; 
     stats: any; 
   }> = ({ name, health, stats }) => (
-    <View style={styles.serviceCard}>
+    <Card style={[styles.serviceCard, {
+      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+    }]}>
       <View style={styles.serviceHeader}>
-        <Text style={styles.serviceName}>{name}</Text>
-        <Text style={[styles.serviceStatus, { color: getHealthColor(health.healthy) }]}>
+        <Typography variant="subtitle" style={[styles.serviceName, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>{name}</Typography>
+        <Typography variant="caption" style={[styles.serviceStatus, { color: getHealthColor(health.healthy) }]}>
           {getHealthIcon(health.healthy)} {health.available ? 'Available' : 'Unavailable'}
-        </Text>
+        </Typography>
       </View>
       
       {stats && (
         <View style={styles.serviceStats}>
           <View style={styles.serviceStatRow}>
-            <Text style={styles.serviceStatLabel}>Attempts:</Text>
-            <Text style={styles.serviceStatValue}>{stats.attempts}</Text>
+            <Typography variant="body" style={[styles.serviceStatLabel, {
+              color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+            }]}>Attempts:</Typography>
+            <Typography variant="body" style={[styles.serviceStatValue, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>{stats.attempts}</Typography>
           </View>
           <View style={styles.serviceStatRow}>
-            <Text style={styles.serviceStatLabel}>Success Rate:</Text>
-            <Text style={styles.serviceStatValue}>{formatPercent(stats.successRate)}</Text>
+            <Typography variant="body" style={[styles.serviceStatLabel, {
+              color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+            }]}>Success Rate:</Typography>
+            <Typography variant="body" style={[styles.serviceStatValue, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>{formatPercent(stats.successRate)}</Typography>
           </View>
           <View style={styles.serviceStatRow}>
-            <Text style={styles.serviceStatLabel}>Avg Time:</Text>
-            <Text style={styles.serviceStatValue}>{formatTime(stats.averageTime)}</Text>
+            <Typography variant="body" style={[styles.serviceStatLabel, {
+              color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+            }]}>Avg Time:</Typography>
+            <Typography variant="body" style={[styles.serviceStatValue, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>{formatTime(stats.averageTime)}</Typography>
           </View>
           <View style={styles.serviceStatRow}>
-            <Text style={styles.serviceStatLabel}>Avg Accuracy:</Text>
-            <Text style={styles.serviceStatValue}>{formatPercent(stats.averageAccuracy)}</Text>
+            <Typography variant="body" style={[styles.serviceStatLabel, {
+              color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+            }]}>Avg Accuracy:</Typography>
+            <Typography variant="body" style={[styles.serviceStatValue, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>{formatPercent(stats.averageAccuracy)}</Typography>
           </View>
         </View>
       )}
       
       {health.lastSuccess && (
-        <Text style={styles.lastSuccess}>
+        <Typography variant="caption" style={[styles.lastSuccess, {
+          color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+        }]}>
           Last success: {new Date(health.lastSuccess).toLocaleString()}
-        </Text>
+        </Typography>
       )}
-    </View>
+    </Card>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>OCR Performance</Text>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
+      <Card style={[styles.header, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+        borderRadius: 0
+      }]}>
+        <Typography variant="subtitle" style={[styles.headerTitle, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>OCR Performance</Typography>
         <TouchableOpacity style={styles.refreshButton} onPress={loadStats} disabled={refreshing}>
           <Ionicons 
             name="refresh" 
@@ -119,11 +161,13 @@ export const OCRStatsScreen: React.FC = () => {
             style={refreshing ? styles.spinning : undefined}
           />
         </TouchableOpacity>
-      </View>
+      </Card>
 
       <ScrollView style={styles.scrollView}>
         {/* Overall Stats */}
-        <Text style={styles.sectionTitle}>Overall Performance (24h)</Text>
+        <Typography variant="title" style={[styles.sectionTitle, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>Overall Performance (24h)</Typography>
         <View style={styles.statsGrid}>
           <StatCard
             title="Total Processed"
@@ -140,7 +184,9 @@ export const OCRStatsScreen: React.FC = () => {
         </View>
 
         {/* Service Breakdown */}
-        <Text style={styles.sectionTitle}>Service Health & Stats</Text>
+        <Typography variant="title" style={[styles.sectionTitle, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>Service Health & Stats</Typography>
         
         {serviceHealth && Object.entries(serviceHealth).map(([serviceName, health]: [string, any]) => {
           const serviceDisplayName = serviceName
@@ -160,7 +206,9 @@ export const OCRStatsScreen: React.FC = () => {
         })}
 
         {/* Debug Actions */}
-        <Text style={styles.sectionTitle}>Debug Actions</Text>
+        <Typography variant="title" style={[styles.sectionTitle, {
+          color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+        }]}>Debug Actions</Typography>
         <TouchableOpacity 
           style={styles.debugButton}
           onPress={() => {
@@ -174,7 +222,8 @@ export const OCRStatsScreen: React.FC = () => {
           <Text style={styles.debugButtonText}>Show Raw Data</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
