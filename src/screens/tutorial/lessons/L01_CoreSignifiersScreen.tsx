@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme';
@@ -278,7 +279,7 @@ export const CoreSignifiersScreen: React.FC<CoreSignifiersScreenProps> = ({
 
   return (
     <PaperBackground variant="lined" showMargin={true} intensity="light">
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {/* Header */}
         <Card variant="flat" padding="md" style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -363,7 +364,7 @@ export const CoreSignifiersScreen: React.FC<CoreSignifiersScreenProps> = ({
             )}
           </View>
         </Card>
-      </View>
+      </SafeAreaView>
     </PaperBackground>
   );
 };
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
-    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.sm,
     marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   headerContent: {

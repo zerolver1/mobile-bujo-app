@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme';
@@ -407,7 +408,7 @@ export const EntryTypesScreen: React.FC<EntryTypesScreenProps> = ({
 
   return (
     <PaperBackground variant="lined" showMargin={true} intensity="light">
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <LessonNavigation
           title="Entry Types"
           currentStep={currentStep + 1}
@@ -429,7 +430,7 @@ export const EntryTypesScreen: React.FC<EntryTypesScreenProps> = ({
           
           <View style={{ height: 120 }} />
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </PaperBackground>
   );
 };
