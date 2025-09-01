@@ -6,6 +6,7 @@ export interface BuJoEntry {
   content: string;
   status: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled';
   priority: 'none' | 'low' | 'medium' | 'high';
+  signifiers?: string[]; // BuJo Pro signifiers (★, €, ⏰, etc.)
   
   // Temporal data
   createdAt: Date;

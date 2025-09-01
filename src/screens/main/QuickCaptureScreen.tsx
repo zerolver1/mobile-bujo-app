@@ -31,8 +31,9 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   const editEntry = route?.params?.editEntry;
   const [content, setContent] = useState(editEntry?.content || '');
   const [selectedBullet, setSelectedBullet] = useState(editEntry ? getBulletIndex(editEntry) : 0);
-  const [priority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
+  const [priority, setPriority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
   const [targetDate, setTargetDate] = useState(editEntry?.collectionDate || new Date().toISOString().split('T')[0]);
+  const [selectedSignifiers, setSelectedSignifiers] = useState<string[]>(editEntry?.signifiers || []);
   const { addEntry, updateEntry } = useBuJoStore();
 
   // Helper function to get bullet index from entry
@@ -81,7 +82,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
       color: safeThemeAccess(theme, t => t.colors.bujo?.note, '#6B7280'), description: 'Ideas, thoughts, observations' },
     { symbol: '!', type: 'inspiration' as const, status: 'incomplete' as const, label: 'Inspiration', 
       color: safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308'), description: 'Ideas that inspire action' },
-    { symbol: '?', type: 'research' as const, status: 'incomplete' as const, label: 'Research', 
+    { symbol: '&', type: 'research' as const, status: 'incomplete' as const, label: 'Research', 
       color: safeThemeAccess(theme, t => t.colors.bujo?.research, '#7C3AED'), description: 'Things to investigate or explore' },
     { symbol: '◇', type: 'memory' as const, status: 'incomplete' as const, label: 'Memory', 
       color: safeThemeAccess(theme, t => t.colors.bujo?.memory, '#BE185D'), description: 'Gratitude, memories, and reflections' },
@@ -98,8 +99,28 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
       color: safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308') },
   ];
 
+  // BuJo Pro Signifiers for enhanced organization
+  const signifiers = [
+    { symbol: '★', label: 'Important', color: '#EAB308', description: 'High importance marker' },
+    { symbol: '€', label: 'Money', color: '#15803D', description: 'Financial related' },
+    { symbol: '⏰', label: 'Time', color: '#DC2626', description: 'Time-sensitive' },
+    { symbol: '↑', label: 'Energy+', color: '#10B981', description: 'Energy boost' },
+    { symbol: '↓', label: 'Energy-', color: '#F59E0B', description: 'Energy drain' },
+    { symbol: '🎯', label: 'Goal', color: '#7C3AED', description: 'Goal-related' },
+    { symbol: '⚡', label: 'Quick', color: '#F59E0B', description: 'Quick task (< 5 min)' },
+    { symbol: '🔥', label: 'Hot', color: '#DC2626', description: 'Urgent/critical' },
+  ];
+
+  const toggleSignifier = (symbol: string) => {
+    setSelectedSignifiers(prev => 
+      prev.includes(symbol) 
+        ? prev.filter(s => s !== symbol)
+        : [...prev, symbol]
+    );
+  };
+
   const currentBullet = bullets[selectedBullet];
-  // const currentPriority = priorities.find(p => p.level === priority) || priorities[0]; // Not used in simplified UI
+  const currentPriority = priorities.find(p => p.level === priority) || priorities[0];
 
   const extractTags = (text: string): string[] => {
     const matches = text.match(/#([a-zA-Z0-9_]+)/g);
@@ -128,6 +149,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           content: content.trim(),
           status: currentBullet.status,
           priority,
+          signifiers: selectedSignifiers,
           tags,
           contexts,
           collectionDate: targetDate,
@@ -143,6 +165,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           status: currentBullet.status,
           content: content.trim(),
           priority,
+          signifiers: selectedSignifiers,
           tags,
           contexts,
           collection: 'daily',
@@ -286,6 +309,98 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           </ScrollView>
         </View>
 
+        {/* Priority Selection for Tasks */}
+        {currentBullet.type === 'task' && (
+          <View style={styles.prioritySection}>
+            <Typography variant="caption" style={styles.priorityLabel}>Priority</Typography>
+            <View style={styles.priorityRow}>
+              {priorities.map((priorityOption) => (
+                <TouchableOpacity
+                  key={priorityOption.level}
+                  style={[
+                    styles.priorityOption,
+                    priority === priorityOption.level && styles.selectedPriorityOption
+                  ]}
+                  onPress={() => setPriority(priorityOption.level)}
+                >
+                  {priorityOption.symbol ? (
+                    <Typography 
+                      variant="body1" 
+                      style={[styles.prioritySymbol, { color: priorityOption.color }]}
+                    >
+                      {priorityOption.symbol}
+                    </Typography>
+                  ) : (
+                    <View style={styles.noPrioritySymbol} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* BuJo Pro Signifiers */}
+        <View style={styles.signifiersSection}>
+          <Typography variant="caption" style={styles.signifiersLabel}>Signifiers</Typography>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.signifiersContent}>
+            {signifiers.map((signifier) => (
+              <TouchableOpacity
+                key={signifier.symbol}
+                style={[
+                  styles.signifierOption,
+                  selectedSignifiers.includes(signifier.symbol) && styles.selectedSignifierOption
+                ]}
+                onPress={() => toggleSignifier(signifier.symbol)}
+              >
+                <Typography 
+                  variant="body1" 
+                  style={[styles.signifierSymbol, { color: signifier.color }]}
+                >
+                  {signifier.symbol}
+                </Typography>
+                <Typography variant="caption" style={styles.signifierLabel}>
+                  {signifier.label}
+                </Typography>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Live Preview */}
+        <View style={styles.previewSection}>
+          <Typography variant="caption" style={styles.previewLabel}>Preview</Typography>
+          <View style={styles.previewContainer}>
+            <BuJoSymbol 
+              type={currentBullet.type} 
+              status={currentBullet.status} 
+              size="md"
+            />
+            {currentBullet.type === 'task' && currentPriority.symbol && (
+              <Typography 
+                variant="body1" 
+                style={[styles.prioritySymbol, { color: currentPriority.color }]}
+              >
+                {currentPriority.symbol}
+              </Typography>
+            )}
+            {selectedSignifiers.map((symbol) => {
+              const signifier = signifiers.find(s => s.symbol === symbol);
+              return signifier ? (
+                <Typography 
+                  key={symbol}
+                  variant="body1" 
+                  style={[styles.prioritySymbol, { color: signifier.color }]}
+                >
+                  {signifier.symbol}
+                </Typography>
+              ) : null;
+            })}
+            <Typography variant="body1" style={styles.previewContent}>
+              {content || `Sample ${currentBullet.label.toLowerCase()}...`}
+            </Typography>
+          </View>
+        </View>
+
         {/* Simple Bottom Bar */}
         <View style={styles.bottomBar}>
           <TouchableOpacity 
@@ -427,5 +542,121 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     minWidth: 120,
+  },
+  prioritySection: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  priorityLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+    color: '#6B7280',
+  },
+  priorityRow: {
+    flexDirection: 'row',
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  priorityOption: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+  },
+  selectedPriorityOption: {
+    borderColor: '#0F2A44',
+    backgroundColor: 'rgba(15, 42, 68, 0.08)',
+  },
+  prioritySymbol: {
+    fontWeight: '600',
+    fontSize: 18,
+  },
+  noPrioritySymbol: {
+    width: 20,
+    height: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 10,
+  },
+  previewSection: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  previewLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+    color: '#6B7280',
+  },
+  previewContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0F2A44',
+  },
+  previewContent: {
+    flex: 1,
+    lineHeight: 22,
+    fontStyle: 'italic',
+    opacity: 0.8,
+  },
+  signifiersSection: {
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  signifiersLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+    color: '#6B7280',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  signifiersContent: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    alignItems: 'center',
+  },
+  signifierOption: {
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.sm,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.xs,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    minWidth: 50,
+  },
+  selectedSignifierOption: {
+    borderColor: '#0F2A44',
+    backgroundColor: 'rgba(15, 42, 68, 0.08)',
+  },
+  signifierSymbol: {
+    fontWeight: '600',
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  signifierLabel: {
+    fontSize: 10,
+    textAlign: 'center',
+    color: '#8E8E93',
   },
 });

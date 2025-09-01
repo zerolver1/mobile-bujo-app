@@ -103,7 +103,7 @@ export const BuJoSymbol: React.FC<BuJoSymbolProps> = ({
         };
       case 'research':
         return { 
-          symbol: '?', // Question mark for research
+          symbol: '&', // Ampersand for research
           color: colors.research,
           description: 'Research',
           style: 'regular',

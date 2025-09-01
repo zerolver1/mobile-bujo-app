@@ -313,13 +313,6 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
             onPress={handleQuickScan}
             style={styles.actionButton}
           />
-          <PaperButton 
-            variant="ink" 
-            size="md" 
-            icon="add" 
-            onPress={handleAddQuickEntry}
-            style={styles.addButton}
-          />
         </View>
         </Card>
         
@@ -445,6 +438,20 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
             />
           </View>
         )}
+
+        {/* Floating Action Button for Quick Capture */}
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={handleAddQuickEntry}
+          activeOpacity={0.8}
+        >
+          <View style={styles.fabInner}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </View>
+          <Typography variant="caption" style={styles.fabLabel}>
+            Quick Log
+          </Typography>
+        </TouchableOpacity>
       </SafeAreaView>
     </PaperBackground>
   );
@@ -496,9 +503,6 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
-  },
-  addButton: {
-    marginLeft: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   swipeToggleButton: {
     marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
@@ -598,5 +602,44 @@ const styles = StyleSheet.create({
   },
   swipeHintText: {
     fontWeight: '500',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: PAPER_DESIGN_TOKENS.spacing.xl2, // Higher from bottom for thumb reach
+    right: PAPER_DESIGN_TOKENS.spacing.xl,
+    alignItems: 'center',
+    zIndex: 1000, // Ensure it's above other content
+    shadowColor: 'rgba(15, 42, 68, 0.4)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0F2A44', // Fountain pen blue
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+    // Paper-like texture
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    // Ink-like shadow
+    shadowColor: 'rgba(15, 42, 68, 0.6)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+  },
+  fabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#0F2A44',
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 });
