@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry, QuarterlyPlan, QuarterlyGoal } from '../../types/BuJo';
 import { useTheme } from '../../theme';
-import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { PaperBackground, Typography, Card, PaperButton, PAPER_DESIGN_TOKENS, createPaperShadow, NotebookCard } from '../../components/ui/paperComponents';
 import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
 import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
@@ -251,7 +251,7 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
   };
 
   const renderMonthCard = (monthData: MonthData, index: number) => (
-    <Card key={`${monthData.month}-${monthData.year}`} variant="elevated" padding="lg" style={styles.monthCard}>
+    <NotebookCard key={`${monthData.month}-${monthData.year}`} variant="page" showHoles={false} style={styles.monthCard}>
       <View style={styles.monthHeader}>
         <Typography variant="headline" color="text">
           {monthData.month} {monthData.year}
@@ -606,17 +606,14 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.sm,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
   },
   headerTitle: {
     fontSize: 18,
@@ -627,37 +624,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
-    lineHeight: 22,
-    marginBottom: 24,
     textAlign: 'center',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   monthsContainer: {
-    gap: 16,
-    marginBottom: 32,
+    gap: PAPER_DESIGN_TOKENS.spacing.lg,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xxl,
   },
   monthCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...createPaperShadow('sm'),
   },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: PAPER_DESIGN_TOKENS.colors.border,
   },
   monthTitle: {
     fontSize: 18,
@@ -670,12 +658,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   entriesContainer: {
-    gap: 8,
+    gap: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 20,
-    gap: 8,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.lg,
+    gap: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   emptyText: {
     fontSize: 16,
@@ -736,20 +724,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   quickAddSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...createPaperShadow('sm'),
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 12,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   quickAddButton: {
     flexDirection: 'row',
