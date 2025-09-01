@@ -32,16 +32,16 @@ export const PaperBackground: React.FC<PaperBackgroundProps> = ({
   const getPaperColors = () => {
     // Use ink-like colors for paper patterns
     return {
-      lineColor: theme.isDark 
+      lineColor: (theme?.isDark || false) 
         ? `rgba(157, 156, 161, ${getOpacity()})` // Warm light gray for dark paper
         : `rgba(75, 85, 99, ${getOpacity()})`,   // Graphite pencil color for light paper
-      marginColor: theme.isDark 
+      marginColor: (theme?.isDark || false) 
         ? 'rgba(96, 165, 250, 0.12)'  // Soft blue for margin on dark paper
         : 'rgba(30, 64, 175, 0.1)',   // Fountain pen blue for margin
-      dotColor: theme.isDark 
+      dotColor: (theme?.isDark || false) 
         ? `rgba(156, 163, 175, ${getOpacity()})` // Light dots on dark paper
         : `rgba(107, 114, 128, ${getOpacity()})`, // Graphite dots on light paper
-      rulingColor: theme.isDark
+      rulingColor: (theme?.isDark || false)
         ? 'rgba(255, 255, 255, 0.06)' // Very subtle ruling on dark paper
         : 'rgba(0, 0, 0, 0.04)',      // Very subtle ruling on light paper
     };
@@ -97,7 +97,7 @@ export const PaperBackground: React.FC<PaperBackgroundProps> = ({
             <Rect 
               width="100%" 
               height="100%" 
-              fill={theme.colors.background}
+              fill={theme.colors?.background || '#FFFFFF'}
               filter="url(#paperGrain)"
               opacity={getOpacity() * 0.3}
             />
@@ -154,7 +154,7 @@ export const PaperBackground: React.FC<PaperBackgroundProps> = ({
             <Rect 
               width="100%" 
               height="100%" 
-              fill={theme.colors.background}
+              fill={theme.colors?.background || '#FFFFFF'}
               opacity="0.05"
             />
             
@@ -257,7 +257,7 @@ export const PaperBackground: React.FC<PaperBackgroundProps> = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface }, style]}>
+    <View style={[styles.container, { backgroundColor: theme.colors?.surface || '#F5F2E8' }, style]}>
       {renderPattern()}
       <View style={styles.content}>
         {children}

@@ -23,7 +23,7 @@ export const ModernCard: React.FC<ModernCardProps> = ({
 
   const getCardStyle = () => {
     const baseStyle = {
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: theme.borderRadius?.lg || 12,
       overflow: 'hidden' as const,
     };
 
@@ -39,27 +39,27 @@ export const ModernCard: React.FC<ModernCardProps> = ({
     // Variant styles
     const variantStyles = {
       elevated: {
-        backgroundColor: theme.colors.surface,
-        ...theme.shadow.md,
+        backgroundColor: theme.colors?.surface || '#F5F2E8',
+        ...(theme.shadow?.md || { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }),
         borderWidth: 0,
       },
       glass: {
-        backgroundColor: theme.isDark 
+        backgroundColor: (theme?.isDark || false) 
           ? 'rgba(255, 255, 255, 0.05)' 
           : 'rgba(255, 255, 255, 0.7)',
         borderWidth: 1,
-        borderColor: theme.isDark 
+        borderColor: (theme?.isDark || false) 
           ? 'rgba(255, 255, 255, 0.1)' 
           : 'rgba(0, 0, 0, 0.05)',
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       },
       outline: {
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: theme.colors.border,
+        borderColor: theme.colors?.border || '#E8E3D5',
       },
       filled: {
-        backgroundColor: theme.colors.backgroundSecondary,
+        backgroundColor: theme.colors?.backgroundSecondary || '#F0EDE5',
         borderWidth: 0,
       },
     };
@@ -116,7 +116,7 @@ export const ModernCardHeader: React.FC<ModernCardHeaderProps> = ({
         paddingBottom: 12,
         marginBottom: divider ? 12 : 0,
         borderBottomWidth: divider ? 1 : 0,
-        borderBottomColor: theme.colors.border,
+        borderBottomColor: theme.colors?.border || '#E8E3D5',
       }, 
       style
     ]}>
@@ -161,7 +161,7 @@ export const ModernCardFooter: React.FC<ModernCardFooterProps> = ({
         paddingTop: 12,
         marginTop: divider ? 12 : 0,
         borderTopWidth: divider ? 1 : 0,
-        borderTopColor: theme.colors.border,
+        borderTopColor: theme.colors?.border || '#E8E3D5',
         justifyContent: justify,
       }, 
       style
@@ -187,11 +187,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 
   const getAccentColor = () => {
     const colors = {
-      primary: theme.colors.primary,
-      secondary: theme.colors.secondary,
-      success: theme.colors.success,
-      warning: theme.colors.warning,
-      error: theme.colors.error,
+      primary: theme.colors?.primary || '#007AFF',
+      secondary: theme.colors?.secondary || '#5856D6',
+      success: theme.colors?.success || '#34C759',
+      warning: theme.colors?.warning || '#FF9500',
+      error: theme.colors?.error || '#FF3B30',
     };
     return colors[accent];
   };

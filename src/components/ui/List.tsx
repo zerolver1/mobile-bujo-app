@@ -31,24 +31,24 @@ export const ListItem: React.FC<ListItemProps> = ({
   const getItemStyle = () => {
     return {
       ...styles.listItem,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors?.surface || '#F5F2E8',
       opacity: disabled ? 0.5 : 1,
     };
   };
 
   const getTitleStyle = () => ({
-    ...theme.typography.textStyles.body,
-    color: theme.colors.text,
+    ...(theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 }),
+    color: theme.colors?.text || '#1C1C1E',
     marginBottom: subtitle ? 2 : 0,
   });
 
   const getSubtitleStyle = () => ({
-    ...theme.typography.textStyles.subheadline,
-    color: theme.colors.textSecondary,
+    ...(theme.typography?.textStyles?.subheadline || { fontSize: 15, lineHeight: 20 }),
+    color: theme.colors?.textSecondary || '#8E8E93',
   });
 
-  const getIconColor = () => theme.colors.primary;
-  const getChevronColor = () => theme.colors.textTertiary;
+  const getIconColor = () => theme.colors?.primary || '#007AFF';
+  const getChevronColor = () => theme.colors?.textTertiary || '#C7C7CC';
 
   return (
     <TouchableOpacity
@@ -59,7 +59,7 @@ export const ListItem: React.FC<ListItemProps> = ({
     >
       {leftIcon && (
         <View style={[styles.iconContainer, { 
-          backgroundColor: theme.colors.primaryLight,
+          backgroundColor: theme.colors?.primaryLight || 'rgba(0, 122, 255, 0.15)',
           marginRight: 12,
         }]}>
           <Ionicons name={leftIcon} size={20} color={getIconColor()} />
@@ -131,9 +131,9 @@ export const ListSection: React.FC<ListSectionProps> = ({
     <View style={[styles.section, style]}>
       {title && (
         <Text style={[styles.sectionTitle, {
-          ...theme.typography.textStyles.footnote,
+          ...(theme.typography?.textStyles?.footnote || { fontSize: 13, lineHeight: 16 }),
           fontWeight: '600',
-          color: theme.colors.textSecondary,
+          color: theme.colors?.textSecondary || '#8E8E93',
           textTransform: 'uppercase',
           letterSpacing: 1.5,
           marginBottom: 4,
@@ -143,10 +143,10 @@ export const ListSection: React.FC<ListSectionProps> = ({
         </Text>
       )}
       <View style={[styles.sectionCard, {
-        backgroundColor: theme.colors.surface,
+        backgroundColor: theme.colors?.surface || '#F5F2E8',
         borderRadius: 12,
         marginHorizontal: 12,
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       }]}>
         {children}
       </View>
@@ -163,7 +163,7 @@ export const ListSeparator: React.FC<ListSeparatorProps> = ({ style }) => {
 
   return (
     <View style={[styles.separator, {
-      backgroundColor: theme.colors.border,
+      backgroundColor: theme.colors?.border || '#E8E3D5',
       marginLeft: 48, // Account for icon + padding
     }, style]} />
   );

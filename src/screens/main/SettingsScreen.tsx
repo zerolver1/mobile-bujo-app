@@ -283,7 +283,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                   ? 'Dark paper theme' 
                   : 'Light paper theme'
               }
-              icon={theme.isDark ? "moon-outline" : "sunny-outline"}
+              icon={(theme?.isDark || false) ? "moon-outline" : "sunny-outline"}
               rightElement={
                 <View style={[styles.themeButtons, {
                   backgroundColor: safeThemeAccess(theme, t => t.colors.backgroundSecondary, '#F2F2F7')

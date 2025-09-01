@@ -59,10 +59,10 @@ export const AppleText: React.FC<AppleTextProps> = ({
 
   const getTextStyle = () => {
     // Get base text style from theme
-    const baseStyle = theme.typography.textStyles[style];
+    const baseStyle = theme.typography?.textStyles?.[style];
     
     // Safety check - if theme is not loaded, return a fallback
-    if (!baseStyle || !theme.colors) {
+    if (!baseStyle || !theme?.colors) {
       return {
         fontSize: 17,
         lineHeight: 22,
@@ -79,11 +79,11 @@ export const AppleText: React.FC<AppleTextProps> = ({
 
     // Color variants using Apple's semantic colors
     const colorStyles = {
-      primary: { color: theme.colors.text },
-      secondary: { color: theme.colors.textSecondary },
-      tertiary: { color: theme.colors.textTertiary },
-      quaternary: { color: theme.colors.textDisabled },
-      custom: { color: customColor || theme.colors.text },
+      primary: { color: theme.colors?.text || '#1C1C1E' },
+      secondary: { color: theme.colors?.textSecondary || '#8E8E93' },
+      tertiary: { color: theme.colors?.textTertiary || '#C7C7CC' },
+      quaternary: { color: theme.colors?.textDisabled || '#D1D1D6' },
+      custom: { color: customColor || (theme.colors?.text || '#1C1C1E') },
     };
 
     // Weight overrides (if specified)

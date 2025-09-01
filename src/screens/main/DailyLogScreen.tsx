@@ -307,13 +307,6 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
             style={styles.swipeToggleButton}
           />
           <PaperButton 
-            variant="pencil" 
-            size="sm" 
-            icon="color-palette-outline" 
-            onPress={() => navigation.navigate('DesignSystem')}
-            style={styles.actionButton}
-          />
-          <PaperButton 
             variant="ink" 
             size="sm" 
             icon="camera-outline" 

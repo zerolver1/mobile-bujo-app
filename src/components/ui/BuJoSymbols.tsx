@@ -181,7 +181,7 @@ export const BuJoSymbol: React.FC<BuJoSymbolProps> = ({
             fontWeight: getFontWeight(),
             transform: config.rotation ? [{ rotate: `${config.rotation}deg` }] : undefined,
             // Ink-like text shadow for depth
-            textShadowColor: theme.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
+            textShadowColor: (theme?.isDark || false) ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
             textShadowOffset: { width: 0.5, height: 0.5 },
             textShadowRadius: 0.5,
           },

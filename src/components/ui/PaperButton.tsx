@@ -77,21 +77,21 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
       ink: {
         backgroundColor: 'transparent',
         borderWidth: 1.5,
-        borderColor: theme.colors.text,
+        borderColor: theme.colors?.text || '#1C1C1E',
         borderStyle: 'solid' as const,
         // Slight pen ink bleeding effect
-        ...theme.shadow.none,
+        ...(theme.shadow?.none || {}),
       },
       pencil: {
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: theme.colors.textSecondary,
+        borderColor: theme.colors?.textSecondary || '#8E8E93',
         borderStyle: 'dashed' as const,
         // Softer, more organic look
         borderRadius: 3,
       },
       highlight: {
-        backgroundColor: theme.isDark 
+        backgroundColor: (theme?.isDark || false) 
           ? '#FCD34D'  // Solid yellow highlighter on dark paper
           : '#FEF08A', // Solid yellow highlighter on light paper  
         borderWidth: 0,
@@ -100,12 +100,12 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
         transform: [{ skewX: '-0.5deg' }],
       },
       sticky: {
-        backgroundColor: theme.isDark 
+        backgroundColor: (theme?.isDark || false) 
           ? 'rgba(217, 119, 6, 0.2)'  // Warm sticky note on dark paper
           : '#FEF3C7',                // Classic sticky note yellow
         borderWidth: 0,
         borderRadius: 2,
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
         // Sticky notes are slightly tilted and have soft shadows
         transform: [{ rotate: '-1.2deg' }],
       },
@@ -169,26 +169,26 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
     // Variant text colors (ink-like)
     const variantStyles = {
       ink: { 
-        color: theme.colors.text,
+        color: theme.colors?.text || '#1C1C1E',
         fontWeight: '600' as const,
         // Slight text shadow to simulate ink depth
-        textShadowColor: theme.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
+        textShadowColor: (theme?.isDark || false) ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
         textShadowOffset: { width: 0.5, height: 0.5 },
         textShadowRadius: 0.5,
       },
       pencil: { 
-        color: theme.colors.textSecondary,
+        color: theme.colors?.textSecondary || '#8E8E93',
         fontWeight: '400' as const,
         // Softer, graphite-like appearance
         opacity: 0.9,
       },
       highlight: { 
-        color: theme.isDark ? theme.colors.text : '#92400E', // Dark brown on highlighted background
+        color: (theme?.isDark || false) ? (theme.colors?.text || '#1C1C1E') : '#92400E', // Dark brown on highlighted background
         fontWeight: '600' as const,
         // Text appears darker when highlighted
       },
       sticky: { 
-        color: theme.isDark ? '#F3F4F6' : '#92400E', // Dark brown on yellow sticky
+        color: (theme?.isDark || false) ? '#F3F4F6' : '#92400E', // Dark brown on yellow sticky
         fontWeight: '500' as const,
       },
     };
@@ -216,10 +216,10 @@ export const PaperButton: React.FC<PaperButtonProps> = ({
     }
 
     const colors = {
-      ink: theme.colors.text,
-      pencil: theme.colors.textSecondary,
-      highlight: theme.colors.text,
-      sticky: theme.isDark ? '#E8E6E1' : '#5A5A5A',
+      ink: theme.colors?.text || '#1C1C1E',
+      pencil: theme.colors?.textSecondary || '#8E8E93',
+      highlight: theme.colors?.text || '#1C1C1E',
+      sticky: (theme?.isDark || false) ? '#E8E6E1' : '#5A5A5A',
     };
     return colors[variant];
   };

@@ -153,7 +153,7 @@ export const COMPONENT_MIGRATION_GUIDE = {
     
     backgrounds: `
       // ❌ Old way
-      <View style={{ backgroundColor: theme.colors.background }}>
+      <View style={{ backgroundColor: theme?.colors?.background || '#fff' }}>
         {content}
       </View>
       
@@ -166,7 +166,7 @@ export const COMPONENT_MIGRATION_GUIDE = {
     typography: `
       // ❌ Old way
       <AppleText variant="title1">Header</AppleText>
-      <Text style={{ color: theme.colors.text }}>Body</Text>
+      <Text style={{ color: theme?.colors?.text || '#000' }}>Body</Text>
       
       // ✅ New way
       <Typography variant="h2">Header</Typography>

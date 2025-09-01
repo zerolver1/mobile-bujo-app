@@ -33,7 +33,7 @@ export const Button: React.FC<ButtonProps> = ({
   const getButtonStyle = () => {
     const baseStyle = {
       ...styles.button,
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: theme.borderRadius?.lg || 12,
     };
 
     // Size variations using Apple's 4pt grid
@@ -58,31 +58,31 @@ export const Button: React.FC<ButtonProps> = ({
     // Variant styles
     const variantStyles = {
       primary: {
-        backgroundColor: theme.colors.primary,
-        ...theme.shadow.sm,
+        backgroundColor: theme.colors?.primary || '#007AFF',
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       },
       secondary: {
-        backgroundColor: theme.colors.secondary,
-        ...theme.shadow.sm,
+        backgroundColor: theme.colors?.secondary || '#5856D6',
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       },
       outline: {
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: theme.colors.border,
+        borderColor: theme.colors?.border || '#E8E3D5',
       },
       ghost: {
         backgroundColor: 'transparent',
       },
       destructive: {
-        backgroundColor: theme.colors.error,
-        ...theme.shadow.sm,
+        backgroundColor: theme.colors?.error || '#FF3B30',
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       },
     };
 
     // Disabled state
     const disabledStyle = disabled ? {
       opacity: 0.5,
-      ...theme.shadow.none,
+      ...(theme.shadow?.none || {}),
     } : {};
 
     // Full width
@@ -99,24 +99,24 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getTextStyle = () => {
     const baseStyle = {
-      ...theme.typography.textStyles.body,
+      ...(theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 }),
       fontWeight: '600',
       textAlign: 'center' as const,
     };
 
     // Size variations using Apple typography
     const sizeStyles = {
-      sm: theme.typography.textStyles.subheadline,
-      md: theme.typography.textStyles.body,
-      lg: theme.typography.textStyles.headline,
+      sm: theme.typography?.textStyles?.subheadline || { fontSize: 15, lineHeight: 20 },
+      md: theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 },
+      lg: theme.typography?.textStyles?.headline || { fontSize: 20, lineHeight: 24, fontWeight: '600' },
     };
 
     // Variant text colors
     const variantStyles = {
       primary: { color: '#FFFFFF' },
       secondary: { color: '#FFFFFF' },
-      outline: { color: theme.colors.text },
-      ghost: { color: theme.colors.primary },
+      outline: { color: theme.colors?.text || '#1C1C1E' },
+      ghost: { color: theme.colors?.primary || '#007AFF' },
       destructive: { color: '#FFFFFF' },
     };
 
@@ -140,8 +140,8 @@ export const Button: React.FC<ButtonProps> = ({
     const colors = {
       primary: '#FFFFFF',
       secondary: '#FFFFFF',
-      outline: theme.colors.text,
-      ghost: theme.colors.primary,
+      outline: theme.colors?.text || '#1C1C1E',
+      ghost: theme.colors?.primary || '#007AFF',
       destructive: '#FFFFFF',
     };
     return colors[variant];
@@ -151,7 +151,7 @@ export const Button: React.FC<ButtonProps> = ({
     if (loading) {
       return (
         <ActivityIndicator
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : '#FFFFFF'}
+          color={variant === 'outline' || variant === 'ghost' ? (theme.colors?.primary || '#007AFF') : '#FFFFFF'}
           size="small"
         />
       );

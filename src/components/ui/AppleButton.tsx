@@ -65,7 +65,7 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
 
   const getButtonStyle = () => {
     const baseStyle = {
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: theme.borderRadius?.lg || 12,
       overflow: 'hidden' as const,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
@@ -108,13 +108,13 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
     // Role-based styling (Apple's system button roles)
     const roleStyles = {
       primary: {
-        backgroundColor: theme.colors.primary,
+        backgroundColor: theme.colors?.primary || '#007AFF',
       },
       secondary: {
-        backgroundColor: theme.colors.backgroundSecondary,
+        backgroundColor: theme.colors?.backgroundSecondary || '#F0EDE5',
       },
       destructive: {
-        backgroundColor: theme.colors.error,
+        backgroundColor: theme.colors?.error || '#FF3B30',
       },
       cancel: {
         backgroundColor: 'transparent',
@@ -128,9 +128,9 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
         // Applied via animation
       },
       selected: {
-        backgroundColor: theme.isDark 
-          ? theme.colors.backgroundTertiary 
-          : theme.colors.backgroundSecondary,
+        backgroundColor: (theme?.isDark || false) 
+          ? (theme.colors?.backgroundTertiary || '#E5E5EA') 
+          : (theme.colors?.backgroundSecondary || '#F0EDE5'),
       },
       disabled: {
         opacity: 0.3,
@@ -155,16 +155,16 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   const getTextStyle = () => {
     // Use Apple's precise text styles
     const textStyle = size === 'small' 
-      ? theme.typography.textStyles.footnote 
+      ? (theme.typography?.textStyles?.footnote || { fontSize: 13, lineHeight: 16 }) 
       : size === 'large'
-        ? theme.typography.textStyles.headline
-        : theme.typography.textStyles.body;
+        ? (theme.typography?.textStyles?.headline || { fontSize: 20, lineHeight: 24, fontWeight: '600' })
+        : (theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 });
 
     const roleColors = {
       primary: '#FFFFFF',
-      secondary: theme.colors.text,
+      secondary: theme.colors?.text || '#1C1C1E',
       destructive: '#FFFFFF', 
-      cancel: theme.colors.primary,
+      cancel: theme.colors?.primary || '#007AFF',
     };
 
     return {
@@ -186,9 +186,9 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   const getIconColor = () => {
     const roleColors = {
       primary: '#FFFFFF',
-      secondary: theme.colors.text,
+      secondary: theme.colors?.text || '#1C1C1E',
       destructive: '#FFFFFF',
-      cancel: theme.colors.primary,
+      cancel: theme.colors?.primary || '#007AFF',
     };
     return roleColors[role];
   };
@@ -302,8 +302,8 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
         style={[
           StyleSheet.absoluteFillObject,
           {
-            backgroundColor: theme.colors.text,
-            borderRadius: theme.borderRadius.lg,
+            backgroundColor: theme.colors?.text || '#1C1C1E',
+            borderRadius: theme.borderRadius?.lg || 12,
           },
           backgroundAnimatedStyle,
         ]}

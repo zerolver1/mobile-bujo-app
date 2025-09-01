@@ -12,13 +12,17 @@ import { PAPER_DESIGN_TOKENS, PaperIntensity, PaperButtonSize, PaperCardPadding 
 // Utility to create paper-like shadows based on theme
 export const createPaperShadow = (
   shadowType: keyof typeof PAPER_DESIGN_TOKENS.shadows,
-  theme: Theme
+  theme?: Theme
 ): ViewStyle => {
   const shadow = PAPER_DESIGN_TOKENS.shadows[shadowType];
   
+  if (!shadow) {
+    return PAPER_DESIGN_TOKENS.shadows.none;
+  }
+  
   // Adjust shadow color based on theme
   let shadowColor = shadow.shadowColor;
-  if (theme.isDark && shadowType !== 'none') {
+  if (theme?.isDark && shadowType !== 'none') {
     shadowColor = 'rgba(0, 0, 0, 0.4)'; // Darker shadows for dark theme
   }
   
@@ -34,7 +38,7 @@ export const getPaperBackground = (
   intensity: PaperIntensity = 'light',
   theme: Theme
 ): string => {
-  const baseColor = theme.colors[variant];
+  const baseColor = theme.colors?.[variant] || '#F5F2E8';
   const alpha = PAPER_DESIGN_TOKENS.intensities[intensity];
   
   // Add subtle texture overlay
@@ -43,7 +47,7 @@ export const getPaperBackground = (
   }
   
   // Create layered background with texture
-  return theme.isDark 
+  return (theme?.isDark || false) 
     ? `rgba(255, 255, 255, ${alpha * 0.5})` // Subtle light overlay on dark
     : `rgba(139, 69, 19, ${alpha * 0.3})`; // Warm brown paper texture on light
 };
@@ -68,9 +72,9 @@ export const createInkTextStyle = (
     case 'ink':
       return {
         ...baseStyle,
-        color: theme.colors.text,
+        color: theme?.colors?.text || '#000',
         fontWeight: '600',
-        textShadowColor: theme.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
+        textShadowColor: (theme?.isDark || false) ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
         textShadowOffset: inkDepth.offset,
         textShadowRadius: inkDepth.radius,
       };
@@ -78,7 +82,7 @@ export const createInkTextStyle = (
     case 'pencil':
       return {
         ...baseStyle,
-        color: theme.colors.textSecondary,
+        color: theme?.colors?.textSecondary || '#666',
         fontWeight: '400',
         opacity: 0.9,
       };
@@ -86,9 +90,9 @@ export const createInkTextStyle = (
     case 'highlight':
       return {
         ...baseStyle,
-        color: theme.isDark ? theme.colors.text : '#92400E',
+        color: (theme?.isDark || false) ? (theme?.colors?.text || '#000') : '#92400E',
         fontWeight: '600',
-        backgroundColor: theme.isDark 
+        backgroundColor: (theme?.isDark || false) 
           ? 'rgba(251, 191, 36, 0.15)'
           : 'rgba(254, 240, 138, 0.4)',
       };
@@ -102,7 +106,7 @@ export const createInkTextStyle = (
 export const createPaperButtonStyle = (
   variant: 'ink' | 'pencil' | 'highlight' | 'sticky',
   size: PaperButtonSize,
-  theme: Theme,
+  theme?: Theme,
   disabled: boolean = false
 ): ViewStyle => {
   const sizeProps = PAPER_DESIGN_TOKENS.buttonSizes[size];
@@ -122,20 +126,20 @@ export const createPaperButtonStyle = (
     ink: {
       backgroundColor: 'transparent',
       borderWidth: 1.5,
-      borderColor: theme.colors.text,
+      borderColor: theme?.colors?.text || '#000',
       ...createPaperShadow('none', theme),
     },
     
     pencil: {
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: theme.colors.textSecondary,
+      borderColor: theme?.colors?.textSecondary || '#666',
       borderStyle: 'dashed',
       borderRadius: PAPER_DESIGN_TOKENS.radius.card,
     },
     
     highlight: {
-      backgroundColor: theme.isDark 
+      backgroundColor: (theme?.isDark || false) 
         ? 'rgba(251, 191, 36, 0.15)'
         : 'rgba(254, 240, 138, 0.4)',
       borderWidth: 0,
@@ -144,7 +148,7 @@ export const createPaperButtonStyle = (
     },
     
     sticky: {
-      backgroundColor: theme.isDark 
+      backgroundColor: (theme?.isDark || false) 
         ? 'rgba(217, 119, 6, 0.2)'
         : '#FEF3C7',
       borderWidth: 0,
@@ -167,13 +171,13 @@ export const createPaperButtonStyle = (
 export const createPaperCardStyle = (
   variant: 'page' | 'sticky' | 'torn' | 'elevated' | 'outlined' | 'flat',
   padding: PaperCardPadding,
-  theme: Theme,
+  theme?: Theme | null,
   showHoles: boolean = false
 ): ViewStyle => {
   const paddingValue = PAPER_DESIGN_TOKENS.cardPadding[padding];
   
   const baseStyle: ViewStyle = {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme?.colors?.surface || '#fff',
     padding: paddingValue,
   };
   
@@ -184,7 +188,7 @@ export const createPaperCardStyle = (
     page: {
       borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
       borderWidth: 0.5,
-      borderColor: theme.colors.border,
+      borderColor: theme?.colors?.border || '#ccc',
       borderLeftWidth: 0,
       borderRightWidth: 0,
       ...createPaperShadow('paper', theme),
@@ -192,7 +196,7 @@ export const createPaperCardStyle = (
     },
     
     sticky: {
-      backgroundColor: theme.isDark 
+      backgroundColor: (theme?.isDark || false) 
         ? 'rgba(217, 119, 6, 0.25)'
         : '#FEF3C7',
       borderRadius: PAPER_DESIGN_TOKENS.radius.note,
@@ -204,9 +208,9 @@ export const createPaperCardStyle = (
     torn: {
       borderRadius: PAPER_DESIGN_TOKENS.radius.subtle,
       borderWidth: 0.5,
-      borderColor: theme.colors.border,
+      borderColor: theme?.colors?.border || '#ccc',
       borderTopWidth: 1.5,
-      borderTopColor: theme.colors.borderLight,
+      borderTopColor: theme?.colors?.borderLight || '#ddd',
       borderStyle: 'dashed',
       ...createPaperShadow('paper', theme),
     },
@@ -219,10 +223,10 @@ export const createPaperCardStyle = (
     outlined: {
       borderRadius: PAPER_DESIGN_TOKENS.radius.card,
       borderWidth: 0.5,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.isDark 
-        ? theme.colors.surface 
-        : `${theme.colors.surface}F8`,
+      borderColor: theme?.colors?.border || '#ccc',
+      backgroundColor: (theme?.isDark || false) 
+        ? (theme?.colors?.surface || '#333')
+        : `${theme?.colors?.surface || '#fff'}F8`,
     },
     
     flat: {
@@ -246,16 +250,16 @@ export const getPaperPatternProps = (
   const opacity = PAPER_DESIGN_TOKENS.intensities[intensity];
   
   const colors = {
-    lineColor: theme.isDark 
+    lineColor: (theme?.isDark || false) 
       ? `rgba(157, 156, 161, ${opacity})`
       : `rgba(75, 85, 99, ${opacity})`,
-    marginColor: theme.isDark 
+    marginColor: (theme?.isDark || false) 
       ? 'rgba(96, 165, 250, 0.12)'
       : 'rgba(30, 64, 175, 0.1)',
-    dotColor: theme.isDark 
+    dotColor: (theme?.isDark || false) 
       ? `rgba(156, 163, 175, ${opacity})`
       : `rgba(107, 114, 128, ${opacity})`,
-    rulingColor: theme.isDark
+    rulingColor: (theme?.isDark || false)
       ? 'rgba(255, 255, 255, 0.06)'
       : 'rgba(0, 0, 0, 0.04)',
   };
@@ -304,7 +308,7 @@ export const getResponsiveSpacing = (
 export const COMMON_PAPER_STYLES = {
   screenContainer: (theme: Theme): ViewStyle => ({
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme?.colors?.background || '#fff',
     padding: PAPER_DESIGN_TOKENS.spacing.xl,
   }),
   
@@ -312,7 +316,7 @@ export const COMMON_PAPER_STYLES = {
     marginBottom: PAPER_DESIGN_TOKENS.spacing.md,
     paddingBottom: PAPER_DESIGN_TOKENS.spacing.sm,
     borderBottomWidth: 0.5,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: theme?.colors?.border || '#E8E3D5',
   }),
   
   entryContainer: (theme: Theme): ViewStyle => ({

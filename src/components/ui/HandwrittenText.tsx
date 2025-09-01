@@ -79,17 +79,17 @@ export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
     // Color styles (ink colors)
     const colorStyles = {
       ink: { 
-        color: theme.isDark ? theme.colors.text : '#2B2B2B',
+        color: (theme?.isDark || false) ? (theme.colors?.text || '#E5E5EA') : '#2B2B2B',
       },
       pencil: { 
-        color: theme.isDark ? '#8B8A85' : '#6B6B6B',
+        color: (theme?.isDark || false) ? '#8B8A85' : '#6B6B6B',
         opacity: 0.9,
       },
       blue: { 
-        color: theme.isDark ? '#7A94C4' : '#2B4C8C',
+        color: (theme?.isDark || false) ? '#7A94C4' : '#2B4C8C',
       },
       red: { 
-        color: theme.isDark ? '#C47A76' : '#B85450',
+        color: (theme?.isDark || false) ? '#C47A76' : '#B85450',
       },
     };
 

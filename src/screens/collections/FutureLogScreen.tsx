@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
@@ -312,7 +313,7 @@ export const FutureLogScreen: React.FC<FutureLogScreenProps> = ({ navigation }) 
           </TouchableOpacity>
         )}
       </View>
-    </Card>
+    </NotebookCard>
   );
 
   return (
@@ -645,7 +646,7 @@ const styles = StyleSheet.create({
     marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
     paddingBottom: PAPER_DESIGN_TOKENS.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: PAPER_DESIGN_TOKENS.colors.border,
+    borderBottomColor: '#E8E3D5',
   },
   monthTitle: {
     fontSize: 18,
@@ -748,47 +749,78 @@ const styles = StyleSheet.create({
   // Quarterly View Styles
   viewModeContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.lg,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    backgroundColor: '#F5F2E8', // Parchment background
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E8E3D5', // Paper border
+    borderStyle: 'dashed', // Hand-drawn style divider
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.md,
+    ...createPaperShadow('sm'),
   },
   viewModeButton: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
     alignItems: 'center',
-    borderRadius: 8,
-    marginHorizontal: 4,
+    borderRadius: PAPER_DESIGN_TOKENS.radius.button,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    borderStyle: 'dashed', // Pencil-sketched buttons
   },
   viewModeButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#FEF3C7', // Sticky note highlight
+    borderColor: '#D97706', // Orange border
+    borderWidth: 1.5,
+    borderStyle: 'solid', // More defined when active
+    transform: [{ rotate: '-0.5deg' }], // Slight tilt like a pressed note
+    ...createPaperShadow('sticky'),
   },
   viewModeText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: '500',
+    color: '#6B6B6B', // Pencil color
+    fontFamily: Platform.select({
+      ios: 'Georgia',
+      android: 'serif',
+      default: 'System',
+    }),
   },
   viewModeTextActive: {
-    color: '#FFFFFF',
+    color: '#92400E', // Dark brown on yellow highlight
+    fontWeight: '600',
+    // Ink effect for active text
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 0.5,
   },
   quartersContainer: {
-    gap: 16,
-    marginBottom: 32,
+    gap: PAPER_DESIGN_TOKENS.spacing.lg,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xxl,
   },
   quarterCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: '#F5F2E8', // Parchment paper color
+    borderRadius: PAPER_DESIGN_TOKENS.radius.soft,
+    padding: PAPER_DESIGN_TOKENS.spacing.lg,
+    borderWidth: 0.5,
+    borderColor: '#E8E3D5',
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    ...createPaperShadow('paper'),
+    // Subtle paper texture
+    shadowColor: 'rgba(139, 69, 19, 0.08)', // Warm brown shadow
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 1,
   },
   quarterCardActive: {
-    borderWidth: 2,
-    borderColor: '#007AFF',
+    borderLeftWidth: 3,
+    borderLeftColor: '#D97706', // Warm orange accent for active quarter
+    backgroundColor: '#FEF3C7', // Slightly yellow tint for current quarter
   },
   quarterHeader: {
     flexDirection: 'row',
@@ -797,32 +829,53 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quarterTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1C1C1E',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B2B2B', // Ink-like color
+    fontFamily: Platform.select({
+      ios: 'Georgia',
+      android: 'serif',
+      default: 'System',
+    }),
+    // Ink depth effect
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 0.5,
   },
   currentBadge: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: '#FEF3C7', // Sticky note yellow
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: PAPER_DESIGN_TOKENS.radius.note,
+    borderWidth: 0.5,
+    borderColor: '#D97706', // Orange border
+    transform: [{ rotate: '-1.5deg' }], // Slight tilt like a sticky note
+    ...createPaperShadow('sticky'),
   },
   currentBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#92400E', // Dark brown text on yellow
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   quarterMonths: {
     fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 16,
+    color: '#6B6B6B', // Pencil-like color
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.md,
+    fontFamily: Platform.select({
+      ios: 'Georgia',
+      android: 'serif',
+      default: 'System',
+    }),
+    opacity: 0.9, // Slightly faded like pencil
   },
   goalsContainer: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.md,
+    borderTopWidth: 0.5,
+    borderTopColor: '#E8E3D5', // Paper border color
+    borderStyle: 'dashed', // Subtle dashed line like hand-drawn
   },
   goalsTitle: {
     fontSize: 14,

@@ -35,50 +35,50 @@ export const NotebookCard: React.FC<NotebookCardProps> = ({
     }
 
     const baseStyle = {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors?.surface || '#F5F2E8',
       borderRadius: variant === 'torn' ? 0 : 2,
       padding: 12, // theme.spacing.lg equivalent
     };
 
     const variantStyles = {
       page: {
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
         borderWidth: 0.5,
-        borderColor: theme.colors.border,
+        borderColor: theme.colors?.border || '#E8E3D5',
         borderLeftWidth: 0,
         borderRightWidth: 0,
         // Subtle paper texture shadow
-        shadowColor: theme.isDark ? '#000000' : 'rgba(139, 69, 19, 0.1)',
+        shadowColor: (theme?.isDark || false) ? '#000000' : 'rgba(139, 69, 19, 0.1)',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: theme.isDark ? 0.3 : 0.1,
+        shadowOpacity: (theme?.isDark || false) ? 0.3 : 0.1,
         shadowRadius: 2,
       },
       sticky: {
-        backgroundColor: theme.isDark 
+        backgroundColor: (theme?.isDark || false) 
           ? 'rgba(217, 119, 6, 0.25)'  // Warm orange sticky on dark paper
           : '#FEF3C7',                 // Classic yellow sticky note
-        ...theme.shadow.md,
+        ...(theme.shadow?.md || { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }),
         borderWidth: 0,
         borderRadius: 2,
         // More realistic sticky note rotation
         transform: [{ rotate: '-0.8deg' }],
         // Sticky note shadow
-        shadowColor: theme.isDark ? '#000000' : '#D97706',
+        shadowColor: (theme?.isDark || false) ? '#000000' : '#D97706',
         shadowOffset: { width: 1, height: 2 },
-        shadowOpacity: theme.isDark ? 0.4 : 0.15,
+        shadowOpacity: (theme?.isDark || false) ? 0.4 : 0.15,
         shadowRadius: 3,
       },
       torn: {
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
         borderWidth: 0.5,
-        borderColor: theme.colors.border,
+        borderColor: theme.colors?.border || '#E8E3D5',
         borderTopWidth: 1.5,
-        borderTopColor: theme.colors.borderLight,
+        borderTopColor: theme.colors?.borderLight || '#E8E3D5',
         borderStyle: 'dashed' as const,
         // Torn paper has irregular edges
         borderRadius: 1,
         // Slightly rough shadow for torn effect
-        shadowColor: theme.isDark ? '#000000' : 'rgba(107, 114, 128, 0.2)',
+        shadowColor: (theme?.isDark || false) ? '#000000' : 'rgba(107, 114, 128, 0.2)',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 1.5,

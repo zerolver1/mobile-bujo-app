@@ -98,9 +98,9 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
           padding: 12,
           marginHorizontal: 16,
           marginVertical: 4,
-          shadowColor: theme?.isDark ? '#000000' : 'rgba(139, 69, 19, 0.08)',
+          shadowColor: (theme?.isDark || false) ? '#000000' : 'rgba(139, 69, 19, 0.08)',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: theme?.isDark ? 0.25 : 0.1,
+          shadowOpacity: (theme?.isDark || false) ? 0.25 : 0.1,
           shadowRadius: 3,
           elevation: 2,
         }

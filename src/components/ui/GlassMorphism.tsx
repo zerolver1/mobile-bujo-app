@@ -35,14 +35,14 @@ export const GlassMorphism: React.FC<GlassMorphismProps> = ({
       };
     }
 
-    const borderColor = theme.isDark 
+    const borderColor = (theme?.isDark || false) 
       ? 'rgba(255, 255, 255, 0.1)' 
       : 'rgba(0, 0, 0, 0.1)';
 
     return {
       borderRadius,
       overflow: 'hidden' as const,
-      backgroundColor: theme.isDark 
+      backgroundColor: (theme?.isDark || false) 
         ? 'rgba(255, 255, 255, 0.05)' 
         : 'rgba(255, 255, 255, 0.8)',
       borderWidth: border ? 1 : 0,
@@ -53,7 +53,7 @@ export const GlassMorphism: React.FC<GlassMorphismProps> = ({
 
   const getBlurTint = () => {
     if (tint === 'default') {
-      return theme.isDark ? 'dark' : 'light';
+      return (theme?.isDark || false) ? 'dark' : 'light';
     }
     return tint;
   };
@@ -140,9 +140,9 @@ export const FloatingGlass: React.FC<FloatingGlassProps> = ({
     }
 
     const shadows = {
-      low: theme.shadow.sm,
-      medium: theme.shadow.md,
-      high: theme.shadow.lg,
+      low: theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+      medium: theme.shadow?.md || { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+      high: theme.shadow?.lg || { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
     };
 
     return shadows[elevation];

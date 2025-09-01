@@ -33,8 +33,8 @@ export const Card: React.FC<CardProps> = ({
     }
 
     const baseStyle = {
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius?.lg || 12,
+      backgroundColor: theme.colors?.surface || '#F5F2E8',
     };
 
     // Padding variations using Apple's 4pt grid
@@ -48,25 +48,25 @@ export const Card: React.FC<CardProps> = ({
     // Variant styles with paper-like feel
     const variantStyles = {
       elevated: {
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
         // Warm paper-like shadow
-        shadowColor: theme.isDark ? '#000000' : 'rgba(139, 69, 19, 0.08)',
+        shadowColor: (theme?.isDark || false) ? '#000000' : 'rgba(139, 69, 19, 0.08)',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: theme.isDark ? 0.25 : 0.1,
+        shadowOpacity: (theme?.isDark || false) ? 0.25 : 0.1,
         shadowRadius: 3,
         elevation: 2,
       },
       outlined: {
         borderWidth: 0.5,
-        borderColor: theme.colors.border,
-        ...theme.shadow.none,
+        borderColor: theme.colors?.border || '#E8E3D5',
+        ...(theme.shadow?.none || {}),
         // Very subtle paper texture
-        backgroundColor: theme.isDark 
-          ? theme.colors.surface 
-          : `${theme.colors.surface}F8`, // Slightly more opaque
+        backgroundColor: (theme?.isDark || false) 
+          ? (theme.colors?.surface || '#F5F2E8') 
+          : `${theme.colors?.surface || '#F5F2E8'}F8`, // Slightly more opaque
       },
       flat: {
-        ...theme.shadow.none,
+        ...(theme.shadow?.none || {}),
         backgroundColor: 'transparent', // Let the paper background show through
       },
     };

@@ -37,34 +37,34 @@ export const Typography: React.FC<TypographyProps> = ({
     
     // Map old variants to new Apple text styles
     const variantStyles = {
-      h1: theme.typography.textStyles.largeTitle,
-      h2: theme.typography.textStyles.title1,
-      h3: theme.typography.textStyles.title2,
-      h4: theme.typography.textStyles.title3,
-      body1: theme.typography.textStyles.body,
-      body2: theme.typography.textStyles.callout,
-      caption: theme.typography.textStyles.caption1,
+      h1: theme.typography?.textStyles?.largeTitle || { fontSize: 34, lineHeight: 41, fontWeight: '700' },
+      h2: theme.typography?.textStyles?.title1 || { fontSize: 28, lineHeight: 34, fontWeight: '700' },
+      h3: theme.typography?.textStyles?.title2 || { fontSize: 22, lineHeight: 28, fontWeight: '700' },
+      h4: theme.typography?.textStyles?.title3 || { fontSize: 20, lineHeight: 25, fontWeight: '600' },
+      body1: theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 },
+      body2: theme.typography?.textStyles?.callout || { fontSize: 16, lineHeight: 21 },
+      caption: theme.typography?.textStyles?.caption1 || { fontSize: 12, lineHeight: 16 },
       overline: {
-        ...theme.typography.textStyles.caption2,
+        ...(theme.typography?.textStyles?.caption2 || { fontSize: 11, lineHeight: 13 }),
         textTransform: 'uppercase' as const,
         letterSpacing: 1.5,
       },
       mono: {
-        ...theme.typography.textStyles.body,
-        fontFamily: theme.typography.fontFamily.mono,
+        ...(theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 }),
+        fontFamily: theme.typography?.fontFamily?.mono || 'Courier New',
       },
     };
 
     // Color styles
     const colorStyles = {
-      primary: { color: theme.colors.text },
-      secondary: { color: theme.colors.textSecondary },
-      tertiary: { color: theme.colors.textTertiary },
-      disabled: { color: theme.colors.textDisabled },
-      success: { color: theme.colors.success },
-      warning: { color: theme.colors.warning },
-      error: { color: theme.colors.error },
-      custom: { color: customColor || theme.colors.text },
+      primary: { color: theme.colors?.text || '#1C1C1E' },
+      secondary: { color: theme.colors?.textSecondary || '#8E8E93' },
+      tertiary: { color: theme.colors?.textTertiary || '#C7C7CC' },
+      disabled: { color: theme.colors?.textDisabled || '#D1D1D6' },
+      success: { color: theme.colors?.success || '#34C759' },
+      warning: { color: theme.colors?.warning || '#FF9500' },
+      error: { color: theme.colors?.error || '#FF3B30' },
+      custom: { color: customColor || (theme.colors?.text || '#1C1C1E') },
     };
 
     // Weight overrides (if specified)

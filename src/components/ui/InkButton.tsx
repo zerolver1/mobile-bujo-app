@@ -60,7 +60,7 @@ export const InkButton: React.FC<InkButtonProps> = ({
     }
 
     const baseStyle = {
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: theme.borderRadius?.lg || 12,
       overflow: 'hidden' as const,
       position: 'relative' as const,
     };
@@ -87,31 +87,31 @@ export const InkButton: React.FC<InkButtonProps> = ({
     // Variant styles
     const variantStyles = {
       filled: {
-        backgroundColor: theme.colors.primary,
+        backgroundColor: theme.colors?.primary || '#007AFF',
         borderWidth: 0,
-        ...theme.shadow.sm,
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       },
       outline: {
         backgroundColor: 'transparent',
         borderWidth: 2,
-        borderColor: theme.colors.primary,
+        borderColor: theme.colors?.primary || '#007AFF',
       },
       ghost: {
         backgroundColor: 'transparent',
         borderWidth: 0,
       },
       ink: {
-        backgroundColor: theme.colors.surface,
+        backgroundColor: theme.colors?.surface || '#F5F2E8',
         borderWidth: 1,
-        borderColor: theme.colors.border,
-        ...theme.shadow.sm,
+        borderColor: theme.colors?.border || '#E8E3D5',
+        ...(theme.shadow?.sm || { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }),
       },
     };
 
     // Disabled state
     const disabledStyle = disabled ? {
       opacity: 0.5,
-      ...theme.shadow.none,
+      ...(theme.shadow?.none || {}),
     } : {};
 
     // Full width
@@ -139,24 +139,24 @@ export const InkButton: React.FC<InkButtonProps> = ({
     }
 
     const baseStyle = {
-      ...theme.typography.textStyles.body,
+      ...(theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 }),
       fontWeight: '600' as const,
       textAlign: 'center' as const,
     };
 
     // Size variations using Apple typography
     const sizeStyles = {
-      sm: theme.typography.textStyles.subheadline,
-      md: theme.typography.textStyles.body,
-      lg: theme.typography.textStyles.headline,
+      sm: theme.typography?.textStyles?.subheadline || { fontSize: 15, lineHeight: 20 },
+      md: theme.typography?.textStyles?.body || { fontSize: 17, lineHeight: 22 },
+      lg: theme.typography?.textStyles?.headline || { fontSize: 20, lineHeight: 24, fontWeight: '600' },
     };
 
     // Variant text colors
     const variantStyles = {
       filled: { color: '#FFFFFF' },
-      outline: { color: theme.colors.primary },
-      ghost: { color: theme.colors.primary },
-      ink: { color: theme.colors.text },
+      outline: { color: theme.colors?.primary || '#007AFF' },
+      ghost: { color: theme.colors?.primary || '#007AFF' },
+      ink: { color: theme.colors?.text || '#1C1C1E' },
     };
 
     return {
@@ -174,9 +174,9 @@ export const InkButton: React.FC<InkButtonProps> = ({
   const getIconColor = () => {
     const colors = {
       filled: '#FFFFFF',
-      outline: theme.colors.primary,
-      ghost: theme.colors.primary,
-      ink: theme.colors.text,
+      outline: theme.colors?.primary || '#007AFF',
+      ghost: theme.colors?.primary || '#007AFF',
+      ink: theme.colors?.text || '#1C1C1E',
     };
     return colors[variant];
   };
@@ -259,9 +259,9 @@ export const InkButton: React.FC<InkButtonProps> = ({
         return 'rgba(255, 255, 255, 0.3)';
       case 'outline':
       case 'ghost':
-        return `rgba(${theme.colors.primary.slice(1).match(/.{2}/g)?.map(hex => parseInt(hex, 16)).join(', ') || '0, 85, 204'}, 0.15)`;
+        return `rgba(${(theme.colors?.primary || '#007AFF').slice(1).match(/.{2}/g)?.map(hex => parseInt(hex, 16)).join(', ') || '0, 85, 204'}, 0.15)`;
       case 'ink':
-        return theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+        return (theme?.isDark || false) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
       default:
         return 'rgba(0, 0, 0, 0.1)';
     }
