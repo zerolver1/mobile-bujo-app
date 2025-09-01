@@ -62,12 +62,16 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   }, [translateX, actionOpacity]);
 
   const handleGestureEvent = (event: PanGestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const { translationX, velocityX } = event.nativeEvent;
     
-    // Limit swipe distance
+    // Apply gentle resistance for smoother feel (like paper friction)
+    const resistance = 0.8; // Slightly reduce direct translation for smoother feel
+    const adjustedTranslation = translationX * resistance;
+    
+    // Limit swipe distance with smooth clamping
     const clampedTranslation = Math.max(
       -SWIPE_THRESHOLDS.MAX,
-      Math.min(SWIPE_THRESHOLDS.MAX, translationX)
+      Math.min(SWIPE_THRESHOLDS.MAX, adjustedTranslation)
     );
     
     translateX.setValue(clampedTranslation);
@@ -99,54 +103,64 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
       const leftWidth = leftActions.length * 80;
       const rightWidth = rightActions.length * 80;
       
+      // Add velocity consideration for more responsive feel
+      const velocityFactor = Math.abs(velocityX) > 500 ? 0.7 : 1; // Lower threshold for fast swipes
+      const leftThreshold = 40 * velocityFactor;
+      const rightThreshold = 40 * velocityFactor;
+      
       // Toggle behavior: swipe same direction to close, different direction to open
-      if (leftRevealed > 40 && leftActions.length > 0) {
+      if (leftRevealed > leftThreshold && leftActions.length > 0) {
         if (revealedSide === 'left') {
-          // Already showing left actions - close them
+          // Already showing left actions - close them with smooth animation
           Animated.spring(translateX, {
             toValue: 0,
             useNativeDriver: false,
-            tension: 200,
-            friction: 8,
+            tension: 120,
+            friction: 12,
+            mass: 1.2,
           }).start();
           setRevealedSide('none');
         } else {
-          // Show left actions
+          // Show left actions with smooth, paper-like animation
           Animated.spring(translateX, {
             toValue: leftWidth,
             useNativeDriver: false,
-            tension: 200,
-            friction: 8,
+            tension: 120, // Reduced tension for smoother motion
+            friction: 12, // Increased friction for less bounce
+            mass: 1.2,   // Added mass for more realistic feel
           }).start();
           setRevealedSide('left');
         }
-      } else if (rightRevealed > 40 && rightActions.length > 0) {
+      } else if (rightRevealed > rightThreshold && rightActions.length > 0) {
         if (revealedSide === 'right') {
-          // Already showing right actions - close them
+          // Already showing right actions - close them with smooth animation
           Animated.spring(translateX, {
             toValue: 0,
             useNativeDriver: false,
-            tension: 200,
-            friction: 8,
+            tension: 120,
+            friction: 12,
+            mass: 1.2,
           }).start();
           setRevealedSide('none');
         } else {
-          // Show right actions
+          // Show right actions with smooth, paper-like animation
           Animated.spring(translateX, {
             toValue: -rightWidth,
             useNativeDriver: false,
-            tension: 200,
-            friction: 8,
+            tension: 120,
+            friction: 12,
+            mass: 1.2,
           }).start();
           setRevealedSide('right');
         }
       } else {
-        // Not enough swipe distance - snap back to center
+        // Not enough swipe distance - gently return to center
         Animated.spring(translateX, {
           toValue: 0,
           useNativeDriver: false,
-          tension: 200,
-          friction: 8,
+          tension: 120,
+          friction: 12,
+          mass: 1.2,
         }).start();
         setRevealedSide('none');
       }
@@ -182,12 +196,13 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
               style={styles.actionPressable}
               onPress={() => {
                 onSwipeAction(entry, { action: action.action, key: action.key });
-                // Animate back to closed position and reset state
+                // Gently animate back to closed position with smooth paper feel
                 Animated.spring(translateX, {
                   toValue: 0,
                   useNativeDriver: false,
-                  tension: 200,
-                  friction: 8,
+                  tension: 120,
+                  friction: 12,
+                  mass: 1.2,
                 }).start();
                 setRevealedSide('none');
               }}
@@ -232,12 +247,13 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
               style={styles.actionPressable}
               onPress={() => {
                 onSwipeAction(entry, { action: action.action, key: action.key });
-                // Animate back to closed position and reset state
+                // Gently animate back to closed position with smooth paper feel
                 Animated.spring(translateX, {
                   toValue: 0,
                   useNativeDriver: false,
-                  tension: 200,
-                  friction: 8,
+                  tension: 120,
+                  friction: 12,
+                  mass: 1.2,
                 }).start();
                 setRevealedSide('none');
               }}
