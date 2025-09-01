@@ -4,11 +4,11 @@
     "slug": "bullet-journal-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAF7F0"
     },
@@ -44,7 +44,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png",
         "backgroundColor": "#FAF7F0"
       },
       "edgeToEdgeEnabled": true,
@@ -58,7 +58,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png"
     },
     "plugins": [
       "expo-camera",

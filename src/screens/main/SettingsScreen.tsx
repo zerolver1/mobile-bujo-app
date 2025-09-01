@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '../../stores/SubscriptionStore';
@@ -99,6 +100,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     <PaperBackground variant="subtle" intensity="light">
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView}>
+        {/* App Logo Header */}
+        <View style={styles.logoSection}>
+          <Image 
+            source={require('../../../assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png')} 
+            style={styles.appLogo}
+            resizeMode="contain"
+          />
+          <Typography variant="title1" style={styles.appTitle}>Bullet Journal</Typography>
+          <Typography variant="caption1" style={styles.appSubtitle}>Digital Bullet Journaling</Typography>
+        </View>
+
         {/* Account Section */}
         <View style={styles.section}>
           <Typography variant="caption" style={[styles.sectionHeader, { 
@@ -438,6 +450,29 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  logoSection: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  appLogo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: '#0F2A44',
+    marginBottom: 4,
+  },
+  appSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#8E8E93',
+    marginBottom: 8,
   },
   section: {
     marginTop: 24,
