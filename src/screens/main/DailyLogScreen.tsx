@@ -280,9 +280,9 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           
           {!isToday && (
             <PaperButton 
-              variant="sticky" 
-              size="sm" 
-              title="Today" 
+              variant="highlight" 
+              size="md" 
+              title="📅 Back to Today" 
               onPress={goToToday}
               style={styles.todayButton}
             />
@@ -572,7 +572,13 @@ const styles = StyleSheet.create({
   },
   todayButton: {
     marginTop: PAPER_DESIGN_TOKENS.spacing.md,
-    alignSelf: 'flex-start',
+    alignSelf: 'center', // Center the button
+    transform: [{ rotate: '1deg' }], // Slight tilt for paper effect
+    shadowColor: 'rgba(217, 119, 6, 0.3)', // Orange highlight shadow
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   entriesList: {
     flex: 1,
