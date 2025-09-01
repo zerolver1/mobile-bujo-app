@@ -1,18 +1,23 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Animated,
   Dimensions,
   Pressable,
 } from 'react-native';
 import {
-  PanGestureHandler,
-  State,
-  PanGestureHandlerStateChangeEvent,
-  PanGestureHandlerGestureEvent,
+  Gesture,
+  GestureDetector,
 } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDecay,
+  runOnJS,
+  clamp,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../types/BuJo';
 import { BuJoEntryItem } from './BuJoEntryItem';
@@ -35,6 +40,17 @@ interface SwipeableEntryItemProps {
   isCompact?: boolean;
 }
 
+// Industry-standard spring configuration based on research
+const SPRING_CONFIG = {
+  stiffness: 170,   // iOS/Android standard
+  damping: 26,      // Smooth, not snappy
+  mass: 1,          // Natural weight
+} as const;
+
+// Velocity threshold for natural gesture recognition  
+const VELOCITY_THRESHOLD = 500;
+const SWIPE_THRESHOLD = 40;
+
 export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   entry,
   onSwipeAction,
@@ -43,130 +59,16 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   isCompact = false,
 }) => {
   const { theme } = useTheme();
-  const translateX = useRef(new Animated.Value(0)).current;
-  const actionOpacity = useRef(new Animated.Value(0)).current;
-  const currentAction = useRef<SwipeAction | null>(null);
   
-  // Track which side is currently revealed
-  const [revealedSide, setRevealedSide] = useState<'none' | 'left' | 'right'>('none');
+  // Modern Reanimated v3 shared values (run on UI thread)
+  const translateX = useSharedValue(0);
+  const isSwipingLeft = useSharedValue(false);
+  const isSwipingRight = useSharedValue(false);
   
-  // Memoize swipe config to prevent unnecessary recalculations
+  // Memoize swipe config for performance
   const swipeConfig = useMemo(() => getSwipeConfig(entry), [entry.type, entry.status]);
-  
-  // Cleanup animations on unmount
-  useEffect(() => {
-    return () => {
-      translateX.stopAnimation();
-      actionOpacity.stopAnimation();
-    };
-  }, [translateX, actionOpacity]);
 
-  const handleGestureEvent = (event: PanGestureHandlerGestureEvent) => {
-    const { translationX, velocityX } = event.nativeEvent;
-    
-    // Apply gentle resistance for smoother feel (like paper friction)
-    const resistance = 0.8; // Slightly reduce direct translation for smoother feel
-    const adjustedTranslation = translationX * resistance;
-    
-    // Limit swipe distance with smooth clamping
-    const clampedTranslation = Math.max(
-      -SWIPE_THRESHOLDS.MAX,
-      Math.min(SWIPE_THRESHOLDS.MAX, adjustedTranslation)
-    );
-    
-    translateX.setValue(clampedTranslation);
-    
-    // Get current action and update opacity
-    const action = getCurrentAction(clampedTranslation, swipeConfig);
-    currentAction.current = action;
-    
-    if (action) {
-      const threshold = action.threshold;
-      const progress = Math.abs(clampedTranslation) / threshold;
-      actionOpacity.setValue(Math.min(1, progress));
-    } else {
-      actionOpacity.setValue(0);
-    }
-  };
-
-  const handleStateChange = (event: PanGestureHandlerStateChangeEvent) => {
-    if (event.nativeEvent.state === State.END) {
-      const { translationX, velocityX } = event.nativeEvent;
-      
-      const leftRevealed = Math.max(0, translationX);
-      const rightRevealed = Math.max(0, -translationX);
-      
-      const leftActions = getLeftActions();
-      const rightActions = getRightActions();
-      
-      // Calculate total widths for each side
-      const leftWidth = leftActions.length * 80;
-      const rightWidth = rightActions.length * 80;
-      
-      // Add velocity consideration for more responsive feel
-      const velocityFactor = Math.abs(velocityX) > 500 ? 0.7 : 1; // Lower threshold for fast swipes
-      const leftThreshold = 40 * velocityFactor;
-      const rightThreshold = 40 * velocityFactor;
-      
-      // Toggle behavior: swipe same direction to close, different direction to open
-      if (leftRevealed > leftThreshold && leftActions.length > 0) {
-        if (revealedSide === 'left') {
-          // Already showing left actions - close them with smooth animation
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: false,
-            tension: 120,
-            friction: 12,
-            mass: 1.2,
-          }).start();
-          setRevealedSide('none');
-        } else {
-          // Show left actions with smooth, paper-like animation
-          Animated.spring(translateX, {
-            toValue: leftWidth,
-            useNativeDriver: false,
-            tension: 120, // Reduced tension for smoother motion
-            friction: 12, // Increased friction for less bounce
-            mass: 1.2,   // Added mass for more realistic feel
-          }).start();
-          setRevealedSide('left');
-        }
-      } else if (rightRevealed > rightThreshold && rightActions.length > 0) {
-        if (revealedSide === 'right') {
-          // Already showing right actions - close them with smooth animation
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: false,
-            tension: 120,
-            friction: 12,
-            mass: 1.2,
-          }).start();
-          setRevealedSide('none');
-        } else {
-          // Show right actions with smooth, paper-like animation
-          Animated.spring(translateX, {
-            toValue: -rightWidth,
-            useNativeDriver: false,
-            tension: 120,
-            friction: 12,
-            mass: 1.2,
-          }).start();
-          setRevealedSide('right');
-        }
-      } else {
-        // Not enough swipe distance - gently return to center
-        Animated.spring(translateX, {
-          toValue: 0,
-          useNativeDriver: false,
-          tension: 120,
-          friction: 12,
-          mass: 1.2,
-        }).start();
-        setRevealedSide('none');
-      }
-    }
-  };
-
+  // Helper functions for action arrays
   const getLeftActions = () => {
     const { leftShort, leftLong } = swipeConfig;
     const actions = [];
@@ -174,6 +76,101 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
     if (leftLong) actions.push(leftLong);
     return actions;
   };
+
+  const getRightActions = () => {
+    const { rightShort, rightLong } = swipeConfig;
+    const actions = [];
+    if (rightShort) actions.push(rightShort);
+    if (rightLong) actions.push(rightLong);
+    return actions;
+  };
+
+  // Modern Gesture.Pan() with industry-standard implementation
+  const panGesture = Gesture.Pan()
+    .onChange((event) => {
+      'worklet';
+      // Direct 1:1 translation (no artificial resistance) for natural feel
+      const clampedTranslation = clamp(
+        event.translationX,
+        -SWIPE_THRESHOLDS.MAX,
+        SWIPE_THRESHOLDS.MAX
+      );
+      
+      translateX.value = clampedTranslation;
+      
+      // Track swipe direction for visual feedback
+      isSwipingLeft.value = clampedTranslation > 20;
+      isSwipingRight.value = clampedTranslation < -20;
+    })
+    .onFinalize((event) => {
+      'worklet';
+      const { velocityX, translationX } = event;
+      const leftActions = runOnJS(getLeftActions)();
+      const rightActions = runOnJS(getRightActions)();
+      
+      // Smart velocity-based threshold (fast swipes need less distance)
+      const velocityFactor = Math.abs(velocityX) > VELOCITY_THRESHOLD ? 0.7 : 1;
+      const effectiveThreshold = SWIPE_THRESHOLD * velocityFactor;
+      
+      const leftSwipe = translationX > effectiveThreshold;
+      const rightSwipe = translationX < -effectiveThreshold;
+      
+      if (leftSwipe && leftActions.length > 0) {
+        // Show left actions with smooth spring
+        const targetX = leftActions.length * 80;
+        translateX.value = withSpring(targetX, SPRING_CONFIG);
+      } else if (rightSwipe && rightActions.length > 0) {
+        // Show right actions with smooth spring  
+        const targetX = -(rightActions.length * 80);
+        translateX.value = withSpring(targetX, SPRING_CONFIG);
+      } else {
+        // Use withDecay for natural velocity continuation, then spring back
+        translateX.value = withDecay({
+          velocity: velocityX,
+          deceleration: 0.998,
+          clamp: [-SWIPE_THRESHOLDS.MAX, SWIPE_THRESHOLDS.MAX],
+        }, () => {
+          // After decay, smoothly return to center
+          translateX.value = withSpring(0, SPRING_CONFIG);
+        });
+      }
+      
+      // Reset swipe direction indicators
+      isSwipingLeft.value = false;
+      isSwipingRight.value = false;
+    });
+
+  // Handle action button presses
+  const handleActionPress = (action: SwipeAction) => {
+    // Smooth animation back to center using modern spring config
+    translateX.value = withSpring(0, SPRING_CONFIG, () => {
+      // Execute action after animation completes
+      runOnJS(onSwipeAction)(entry, { action: action.action, key: action.key });
+    });
+  };
+
+  // Modern useAnimatedStyle for smooth UI thread animations
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  }, []);
+
+  const leftActionsStyle = useAnimatedStyle(() => {
+    const opacity = isSwipingLeft.value ? 1 : 0;
+    return {
+      opacity,
+      transform: [{ scale: isSwipingLeft.value ? 1 : 0.9 }],
+    };
+  }, []);
+
+  const rightActionsStyle = useAnimatedStyle(() => {
+    const opacity = isSwipingRight.value ? 1 : 0;
+    return {
+      opacity,
+      transform: [{ scale: isSwipingRight.value ? 1 : 0.9 }],
+    };
+  }, []);
 
   const renderLeftActions = () => {
     const actions = getLeftActions();
@@ -194,18 +191,7 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
           >
             <Pressable
               style={styles.actionPressable}
-              onPress={() => {
-                onSwipeAction(entry, { action: action.action, key: action.key });
-                // Gently animate back to closed position with smooth paper feel
-                Animated.spring(translateX, {
-                  toValue: 0,
-                  useNativeDriver: false,
-                  tension: 120,
-                  friction: 12,
-                  mass: 1.2,
-                }).start();
-                setRevealedSide('none');
-              }}
+              onPress={() => handleActionPress(action)}
             >
               <Ionicons name={action.icon as any} size={20} color={action.color} />
               <Text style={[styles.actionText, { color: action.color }]}>
@@ -245,18 +231,7 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
           >
             <Pressable
               style={styles.actionPressable}
-              onPress={() => {
-                onSwipeAction(entry, { action: action.action, key: action.key });
-                // Gently animate back to closed position with smooth paper feel
-                Animated.spring(translateX, {
-                  toValue: 0,
-                  useNativeDriver: false,
-                  tension: 120,
-                  friction: 12,
-                  mass: 1.2,
-                }).start();
-                setRevealedSide('none');
-              }}
+              onPress={() => handleActionPress(action)}
             >
               <Ionicons name={action.icon as any} size={20} color={action.color} />
               <Text style={[styles.actionText, { color: action.color }]}>
@@ -273,22 +248,23 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
     <View style={[styles.container, {
       backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
     }]}>
-      {/* Background Actions */}
-      {renderLeftActions()}
-      {renderRightActions()}
+      {/* Left Actions */}
+      <Animated.View style={[styles.leftActions, leftActionsStyle]}>
+        {renderLeftActions()}
+      </Animated.View>
       
-      {/* Swipeable Entry */}
-      <PanGestureHandler
-        onGestureEvent={handleGestureEvent}
-        onHandlerStateChange={handleStateChange}
-        activeOffsetX={[-10, 10]}
-        failOffsetY={[-5, 5]}
-      >
+      {/* Right Actions */}
+      <Animated.View style={[styles.rightActions, rightActionsStyle]}>
+        {renderRightActions()}
+      </Animated.View>
+      
+      {/* Main Content with Modern Gesture Detection */}
+      <GestureDetector gesture={panGesture}>
         <Animated.View
           style={[
             styles.entryContainer,
+            animatedStyle,
             {
-              transform: [{ translateX }],
               backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
             },
           ]}
@@ -300,7 +276,7 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
             isCompact={isCompact}
           />
         </Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
     </View>
   );
 };
@@ -323,12 +299,24 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   leftActions: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     left: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-start',
+    zIndex: 1,
   },
   rightActions: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
+    zIndex: 1,
   },
   actionButton: {
     width: 80,
