@@ -187,6 +187,153 @@ export const BuJoGuideScreen: React.FC<BuJoGuideScreenProps> = ({ navigation }) 
           </View>
         </Card>
 
+        {/* Entry Type Relationships */}
+        <Card variant="elevated" padding="lg" style={styles.section}>
+          <Typography variant="title" style={styles.sectionTitle}>Entry Type Relationships</Typography>
+          <Typography variant="body" style={styles.text}>
+            Understanding how different entry types connect and flow into each other is key to mastering 
+            the bullet journal methodology. Here's the BuJo Pro hierarchy and relationships:
+          </Typography>
+          
+          {/* The Core Hierarchy */}
+          <View style={styles.hierarchyContainer}>
+            <Typography variant="subtitle" style={styles.hierarchyTitle}>The Fundamental Hierarchy</Typography>
+            
+            <View style={styles.hierarchyItem}>
+              <View style={styles.hierarchyRank}>
+                <Typography variant="caption" style={styles.rankNumber}>1</Typography>
+              </View>
+              <View style={styles.hierarchyContent}>
+                <Typography variant="headline" style={styles.hierarchyItemTitle}>
+                  • Tasks - The CORE of BuJo
+                </Typography>
+                <Typography variant="body" style={styles.hierarchyDescription}>
+                  Only actionable entries with full state transitions (complete, migrate, schedule, cancel). 
+                  Can spawn from any other entry type.
+                </Typography>
+                <Typography variant="caption" style={styles.swipeHint}>
+                  Swipe actions: Complete, Migrate (>), Schedule, Cancel (✕)
+                </Typography>
+              </View>
+            </View>
+            
+            <View style={styles.hierarchyItem}>
+              <View style={styles.hierarchyRank}>
+                <Typography variant="caption" style={styles.rankNumber}>2</Typography>
+              </View>
+              <View style={styles.hierarchyContent}>
+                <Typography variant="headline" style={styles.hierarchyItemTitle}>
+                  ○ Events - Time-bound occurrences
+                </Typography>
+                <Typography variant="body" style={styles.hierarchyDescription}>
+                  Immutable once logged (events happen or don't). Often generate follow-up tasks.
+                </Typography>
+                <Typography variant="caption" style={styles.swipeHint}>
+                  Swipe actions: Attend, Add to Calendar, Set Reminder
+                </Typography>
+              </View>
+            </View>
+            
+            <View style={styles.hierarchyItem}>
+              <View style={styles.hierarchyRank}>
+                <Typography variant="caption" style={styles.rankNumber}>3</Typography>
+              </View>
+              <View style={styles.hierarchyContent}>
+                <Typography variant="headline" style={styles.hierarchyItemTitle}>
+                  —★& Notes + Inspiration + Research
+                </Typography>
+                <Typography variant="body" style={styles.hierarchyDescription}>
+                  Information capture family. Research and Inspiration are specialized notes that 
+                  often spawn tasks as ideas develop.
+                </Typography>
+                <Typography variant="caption" style={styles.swipeHint}>
+                  Swipe actions: Convert to Task, Archive, Add to Collection
+                </Typography>
+              </View>
+            </View>
+            
+            <View style={styles.hierarchyItem}>
+              <View style={styles.hierarchyRank}>
+                <Typography variant="caption" style={styles.rankNumber}>4</Typography>
+              </View>
+              <View style={styles.hierarchyContent}>
+                <Typography variant="headline" style={styles.hierarchyItemTitle}>
+                  ◇ Memory - Reflective practice
+                </Typography>
+                <Typography variant="body" style={styles.hierarchyDescription}>
+                  Gratitude entries and special moments. Modern BuJo addition for wellness. 
+                  Standalone reflective practice, may spawn gratitude-related tasks.
+                </Typography>
+                <Typography variant="caption" style={styles.swipeHint}>
+                  Swipe actions: Add Photo, Gratitude Log, Share Memory
+                </Typography>
+              </View>
+            </View>
+            
+            <View style={styles.hierarchyItem}>
+              <View style={styles.hierarchyRank}>
+                <Typography variant="caption" style={styles.rankNumber}>5</Typography>
+              </View>
+              <View style={styles.hierarchyContent}>
+                <Typography variant="headline" style={styles.hierarchyItemTitle}>
+                  Custom - User-defined signifiers
+                </Typography>
+                <Typography variant="body" style={styles.hierarchyDescription}>
+                  Your personal notation system. Actions depend on your signifier's meaning—
+                  could be actionable like tasks or informational like notes.
+                </Typography>
+                <Typography variant="caption" style={styles.swipeHint}>
+                  Swipe actions: Edit, Delete (adapts to your meaning)
+                </Typography>
+              </View>
+            </View>
+          </View>
+          
+          {/* Flow Relationships */}
+          <View style={styles.flowContainer}>
+            <Typography variant="subtitle" style={styles.flowTitle}>Natural Entry Flow</Typography>
+            
+            <View style={styles.flowItem}>
+              <View style={styles.flowArrow}>
+                <Ionicons name="arrow-forward" size={16} color="#007AFF" />
+              </View>
+              <Typography variant="body" style={styles.flowText}>
+                <Typography variant="headline" style={styles.flowSource}>Ideas & Information</Typography> → 
+                <Typography variant="headline" style={styles.flowTarget}> Tasks</Typography>
+              </Typography>
+              <Typography variant="caption" style={styles.flowDescription}>
+                Notes, Inspiration, and Research naturally evolve into actionable tasks
+              </Typography>
+            </View>
+            
+            <View style={styles.flowItem}>
+              <View style={styles.flowArrow}>
+                <Ionicons name="arrow-forward" size={16} color="#007AFF" />
+              </View>
+              <Typography variant="body" style={styles.flowText}>
+                <Typography variant="headline" style={styles.flowSource}>Events</Typography> → 
+                <Typography variant="headline" style={styles.flowTarget}> Tasks</Typography>
+              </Typography>
+              <Typography variant="caption" style={styles.flowDescription}>
+                Meetings and appointments often generate follow-up actions
+              </Typography>
+            </View>
+            
+            <View style={styles.flowItem}>
+              <View style={styles.flowArrow}>
+                <Ionicons name="remove" size={16} color="#8E8E93" />
+              </View>
+              <Typography variant="body" style={styles.flowText}>
+                <Typography variant="headline" style={styles.flowSource}>Memory</Typography> → 
+                <Typography variant="headline" style={styles.flowStandalone}> Standalone</Typography>
+              </Typography>
+              <Typography variant="caption" style={styles.flowDescription}>
+                Reflective practice exists independently for wellness and gratitude
+              </Typography>
+            </View>
+          </View>
+        </Card>
+
         {/* Interactive Examples */}
         <Card variant="elevated" padding="lg" style={styles.section}>
           <Typography variant="title" style={styles.sectionTitle}>Interactive Examples</Typography>
@@ -913,5 +1060,105 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     lineHeight: 20,
+  },
+  // Hierarchy Styles
+  hierarchyContainer: {
+    marginTop: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  hierarchyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  hierarchyItem: {
+    flexDirection: 'row',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+    alignItems: 'flex-start',
+  },
+  hierarchyRank: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
+    marginTop: 2,
+  },
+  rankNumber: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  hierarchyContent: {
+    flex: 1,
+  },
+  hierarchyItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  hierarchyDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#666666',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  swipeHint: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
+    backgroundColor: '#F0F8FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  // Flow Styles
+  flowContainer: {
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E7',
+  },
+  flowTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  flowItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  flowArrow: {
+    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
+    marginTop: 2,
+  },
+  flowText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  flowSource: {
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  flowTarget: {
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  flowStandalone: {
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  flowDescription: {
+    fontSize: 13,
+    color: '#666666',
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
+    fontStyle: 'italic',
   },
 });
