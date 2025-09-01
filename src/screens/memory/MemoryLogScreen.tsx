@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -319,6 +320,7 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
 
   return (
     <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <Card style={[styles.header, {
         backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
@@ -585,11 +587,15 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
           </ScrollView>
         </PaperBackground>
       </Modal>
+      </SafeAreaView>
     </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
