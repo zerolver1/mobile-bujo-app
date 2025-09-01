@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
 import { BuJoEntryItem } from '../../components/BuJoEntryItem';
@@ -47,6 +48,8 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [useSwipeableEntries, setUseSwipeableEntries] = useState(true);
   const [showStats, setShowStats] = useState(true);
+  
+  const insets = useSafeAreaInsets();
 
   // Initialize swipe gestures
   const { handleSwipeAction, undoLastAction, hasUndo } = useSwipeGestures({
@@ -442,7 +445,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
       
       {/* Floating Action Button for Quick Capture - Outside SafeAreaView */}
       <TouchableOpacity 
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + 80 }]} // 80px for tab bar height + margin
         onPress={handleAddQuickEntry}
         activeOpacity={0.8}
       >
@@ -450,7 +453,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </View>
         <Typography variant="caption" style={styles.fabLabel}>
-          Quick Log
+          Log
         </Typography>
       </TouchableOpacity>
     </PaperBackground>
@@ -605,10 +608,9 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24, // Fixed value for reliable positioning
-    right: 20, // Fixed value for reliable positioning
+    right: 20,
     alignItems: 'center',
-    zIndex: 1000, // Ensure it's above other content
+    zIndex: 1000,
     shadowColor: 'rgba(15, 42, 68, 0.4)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
