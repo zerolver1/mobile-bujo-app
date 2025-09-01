@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../../types/BuJo';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { useTheme } from '../../theme';
-import { PaperBackground, PaperButton, Typography, Card } from '../../components/ui/paperComponents';
+import { PaperBackground, PaperButton, Typography, PAPER_DESIGN_TOKENS } from '../../components/ui/paperComponents';
 import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
 import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
@@ -31,7 +31,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   const editEntry = route?.params?.editEntry;
   const [content, setContent] = useState(editEntry?.content || '');
   const [selectedBullet, setSelectedBullet] = useState(editEntry ? getBulletIndex(editEntry) : 0);
-  const [priority, setPriority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
+  const [priority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
   const [targetDate, setTargetDate] = useState(editEntry?.collectionDate || new Date().toISOString().split('T')[0]);
   const { addEntry, updateEntry } = useBuJoStore();
 
@@ -99,7 +99,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   ];
 
   const currentBullet = bullets[selectedBullet];
-  const currentPriority = priorities.find(p => p.level === priority) || priorities[0];
+  // const currentPriority = priorities.find(p => p.level === priority) || priorities[0]; // Not used in simplified UI
 
   const extractTags = (text: string): string[] => {
     const matches = text.match(/#([a-zA-Z0-9_]+)/g);
@@ -196,189 +196,126 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   };
 
   return (
-    <PaperBackground variant="lined" showMargin={false} intensity="light">
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
       <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <Card variant="elevated" padding="md" style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Typography variant="callout" color="textSecondary">Cancel</Typography>
+        {/* Simplified Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelButton}>
+            <Ionicons name="close" size={24} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
           </TouchableOpacity>
-          <Typography variant="headline" color="text">
-            {editEntry ? 'Edit Entry' : 'Quick Capture'}
+          <Typography variant="h2" style={styles.headerTitle}>
+            {editEntry ? 'Edit Entry' : 'New Entry'}
           </Typography>
-          <PaperButton 
-            variant="ink" 
-            size="sm" 
-            onPress={handleSave}
-            style={styles.saveButtonContainer}
-          >
-            <BuJoSymbol type={currentBullet.type} status={currentBullet.status} size="sm" />
-            <Typography variant="callout" style={styles.saveButtonText}>
-              Save {currentBullet.label}
-            </Typography>
-          </PaperButton>
-        </Card>
+          <View style={styles.headerSpacer} />
+        </View>
 
-        <ScrollView style={styles.content}>
-          {/* Bullet Type Selection */}
-          <Card variant="elevated" padding="lg" style={styles.section}>
-            <Typography variant="title3" color="text" style={styles.sectionTitle}>Entry Type</Typography>
-            <View style={styles.bulletGrid}>
-              {bullets.map((bullet, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.bulletOption,
-                    selectedBullet === index && styles.selectedBulletOption
-                  ]}
-                  onPress={() => setSelectedBullet(index)}
-                >
-                  <BuJoSymbol 
-                    type={bullet.type} 
-                    status={bullet.status} 
-                    size="sm"
-                    style={styles.bulletSymbolContainer}
-                  />
-                  <Typography 
-                    variant="footnote" 
-                    style={[
-                      styles.bulletLabel,
-                      selectedBullet === index && { 
-                        color: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
-                      }
-                    ]}
-                  >
-                    {bullet.label}
-                  </Typography>
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            <Card variant="flat" padding="md" style={styles.bulletDescription}>
-              <Typography variant="footnote" color="textSecondary">
-                {currentBullet.description}
-              </Typography>
-            </Card>
-          </Card>
-
-          {/* Priority Selection (for tasks only) */}
-          {currentBullet.type === 'task' && (
-            <Card variant="elevated" padding="lg" style={styles.section}>
-              <Typography variant="title3" color="text" style={styles.sectionTitle}>Priority</Typography>
-              <View style={styles.priorityRow}>
-                {priorities.map((priorityOption) => (
-                  <TouchableOpacity
-                    key={priorityOption.level}
-                    style={[
-                      styles.priorityOption,
-                      priority === priorityOption.level && styles.selectedPriorityOption
-                    ]}
-                    onPress={() => setPriority(priorityOption.level)}
-                  >
-                    {priorityOption.symbol ? (
-                      <Typography 
-                        variant="callout" 
-                        style={[styles.prioritySymbol, { color: priorityOption.color }]}
-                      >
-                        {priorityOption.symbol}
-                      </Typography>
-                    ) : (
-                      <View style={styles.noPrioritySymbol} />
-                    )}
-                    <Typography 
-                      variant="caption1" 
-                      style={[
-                        styles.priorityLabel,
-                        priority === priorityOption.level && { 
-                          color: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
-                        }
-                      ]}
-                    >
-                      {priorityOption.label}
-                    </Typography>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Card>
-          )}
-
-          {/* Content Input */}
-          <Card variant="elevated" padding="lg" style={styles.section}>
-            <Typography variant="title3" color="text" style={styles.sectionTitle}>Content</Typography>
+        {/* Hero Content Input - This is the main focus */}
+        <View style={styles.heroSection}>
+          <View style={styles.entryLine}>
+            <BuJoSymbol 
+              type={currentBullet.type} 
+              status={currentBullet.status} 
+              size="md"
+              style={styles.leadingBullet}
+            />
             <TextInput
               style={[
-                styles.contentInput,
+                styles.heroInput,
                 {
-                  backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8'),
-                  borderColor: safeThemeAccess(theme, t => t.colors.border, '#E8E3D5'),
                   color: safeThemeAccess(theme, t => t.colors.text, '#2B2B2B')
                 }
               ]}
               value={content}
               onChangeText={setContent}
-              placeholder={`Enter your ${currentBullet.label.toLowerCase()}...`}
-              placeholderTextColor={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')}
+              placeholder="What's on your mind?"
+              placeholderTextColor={safeThemeAccess(theme, t => t.colors.textSecondary, '#9CA3AF')}
               multiline
               autoFocus={!editEntry}
               textAlignVertical="top"
             />
-            <Typography variant="caption1" color="textSecondary" style={styles.helpText}>
-              Use #tags and @contexts to organize your entries
-            </Typography>
-          </Card>
+          </View>
+        </View>
 
-          {/* Date Selection */}
-          <Card variant="elevated" padding="lg" style={styles.section}>
-            <Typography variant="title3" color="text" style={styles.sectionTitle}>Date</Typography>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
-              {getDateOptions().map((date) => (
+        {/* Quick Actions Bar */}
+        <View style={styles.actionsBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actionsContent}>
+            {/* Common Bullet Types - Just the essentials */}
+            {[0, 5, 6].map((bulletIndex) => { // Task, Event, Note
+              const bullet = bullets[bulletIndex];
+              return (
                 <TouchableOpacity
-                  key={date}
+                  key={bulletIndex}
                   style={[
-                    styles.dateOption,
-                    targetDate === date && styles.selectedDateOption
+                    styles.quickBullet,
+                    selectedBullet === bulletIndex && styles.selectedQuickBullet
                   ]}
-                  onPress={() => setTargetDate(date)}
+                  onPress={() => setSelectedBullet(bulletIndex)}
                 >
-                  <Typography 
-                    variant="footnote" 
-                    style={[
-                      styles.dateLabel,
-                      targetDate === date && { 
-                        color: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
-                      }
-                    ]}
-                  >
-                    {formatDate(date)}
+                  <BuJoSymbol 
+                    type={bullet.type} 
+                    status={bullet.status} 
+                    size="sm"
+                  />
+                  <Typography variant="caption" style={styles.quickBulletLabel}>
+                    {bullet.label}
                   </Typography>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Card>
-
-          {/* Preview */}
-          <Card variant="elevated" padding="lg" style={styles.section}>
-            <Typography variant="title3" color="text" style={styles.sectionTitle}>Preview</Typography>
-            <Card variant="flat" padding="md" style={styles.previewContainer}>
-              <BuJoSymbol 
-                type={currentBullet.type} 
-                status={currentBullet.status} 
-                size="md"
-              />
-              {currentPriority.symbol && (
-                <Typography 
-                  variant="callout" 
-                  style={[styles.prioritySymbol, { color: currentPriority.color }]}
-                >
-                  {currentPriority.symbol}
-                </Typography>
-              )}
-              <Typography variant="callout" color="text" style={styles.previewContent}>
-                {content || `Sample ${currentBullet.label.toLowerCase()}...`}
+              );
+            })}
+            
+            {/* More Options Button */}
+            <TouchableOpacity 
+              style={styles.moreButton}
+              onPress={() => {
+                // Show expanded options
+                Alert.alert(
+                  'Entry Types',
+                  'Select the type of entry you want to create:',
+                  bullets.map((bullet, index) => ({
+                    text: `${bullet.symbol} ${bullet.label}`,
+                    onPress: () => setSelectedBullet(index)
+                  })).concat([{ text: 'Cancel', onPress: () => {} }])
+                );
+              }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={20} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+              <Typography variant="caption" style={styles.quickBulletLabel}>
+                More
               </Typography>
-            </Card>
-          </Card>
-        </ScrollView>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* Simple Bottom Bar */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity 
+            style={styles.dateButton}
+            onPress={() => {
+              Alert.alert(
+                'Select Date',
+                'Choose when to add this entry:',
+                getDateOptions().map(date => ({
+                  text: formatDate(date),
+                  onPress: () => setTargetDate(date)
+                })).concat([{ text: 'Cancel', onPress: () => {} }])
+              );
+            }}
+          >
+            <Ionicons name="calendar-outline" size={18} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+            <Typography variant="caption" style={{ color: safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280') }}>
+              {formatDate(targetDate)}
+            </Typography>
+          </TouchableOpacity>
+
+          <PaperButton 
+            variant="ink" 
+            size="lg" 
+            title="Save Entry"
+            onPress={handleSave}
+            style={styles.saveButton}
+            disabled={!content.trim()}
+          />
+        </View>
       </SafeAreaView>
     </PaperBackground>
   );
@@ -387,126 +324,108 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent', // Let PaperBackground show through
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
-  saveButtonText: {
-    marginLeft: 4,
+  cancelButton: {
+    padding: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 20,
   },
-  saveButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    marginBottom: 16,
-  },
-  bulletGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  bulletOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    minWidth: 100,
-    marginBottom: 8,
-    marginRight: 8,
-  },
-  selectedBulletOption: {
-    borderWidth: 2,
-  },
-  bulletSymbolContainer: {
-    marginRight: 8,
-  },
-  bulletLabel: {
-    fontWeight: '500',
-  },
-  bulletDescription: {
-    marginTop: 12,
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  priorityOption: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    flex: 1,
-  },
-  selectedPriorityOption: {
-    borderWidth: 2,
-  },
-  prioritySymbol: {
-    marginBottom: 4,
+  headerTitle: {
     fontWeight: '600',
   },
-  noPrioritySymbol: {
-    width: 16,
-    height: 16,
-    marginBottom: 4,
+  headerSpacer: {
+    width: 44, // Same as cancel button for balance
   },
-  priorityLabel: {
-    fontWeight: '500',
+  heroSection: {
+    flex: 1,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.xl2,
   },
-  contentInput: {
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    minHeight: 120,
-    borderWidth: 1,
-  },
-  helpText: {
-    marginTop: 8,
-    lineHeight: 16,
-  },
-  dateScroll: {
-    flexDirection: 'row',
-  },
-  dateOption: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedDateOption: {
-    borderWidth: 2,
-  },
-  dateLabel: {
-    fontWeight: '500',
-  },
-  previewContainer: {
+  entryLine: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    paddingLeft: 8, // Align with ruled paper margin
   },
-  previewContent: {
+  leadingBullet: {
+    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
+    marginTop: 4, // Align with text baseline
+  },
+  heroInput: {
     flex: 1,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 26,
+    fontFamily: 'System', // Use system font for natural feel
+    minHeight: 200,
+    textAlignVertical: 'top',
+    backgroundColor: 'transparent', // Let paper show through
+    paddingVertical: 0, // Remove default padding
+    paddingHorizontal: 0,
+  },
+  actionsBar: {
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  actionsContent: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    alignItems: 'center',
+  },
+  quickBullet: {
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.md,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+  },
+  selectedQuickBullet: {
+    borderColor: '#0F2A44',
+    backgroundColor: 'rgba(15, 42, 68, 0.08)',
+  },
+  quickBulletLabel: {
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  moreButton: {
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    gap: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  saveButton: {
+    minWidth: 120,
   },
 });
