@@ -46,6 +46,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   const [todaysEntries, setTodaysEntries] = useState<BuJoEntry[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [useSwipeableEntries, setUseSwipeableEntries] = useState(true);
+  const [showStats, setShowStats] = useState(true);
 
   // Initialize swipe gestures
   const { handleSwipeAction, undoLastAction, hasUndo } = useSwipeGestures({
@@ -252,10 +253,29 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
             </TouchableOpacity>
           </View>
           
+          {/* Stats Toggle and Summary */}
           {stats.total > 0 && (
-            <Typography variant="footnote" color="textSecondary" style={styles.statsText}>
-              {stats.total} entries • {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
-            </Typography>
+            <View style={styles.statsHeaderSection}>
+              <TouchableOpacity 
+                style={styles.statsToggleButton} 
+                onPress={() => setShowStats(!showStats)}
+              >
+                <Ionicons 
+                  name={showStats ? "eye" : "eye-off"} 
+                  size={16} 
+                  color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+                />
+                <Typography variant="caption1" style={styles.statsToggleText}>
+                  Stats
+                </Typography>
+              </TouchableOpacity>
+              
+              {showStats && (
+                <Typography variant="footnote" color="textSecondary" style={styles.statsText}>
+                  {stats.total} entries • {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
+                </Typography>
+              )}
+            </View>
           )}
           
           {!isToday && (
@@ -333,7 +353,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         )}
 
         {/* Quick Stats Summary */}
-        {stats.total > 0 && (
+        {stats.total > 0 && showStats && (
           <NotebookCard variant="page" showHoles={false} style={styles.statsContainer}>
             {/* Core BuJo Types Row */}
             <View style={styles.statsRow}>
@@ -457,6 +477,25 @@ const styles = StyleSheet.create({
   },
   statsText: {
     marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  statsHeaderSection: {
+    alignItems: 'center',
+    marginTop: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  statsToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.sm,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.xs,
+    backgroundColor: 'rgba(15, 42, 68, 0.08)',
+    borderRadius: 16,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  statsToggleText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#0F2A44',
   },
   headerActions: {
     flexDirection: 'row',
