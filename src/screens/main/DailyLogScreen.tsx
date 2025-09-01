@@ -48,7 +48,6 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [useSwipeableEntries, setUseSwipeableEntries] = useState(true);
   const [showStats, setShowStats] = useState(true);
-  const [showActionMenu, setShowActionMenu] = useState(false);
   
   const insets = useSafeAreaInsets();
 
@@ -272,108 +271,48 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
                 style={styles.todayButton}
               />
             )}
-            <TouchableOpacity 
-              style={styles.menuButton}
-              onPress={() => setShowActionMenu(!showActionMenu)}
-            >
-              <Ionicons name="ellipsis-horizontal" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
-            </TouchableOpacity>
+            {/* Action Buttons */}
+            <View style={styles.actionButtonsContainer}>
+              {/* Scan Page Button */}
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={handleQuickScan}
+              >
+                <Ionicons name="camera-outline" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              </TouchableOpacity>
+              
+              {/* Swipe Mode Toggle Button */}
+              <TouchableOpacity 
+                style={[styles.actionButton, useSwipeableEntries && styles.actionButtonActive]}
+                onPress={() => setUseSwipeableEntries(!useSwipeableEntries)}
+              >
+                <Ionicons name="swap-horizontal" size={20} color={useSwipeableEntries ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              </TouchableOpacity>
+              
+              {/* Stats Toggle Button */}
+              <TouchableOpacity 
+                style={[styles.actionButton, showStats && styles.actionButtonActive]}
+                onPress={() => setShowStats(!showStats)}
+              >
+                <Ionicons name={showStats ? "eye" : "eye-off"} size={20} color={showStats ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              </TouchableOpacity>
+              
+              {/* Undo Button - only show when available */}
+              {hasUndo && (
+                <TouchableOpacity 
+                  style={[styles.actionButton, { backgroundColor: '#15803D' }]}
+                  onPress={undoLastAction}
+                >
+                  <Ionicons name="arrow-undo" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
         {/* Subtle divider */}
         <View style={styles.headerDivider} />
 
-        {/* Paper-styled Action Menu */}
-        {showActionMenu && (
-          <>
-            <TouchableOpacity 
-              style={styles.menuOverlay}
-              onPress={() => setShowActionMenu(false)}
-              activeOpacity={1}
-            />
-            <View style={styles.actionMenuContainer}>
-              <NotebookCard variant="sticky" style={styles.actionMenu}>
-              <TouchableOpacity 
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowActionMenu(false);
-                  handleQuickScan();
-                }}
-              >
-                <View style={styles.menuItemContent}>
-                  <Ionicons name="camera-outline" size={18} color="#0F2A44" />
-                  <Typography variant="body2" style={styles.menuItemText}>
-                    Scan Page
-                  </Typography>
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity 
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowActionMenu(false);
-                  setUseSwipeableEntries(!useSwipeableEntries);
-                }}
-              >
-                <View style={styles.menuItemContent}>
-                  <Ionicons name="swap-horizontal" size={18} color="#0F2A44" />
-                  <Typography variant="body2" style={styles.menuItemText}>
-                    Swipe Mode
-                  </Typography>
-                  <View style={[styles.toggle, useSwipeableEntries && styles.toggleActive]}>
-                    <Typography variant="caption" style={[styles.toggleText, useSwipeableEntries && styles.toggleTextActive]}>
-                      {useSwipeableEntries ? 'ON' : 'OFF'}
-                    </Typography>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowActionMenu(false);
-                  setShowStats(!showStats);
-                }}
-              >
-                <View style={styles.menuItemContent}>
-                  <Ionicons name={showStats ? "eye" : "eye-off"} size={18} color="#0F2A44" />
-                  <Typography variant="body2" style={styles.menuItemText}>
-                    Stats
-                  </Typography>
-                  <View style={[styles.toggle, showStats && styles.toggleActive]}>
-                    <Typography variant="caption" style={[styles.toggleText, showStats && styles.toggleTextActive]}>
-                      {showStats ? 'ON' : 'OFF'}
-                    </Typography>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {hasUndo && (
-                <>
-                  <View style={styles.menuDivider} />
-                  <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => {
-                      setShowActionMenu(false);
-                      undoLastAction();
-                    }}
-                  >
-                    <View style={styles.menuItemContent}>
-                      <Ionicons name="arrow-undo" size={18} color="#15803D" />
-                      <Typography variant="body2" style={[styles.menuItemText, { color: '#15803D' }]}>
-                        Undo Last Action
-                      </Typography>
-                    </View>
-                  </TouchableOpacity>
-                </>
-              )}
-              </NotebookCard>
-            </View>
-          </>
-        )}
         
         {/* Date Picker Modal */}
         {showDatePicker && (
@@ -562,10 +501,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: PAPER_DESIGN_TOKENS.spacing.sm,
   },
-  menuButton: {
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  actionButton: {
     padding: PAPER_DESIGN_TOKENS.spacing.sm,
     borderRadius: 20,
     backgroundColor: 'rgba(15, 42, 68, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonActive: {
+    backgroundColor: '#0F2A44',
   },
   headerDivider: {
     height: 1,
@@ -655,66 +604,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-  },
-  menuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 998,
-    backgroundColor: 'transparent',
-  },
-  actionMenuContainer: {
-    position: 'absolute',
-    top: 70, // Below header
-    right: PAPER_DESIGN_TOKENS.spacing.xl,
-    zIndex: 999,
-    minWidth: 180,
-  },
-  actionMenu: {
-    transform: [{ rotate: '0.5deg' }], // Slight paper tilt
-  },
-  menuItem: {
-    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
-    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
-  },
-  menuItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: PAPER_DESIGN_TOKENS.spacing.sm,
-  },
-  menuItemText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#2B2B2B',
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: 'rgba(15, 42, 68, 0.15)',
-    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
-    marginVertical: PAPER_DESIGN_TOKENS.spacing.xs,
-  },
-  toggle: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: 'rgba(107, 114, 128, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(107, 114, 128, 0.3)',
-  },
-  toggleActive: {
-    backgroundColor: 'rgba(21, 128, 61, 0.2)',
-    borderColor: 'rgba(21, 128, 61, 0.4)',
-  },
-  toggleText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  toggleTextActive: {
-    color: '#15803D',
   },
   fabInner: {
     width: 56,

@@ -62,8 +62,6 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   
   // Modern Reanimated v3 shared values (run on UI thread)
   const translateX = useSharedValue(0);
-  const isSwipingLeft = useSharedValue(false);
-  const isSwipingRight = useSharedValue(false);
   
   // Memoize swipe config for performance
   const swipeConfig = useMemo(() => getSwipeConfig(entry), [entry.type, entry.status]);
@@ -97,16 +95,14 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
       );
       
       translateX.value = clampedTranslation;
-      
-      // Track swipe direction for visual feedback
-      isSwipingLeft.value = clampedTranslation > 20;
-      isSwipingRight.value = clampedTranslation < -20;
     })
     .onFinalize((event) => {
       'worklet';
       const { velocityX, translationX } = event;
-      const leftActions = runOnJS(getLeftActions)();
-      const rightActions = runOnJS(getRightActions)();
+      
+      // Get actions synchronously within worklet
+      const leftActionsCount = swipeConfig.leftShort ? (swipeConfig.leftLong ? 2 : 1) : 0;
+      const rightActionsCount = swipeConfig.rightShort ? (swipeConfig.rightLong ? 2 : 1) : 0;
       
       // Smart velocity-based threshold (fast swipes need less distance)
       const velocityFactor = Math.abs(velocityX) > VELOCITY_THRESHOLD ? 0.7 : 1;
@@ -115,13 +111,13 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
       const leftSwipe = translationX > effectiveThreshold;
       const rightSwipe = translationX < -effectiveThreshold;
       
-      if (leftSwipe && leftActions.length > 0) {
+      if (leftSwipe && leftActionsCount > 0) {
         // Show left actions with smooth spring
-        const targetX = leftActions.length * 80;
+        const targetX = leftActionsCount * 80;
         translateX.value = withSpring(targetX, SPRING_CONFIG);
-      } else if (rightSwipe && rightActions.length > 0) {
+      } else if (rightSwipe && rightActionsCount > 0) {
         // Show right actions with smooth spring  
-        const targetX = -(rightActions.length * 80);
+        const targetX = -(rightActionsCount * 80);
         translateX.value = withSpring(targetX, SPRING_CONFIG);
       } else {
         // Use withDecay for natural velocity continuation, then spring back
@@ -134,10 +130,6 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
           translateX.value = withSpring(0, SPRING_CONFIG);
         });
       }
-      
-      // Reset swipe direction indicators
-      isSwipingLeft.value = false;
-      isSwipingRight.value = false;
     });
 
   // Handle action button presses
@@ -157,18 +149,20 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   }, []);
 
   const leftActionsStyle = useAnimatedStyle(() => {
-    const opacity = isSwipingLeft.value ? 1 : 0;
+    const isRevealed = translateX.value > 20;
+    const opacity = isRevealed ? 1 : 0;
     return {
       opacity,
-      transform: [{ scale: isSwipingLeft.value ? 1 : 0.9 }],
+      transform: [{ scale: isRevealed ? 1 : 0.9 }],
     };
   }, []);
 
   const rightActionsStyle = useAnimatedStyle(() => {
-    const opacity = isSwipingRight.value ? 1 : 0;
+    const isRevealed = translateX.value < -20;
+    const opacity = isRevealed ? 1 : 0;
     return {
       opacity,
-      transform: [{ scale: isSwipingRight.value ? 1 : 0.9 }],
+      transform: [{ scale: isRevealed ? 1 : 0.9 }],
     };
   }, []);
 

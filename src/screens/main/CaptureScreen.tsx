@@ -7,23 +7,29 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { useSubscriptionStore } from '../../stores/SubscriptionStore';
-// import { mlKitService } from '../../services/ocr/MLKitService';
-// import { mockOCRService } from '../../services/ocr/MockOCRService';
-// import { tesseractService } from '../../services/ocr/TesseractService';
 import { smartOCRService } from '../../services/ocr/SmartOCRService';
 import { enhancedBuJoParser } from '../../services/parser/EnhancedBuJoParser';
 import { OCREntryMapper } from '../../services/utils/OCREntryMapper';
 import { useProcessingStore } from '../../stores/ProcessingStore';
 import { ImageMetadataService, ImageMetadata } from '../../services/utils/ImageMetadataService';
 import { useTheme } from '../../theme';
-import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { PaperBackground } from '../../components/ui/PaperBackground';
+import { PaperButton } from '../../components/ui/PaperButton';
+import { Typography } from '../../components/ui/Typography';
+import { NotebookCard } from '../../components/ui/NotebookCard';
 import { safeThemeAccess } from '../../theme/paperStyleUtils';
+import { PAPER_DESIGN_TOKENS } from '../../theme/paperDesignTokens';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CaptureScreenProps {
   navigation?: any;
@@ -32,8 +38,11 @@ interface CaptureScreenProps {
 export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [processing, setProcessing] = useState(false);
+  const [selectedPageType, setSelectedPageType] = useState<'daily' | 'monthly' | 'collection' | 'auto'>('auto');
+  const [showTips, setShowTips] = useState(false); // Start collapsed
   const cameraRef = useRef<CameraView>(null);
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const { addScan } = useBuJoStore();
   const { canPerformScan, trackScan, triggerPaywall } = useSubscriptionStore();
@@ -128,11 +137,12 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
   const processImage = async (imageUri: string) => {
     try {
       console.log('Starting intelligent OCR processing...');
+      console.log('Selected page type:', selectedPageType);
       
       // Start global processing task
       const taskId = startTask({
         type: 'ocr',
-        stage: 'Analyzing image...',
+        stage: `Analyzing ${selectedPageType === 'auto' ? 'page' : selectedPageType + ' page'}...`,
         progress: 10,
         canNavigate: false,
         imageUri: imageUri
@@ -147,29 +157,34 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         canNavigate: true
       });
 
-      // Extract image metadata including timestamps
+      // Extract image metadata including timestamps and add page type context
       const imageMetadata = await ImageMetadataService.extractMetadata(imageUri);
-      console.log('CaptureScreen: Extracted image metadata:', {
+      console.log('CaptureScreen: Extracted image metadata with page type:', {
         createdAt: imageMetadata.createdAt,
         source: imageMetadata.source,
-        estimatedJournalDate: imageMetadata.estimatedJournalDate
+        estimatedJournalDate: imageMetadata.estimatedJournalDate,
+        pageType: selectedPageType
       });
       
       updateTask(taskId, {
-        stage: 'Processing with Smart OCR...',
+        stage: `Processing ${selectedPageType} page with Smart OCR...`,
         progress: 25,
         canNavigate: true
       });
       
-      // Step 1: Use Smart OCR Service with user speed preference and metadata
-      console.log(`CaptureScreen: Using speed preference: ${speedPreference}`);
+      // Step 1: Use Smart OCR Service with user speed preference, metadata, and page type
+      console.log(`CaptureScreen: Using speed preference: ${speedPreference}, page type: ${selectedPageType}`);
       
       const ocrResult = await smartOCRService.processImage(imageUri, {
         prioritizeAccuracy: speedPreference === 'accuracy',
         prioritizeSpeed: speedPreference === 'speed',
         maxCostTier: 'premium', // Allow all services
         userSpeedPreference: speedPreference, // Pass user preference
-        imageMetadata: imageMetadata // Pass metadata for date context
+        imageMetadata: {
+          ...imageMetadata,
+          pageType: selectedPageType // Add page type to metadata for better OCR context
+        },
+        pageType: selectedPageType // Direct page type hint for OCR service
       });
       
       // Update task with detected service name
@@ -240,15 +255,26 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
         extractedEntries: entries.map(e => e.id),
       });
       
-      // Step 4: Add entries to BuJo store
+      // Step 4: Add entries to BuJo store with page type context
       const { addEntry } = useBuJoStore.getState();
+      
+      // Determine collection type based on page type selection
+      const getCollectionType = (entryCollection?: string) => {
+        switch (selectedPageType) {
+          case 'daily': return 'daily';
+          case 'monthly': return 'monthly';
+          case 'collection': return 'custom';
+          default: return entryCollection || 'daily';
+        }
+      };
+      
       for (const entry of entries) {
         addEntry({
           type: entry.type,
           content: entry.content,
           status: entry.status,
           priority: entry.priority,
-          collection: entry.collection,
+          collection: selectedPageType === 'auto' ? (entry.collection || 'daily') : getCollectionType(entry.collection),
           collectionDate: entry.collectionDate,
           tags: entry.tags,
           contexts: entry.contexts,
@@ -334,14 +360,12 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   if (!permission) {
     return (
-      <PaperBackground>
-        <View style={[styles.permissionContainer, {
-          backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
-        }]}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Typography variant="body" style={[styles.permissionText, {
-            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
-          }]}>Requesting camera permission...</Typography>
+      <PaperBackground variant="subtle" intensity="light">
+        <View style={styles.permissionContainer}>
+          <ActivityIndicator size="large" color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+          <Typography variant="body" color="textSecondary" style={styles.permissionText}>
+            Requesting camera permission...
+          </Typography>
         </View>
       </PaperBackground>
     );
@@ -349,140 +373,324 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
 
   if (!permission.granted) {
     return (
-      <PaperBackground>
-        <View style={[styles.permissionContainer, {
-          backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
-        }]}>
-          <Ionicons name="camera-outline" size={64} color={safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')} />
-          <Typography variant="title" style={[styles.permissionTitle, {
-            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
-          }]}>Camera Access Required</Typography>
-          <Typography variant="body" style={[styles.permissionText, {
-            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
-          }]}>
-            We need camera access to scan your bullet journal pages.
-          </Typography>
-          <PaperButton 
-            variant="primary"
-            onPress={requestPermission}
-          >
-            Grant Permission
-          </PaperButton>
+      <PaperBackground variant="lined" showMargin={true} intensity="light">
+        <View style={styles.permissionContainer}>
+          <NotebookCard variant="page" showHoles={false} style={styles.permissionCard}>
+            <Ionicons name="camera-outline" size={64} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+            <Typography variant="h2" color="text" style={styles.permissionTitle}>
+              Camera Access Required
+            </Typography>
+            <Typography variant="body" color="textSecondary" style={styles.permissionText}>
+              We need camera access to scan your beautiful bullet journal pages.
+            </Typography>
+            <PaperButton 
+              variant="ink"
+              size="md"
+              title="Grant Permission"
+              onPress={requestPermission}
+            />
+          </NotebookCard>
         </View>
       </PaperBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Camera View */}
-      <View style={styles.cameraContainer}>
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-        />
-        
-        {/* Overlay guides with absolute positioning */}
-        <View style={styles.overlay}>
-          <View style={styles.guidesContainer}>
-            <View style={[styles.cornerGuide, styles.topLeft]} />
-            <View style={[styles.cornerGuide, styles.topRight]} />
-            <View style={[styles.cornerGuide, styles.bottomLeft]} />
-            <View style={[styles.cornerGuide, styles.bottomRight]} />
-          </View>
-          <View style={styles.instructionContainer}>
-            <Text style={styles.instructionText}>
-              Position your bullet journal page within the guides
-            </Text>
+    <PaperBackground variant="subtle" intensity="minimal">
+      <SafeAreaView style={styles.container}>
+        {/* Page Type Selector */}
+        <View style={styles.pageTypeContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pageTypeScroller}>
+            {[
+              { type: 'auto', label: 'Auto Detect', icon: 'sparkles' },
+              { type: 'daily', label: 'Daily Log', icon: 'today' },
+              { type: 'monthly', label: 'Monthly', icon: 'calendar' },
+              { type: 'collection', label: 'Collection', icon: 'list' },
+            ].map((item) => (
+              <TouchableOpacity
+                key={item.type}
+                style={[
+                  styles.pageTypeButton,
+                  selectedPageType === item.type && styles.pageTypeButtonActive
+                ]}
+                onPress={() => setSelectedPageType(item.type as any)}
+              >
+                <Ionicons 
+                  name={item.icon as any} 
+                  size={16} 
+                  color={selectedPageType === item.type ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+                />
+                <Typography 
+                  variant="caption1" 
+                  style={[
+                    styles.pageTypeLabel,
+                    { color: selectedPageType === item.type ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.text, '#2B2B2B') }
+                  ]}
+                >
+                  {item.label}
+                </Typography>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Camera View with Paper Frame - Dynamic size based on tips visibility */}
+        <View style={[styles.cameraContainer, !showTips && styles.cameraContainerExpanded]}>
+          <View style={styles.paperFrame}>
+            <CameraView
+              ref={cameraRef}
+              style={styles.camera}
+              facing="back"
+            />
+            
+            {/* Paper-style overlay guides */}
+            <View style={styles.overlay}>
+              {/* Paper texture frame */}
+              <View style={styles.viewfinderFrame}>
+                {/* Washi tape corner guides */}
+                <View style={[styles.washiTape, styles.topLeft]} />
+                <View style={[styles.washiTape, styles.topRight]} />
+                <View style={[styles.washiTape, styles.bottomLeft]} />
+                <View style={[styles.washiTape, styles.bottomRight]} />
+                
+                {/* Page alignment guides based on type */}
+                {selectedPageType === 'daily' && (
+                  <View style={styles.dailyGuides}>
+                    <View style={styles.marginLine} />
+                    <View style={styles.bulletColumn} />
+                  </View>
+                )}
+                
+                {selectedPageType === 'monthly' && (
+                  <View style={styles.monthlyGrid}>
+                    {[...Array(7)].map((_, i) => (
+                      <View key={i} style={styles.gridLine} />
+                    ))}
+                  </View>
+                )}
+              </View>
+              
+              {/* Scanning instruction */}
+              <View style={styles.instructionContainer}>
+                <NotebookCard variant="sticky" style={styles.instructionCard}>
+                  <Typography variant="caption1" color="text">
+                    {selectedPageType === 'daily' ? 'Align daily log with margin guide' :
+                     selectedPageType === 'monthly' ? 'Position monthly spread in frame' :
+                     selectedPageType === 'collection' ? 'Center your collection page' :
+                     'Position your journal page'}
+                  </Typography>
+                </NotebookCard>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity 
-          style={styles.secondaryButton}
-          onPress={handlePickImage}
-          disabled={processing}
-        >
-          <Ionicons name="images-outline" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#007AFF')} />
-          <Typography variant="caption" style={[styles.secondaryButtonText, {
-            color: safeThemeAccess(theme, t => t.colors.primary, '#007AFF')
-          }]}>Library</Typography>
-        </TouchableOpacity>
+        {/* Paper-style Controls */}
+        <View style={styles.controlsContainer}>
+          <NotebookCard variant="page" showHoles={false} style={styles.controlsCard}>
+            <View style={styles.controls}>
+              <PaperButton
+                variant="pencil"
+                size="sm"
+                title="Library"
+                icon="images-outline"
+                onPress={handlePickImage}
+                disabled={processing}
+                style={styles.libraryButton}
+              />
 
-        <TouchableOpacity 
-          style={[styles.captureButton, processing && styles.captureButtonDisabled]}
-          onPress={handleTakePhoto}
-          disabled={processing}
-        >
-          {processing ? (
-            <ActivityIndicator size="large" color="#FFFFFF" />
+              <TouchableOpacity 
+                style={[styles.captureButton, processing && styles.captureButtonDisabled]}
+                onPress={handleTakePhoto}
+                disabled={processing}
+              >
+                {processing ? (
+                  <ActivityIndicator size="large" color={safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')} />
+                ) : (
+                  <View style={styles.inkStamp}>
+                    <Ionicons name="scan" size={32} color="#FFFFFF" />
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <PaperButton
+                variant="pencil"
+                size="sm"
+                title="Tips"
+                icon={showTips ? "eye-off-outline" : "eye-outline"}
+                onPress={() => setShowTips(!showTips)}
+                style={styles.tipsButton}
+              />
+            </View>
+          </NotebookCard>
+        </View>
+
+        {/* Collapsible BuJo-specific Tips */}
+        <View style={[styles.tipsWrapper, { paddingBottom: insets.bottom + 80 }]}>
+          {showTips ? (
+            <NotebookCard variant="sticky" style={styles.tipsContainer}>
+              <TouchableOpacity 
+                style={styles.tipsHeader} 
+                onPress={() => setShowTips(false)}
+                activeOpacity={0.7}
+              >
+                <Typography variant="subtitle2" color="text" style={styles.tipsTitle}>
+                  {selectedPageType === 'daily' ? '📓 Daily Log Tips' :
+                   selectedPageType === 'monthly' ? '📅 Monthly Spread Tips' :
+                   selectedPageType === 'collection' ? '📚 Collection Tips' :
+                   '✨ Smart Scanning Tips'}
+                </Typography>
+                <Ionicons name="chevron-down" size={20} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+              </TouchableOpacity>
+            
+            {selectedPageType === 'daily' && (
+              <>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Include signifiers (•, ×, >, etc.) in frame
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Capture full width for context & tags
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Date header helps with organization
+                </Typography>
+              </>
+            )}
+            
+            {selectedPageType === 'monthly' && (
+              <>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Scan full spread if possible
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Include month title for context
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Grid lines help with alignment
+                </Typography>
+              </>
+            )}
+            
+            {selectedPageType === 'collection' && (
+              <>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Include collection title
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Numbered lists scan better
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Group related items visually
+                </Typography>
+              </>
+            )}
+            
+            {selectedPageType === 'auto' && (
+              <>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Good lighting reduces shadows
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Dark ink (black/blue) scans best
+                </Typography>
+                <Typography variant="caption1" color="textSecondary" style={styles.tipItem}>
+                  • Hold steady for sharp capture
+                </Typography>
+              </>
+            )}
+            </NotebookCard>
           ) : (
-            <View style={styles.captureButtonInner} />
+            <TouchableOpacity 
+              style={styles.tipsToggle} 
+              onPress={() => setShowTips(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="lightbulb-outline" size={18} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              <Typography variant="caption1" color="text" style={styles.tipsToggleText}>
+                Show Tips
+              </Typography>
+              <Ionicons name="chevron-up" size={16} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
-
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Tips */}
-      <Card style={[styles.tipsContainer, {
-        backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#1C1C1E'),
-        borderRadius: 0
-      }]}>
-        <Typography variant="subtitle" style={styles.tipsTitle}>Tips for best results:</Typography>
-        <Typography variant="body" style={styles.tipItem}>• Ensure good lighting</Typography>
-        <Typography variant="body" style={styles.tipItem}>• Keep page flat and straight</Typography>
-        <Typography variant="body" style={styles.tipItem}>• Avoid shadows on the page</Typography>
-      </Card>
-
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
   },
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAF7F0',
-    paddingHorizontal: 40,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl4,
+  },
+  permissionCard: {
+    alignItems: 'center',
+    padding: PAPER_DESIGN_TOKENS.spacing.xl4,
+    maxWidth: 320,
   },
   permissionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1C1C1E',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
     textAlign: 'center',
   },
   permissionText: {
-    fontSize: 16,
-    color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl2,
   },
-  primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+  
+  // Page Type Selector
+  pageTypeContainer: {
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15, 42, 68, 0.1)',
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  pageTypeScroller: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
   },
+  pageTypeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15, 42, 68, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(15, 42, 68, 0.1)',
+  },
+  pageTypeButtonActive: {
+    backgroundColor: '#0F2A44',
+    borderColor: '#0F2A44',
+  },
+  pageTypeLabel: {
+    marginLeft: PAPER_DESIGN_TOKENS.spacing.xs,
+    fontWeight: '500',
+  },
+  
+  // Camera View
   cameraContainer: {
     flex: 1,
-    position: 'relative',
+    padding: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  cameraContainerExpanded: {
+    flex: 1.3, // Take more space when tips are hidden
+  },
+  paperFrame: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    // Paper-like shadow
+    shadowColor: 'rgba(139, 69, 19, 0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   camera: {
     flex: 1,
@@ -493,117 +701,185 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'transparent',
   },
-  guidesContainer: {
+  viewfinderFrame: {
     flex: 1,
-    margin: 40,
+    margin: 20,
   },
-  cornerGuide: {
+  
+  // Washi Tape Corner Guides
+  washiTape: {
     position: 'absolute',
-    width: 30,
-    height: 30,
-    borderColor: '#FFFFFF',
-    borderWidth: 3,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 223, 186, 0.7)', // Warm washi tape color
+    borderWidth: 1,
+    borderColor: 'rgba(210, 180, 140, 0.5)',
   },
   topLeft: {
     top: 0,
     left: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
+    borderBottomRightRadius: 8,
+    transform: [{ rotate: '-2deg' }],
   },
   topRight: {
     top: 0,
     right: 0,
-    borderLeftWidth: 0,
-    borderBottomWidth: 0,
+    borderBottomLeftRadius: 8,
+    transform: [{ rotate: '2deg' }],
   },
   bottomLeft: {
     bottom: 0,
     left: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
+    borderTopRightRadius: 8,
+    transform: [{ rotate: '1deg' }],
   },
   bottomRight: {
     bottom: 0,
     right: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
+    borderTopLeftRadius: 8,
+    transform: [{ rotate: '-1deg' }],
   },
-  instructionContainer: {
+  
+  // Page-specific guides
+  dailyGuides: {
     position: 'absolute',
-    bottom: 120,
+    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
+  },
+  marginLine: {
+    position: 'absolute',
+    left: 60,
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: 'rgba(220, 38, 127, 0.3)', // Pink margin line
+  },
+  bulletColumn: {
+    position: 'absolute',
+    left: 20,
+    top: '30%',
+    bottom: '30%',
+    width: 30,
+    backgroundColor: 'rgba(15, 42, 68, 0.05)',
+    borderRadius: 4,
+  },
+  monthlyGrid: {
+    position: 'absolute',
+    top: '20%',
+    bottom: '20%',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+  gridLine: {
+    width: 1,
+    backgroundColor: 'rgba(15, 42, 68, 0.1)',
+  },
+  
+  // Instructions
+  instructionContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
     alignItems: 'center',
   },
-  instructionText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    textAlign: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  instructionCard: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    backgroundColor: 'rgba(255, 250, 230, 0.95)',
+    transform: [{ rotate: '-0.5deg' }],
+  },
+  
+  // Controls
+  controlsContainer: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  controlsCard: {
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.xl,
+    backgroundColor: 'rgba(245, 242, 232, 0.98)',
   },
   controls: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    paddingVertical: 32,
-    backgroundColor: '#000000',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl2,
   },
-  secondaryButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 60,
-    height: 60,
-  },
-  secondaryButtonText: {
-    color: '#007AFF',
-    fontSize: 12,
-    marginTop: 4,
+  libraryButton: {
+    minWidth: 80,
   },
   captureButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0F2A44',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#E5E5E7',
+    // Ink stamp shadow
+    shadowColor: 'rgba(15, 42, 68, 0.6)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
   captureButtonDisabled: {
     opacity: 0.5,
   },
-  captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
+  inkStamp: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#0F2A44',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E5E5E7',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  placeholder: {
-    width: 60,
-    height: 60,
+  tipsButton: {
+    minWidth: 80,
+  },
+  
+  // Tips
+  tipsWrapper: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   tipsContainer: {
-    backgroundColor: '#1C1C1E',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    padding: PAPER_DESIGN_TOKENS.spacing.xl,
+    backgroundColor: 'rgba(255, 250, 230, 0.95)',
+    transform: [{ rotate: '0.5deg' }],
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
   },
   tipsTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    flex: 1,
   },
   tipItem: {
-    color: '#8E8E93',
-    fontSize: 14,
-    marginBottom: 4,
+    lineHeight: 20,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  tipsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    backgroundColor: 'rgba(245, 242, 232, 0.98)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 42, 68, 0.1)',
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  tipsToggleText: {
+    fontWeight: '500',
   },
 });
