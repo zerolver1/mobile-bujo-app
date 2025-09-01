@@ -438,21 +438,21 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
             />
           </View>
         )}
-
-        {/* Floating Action Button for Quick Capture */}
-        <TouchableOpacity 
-          style={styles.fab}
-          onPress={handleAddQuickEntry}
-          activeOpacity={0.8}
-        >
-          <View style={styles.fabInner}>
-            <Ionicons name="add" size={24} color="#FFFFFF" />
-          </View>
-          <Typography variant="caption" style={styles.fabLabel}>
-            Quick Log
-          </Typography>
-        </TouchableOpacity>
       </SafeAreaView>
+      
+      {/* Floating Action Button for Quick Capture - Outside SafeAreaView */}
+      <TouchableOpacity 
+        style={styles.fab}
+        onPress={handleAddQuickEntry}
+        activeOpacity={0.8}
+      >
+        <View style={styles.fabInner}>
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+        </View>
+        <Typography variant="caption" style={styles.fabLabel}>
+          Quick Log
+        </Typography>
+      </TouchableOpacity>
     </PaperBackground>
   );
 };
@@ -605,8 +605,8 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: PAPER_DESIGN_TOKENS.spacing.xl2, // Higher from bottom for thumb reach
-    right: PAPER_DESIGN_TOKENS.spacing.xl,
+    bottom: 24, // Fixed value for reliable positioning
+    right: 20, // Fixed value for reliable positioning
     alignItems: 'center',
     zIndex: 1000, // Ensure it's above other content
     shadowColor: 'rgba(15, 42, 68, 0.4)',
