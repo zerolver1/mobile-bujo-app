@@ -17,7 +17,6 @@ import {
   safeThemeAccess 
 } from '../../../components/ui/paperComponents';
 import { useTutorialProgress } from '../hooks/useTutorialProgress';
-import { LessonNavigation } from '../components/LessonNavigation';
 import { getNextLessonId, isLastLesson } from '../utils/lessonConfig';
 
 interface CoreSignifiersScreenProps {
@@ -280,16 +279,46 @@ export const CoreSignifiersScreen: React.FC<CoreSignifiersScreenProps> = ({
   return (
     <PaperBackground variant="lined" showMargin={true} intensity="light">
       <View style={styles.container}>
-        <LessonNavigation
-          title="Core Signifiers"
-          currentStep={currentStep + 1}
-          totalSteps={steps.length}
-          onBack={() => navigation.goBack()}
-          onPrevious={currentStep > 0 ? handlePrevious : undefined}
-          onNext={handleNext}
-          onComplete={currentStep === steps.length - 1 ? handleComplete : undefined}
-          nextLabel={currentStep === steps.length - 1 ? "Complete Lesson" : "Next"}
-        />
+        {/* Header */}
+        <Card variant="flat" padding="md" style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Typography variant="headline" color="text" style={styles.headerTitle}>
+              Core Signifiers
+            </Typography>
+            <Typography variant="caption" style={styles.stepIndicator}>
+              Step {currentStep + 1} of {steps.length}
+            </Typography>
+          </View>
+          <View style={{ width: 24 }} />
+        </Card>
+
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[
+              styles.progressFill,
+              { width: `${((currentStep + 1) / steps.length) * 100}%` }
+            ]} />
+          </View>
+          <View style={styles.progressSteps}>
+            {Array.from({ length: steps.length }, (_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressStep,
+                  {
+                    backgroundColor: index < currentStep + 1 
+                      ? '#007AFF' 
+                      : '#E5E5E7'
+                  }
+                ]}
+              />
+            ))}
+          </View>
+        </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <Animated.View style={[styles.stepContainer, { opacity: fadeAnim }]}>
@@ -298,9 +327,42 @@ export const CoreSignifiersScreen: React.FC<CoreSignifiersScreenProps> = ({
             </Typography>
             {steps[currentStep].content}
           </Animated.View>
-          
-          <View style={{ height: 100 }} />
         </ScrollView>
+
+        {/* Navigation Buttons */}
+        <Card variant="flat" padding="md" style={styles.navigationCard}>
+          <View style={styles.navigationButtons}>
+            {currentStep > 0 ? (
+              <PaperButton
+                variant="outline"
+                size="md"
+                title="Previous"
+                onPress={handlePrevious}
+                style={styles.navButton}
+              />
+            ) : (
+              <View style={styles.navButton} />
+            )}
+            
+            {currentStep === steps.length - 1 ? (
+              <PaperButton
+                variant="primary"
+                size="md"
+                title="Complete Lesson"
+                onPress={handleComplete}
+                style={styles.navButton}
+              />
+            ) : (
+              <PaperButton
+                variant="primary"
+                size="md"
+                title="Next"
+                onPress={handleNext}
+                style={styles.navButton}
+              />
+            )}
+          </View>
+        </Card>
       </View>
     </PaperBackground>
   );
@@ -310,9 +372,76 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  stepIndicator: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  progressContainer: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.lg,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#E5E5E7',
+    borderRadius: 2,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 2,
+  },
+  progressSteps: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  progressStep: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   content: {
     flex: 1,
     paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  navigationCard: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  navigationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  navButton: {
+    minWidth: 120,
   },
   stepContainer: {
     marginTop: PAPER_DESIGN_TOKENS.spacing.lg,

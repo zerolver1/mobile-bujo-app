@@ -90,47 +90,42 @@ export const LessonNavigation: React.FC<LessonNavigationProps> = ({
         </View>
       )}
 
-      {/* Navigation Buttons - Fixed at bottom */}
-      <View style={styles.navigationContainer}>
-        <Card variant="flat" padding="md" style={styles.navigationCard}>
-          <View style={styles.navigationButtons}>
-            {onPrevious ? (
-              <PaperButton
-                variant="outline"
-                size="md"
-                title="Previous"
-                onPress={onPrevious}
-                icon="chevron-back"
-                style={styles.navButton}
-              />
-            ) : (
-              <View style={styles.navButton} />
-            )}
-            
-            {onComplete ? (
-              <PaperButton
-                variant="primary"
-                size="md"
-                title={nextLabel}
-                onPress={onComplete}
-                icon="checkmark"
-                style={styles.navButton}
-              />
-            ) : onNext ? (
-              <PaperButton
-                variant="primary"
-                size="md"
-                title={nextLabel}
-                onPress={onNext}
-                icon="chevron-forward"
-                style={styles.navButton}
-              />
-            ) : (
-              <View style={styles.navButton} />
-            )}
-          </View>
-        </Card>
-      </View>
+      {/* Navigation Buttons */}
+      <Card variant="flat" padding="md" style={styles.navigationCard}>
+        <View style={styles.navigationButtons}>
+          {onPrevious ? (
+            <PaperButton
+              variant="outline"
+              size="md"
+              title="Previous"
+              onPress={onPrevious}
+              style={styles.navButton}
+            />
+          ) : (
+            <View style={styles.navButton} />
+          )}
+          
+          {onComplete ? (
+            <PaperButton
+              variant="primary"
+              size="md"
+              title={nextLabel}
+              onPress={onComplete}
+              style={styles.navButton}
+            />
+          ) : onNext ? (
+            <PaperButton
+              variant="primary"
+              size="md"
+              title={nextLabel}
+              onPress={onNext}
+              style={styles.navButton}
+            />
+          ) : (
+            <View style={styles.navButton} />
+          )}
+        </View>
+      </Card>
     </>
   );
 };
@@ -184,22 +179,17 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  navigationContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
-    paddingBottom: PAPER_DESIGN_TOKENS.spacing.xl,
-  },
   navigationCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.lg,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 3,
   },
   navigationButtons: {
     flexDirection: 'row',
