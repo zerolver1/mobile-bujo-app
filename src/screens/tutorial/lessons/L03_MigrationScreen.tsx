@@ -18,6 +18,7 @@ import {
 } from '../../../components/ui/paperComponents';
 import { useTutorialProgress } from '../hooks/useTutorialProgress';
 import { LessonNavigation } from '../components/LessonNavigation';
+import { getNextLessonId, isLastLesson } from '../utils/lessonConfig';
 
 interface MigrationScreenProps {
   navigation: any;
@@ -155,17 +156,18 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({
     
     await completeLesson(lessonId, score);
     
-    // Navigate based on mode
-    if (mode === 'quickStart') {
-      // Quick start complete - return to launch
-      navigation.navigate('TutorialLaunch', { mode });
-    } else {
-      // Continue to next lesson in complete course
+    const nextLessonId = getNextLessonId(lessonId, mode);
+    
+    if (nextLessonId) {
+      // Navigate to next lesson
       navigation.navigate('TutorialLesson', {
-        lessonId: 'collections',
+        lessonId: nextLessonId,
         mode,
         fromGuide,
       });
+    } else {
+      // Last lesson completed, return to launch screen
+      navigation.navigate('TutorialLaunch', { mode });
     }
   };
 

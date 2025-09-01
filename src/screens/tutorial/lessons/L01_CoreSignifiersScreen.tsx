@@ -18,6 +18,7 @@ import {
 } from '../../../components/ui/paperComponents';
 import { useTutorialProgress } from '../hooks/useTutorialProgress';
 import { LessonNavigation } from '../components/LessonNavigation';
+import { getNextLessonId, isLastLesson } from '../utils/lessonConfig';
 
 interface CoreSignifiersScreenProps {
   navigation: any;
@@ -122,14 +123,17 @@ export const CoreSignifiersScreen: React.FC<CoreSignifiersScreenProps> = ({
   const handleComplete = async () => {
     await completeLesson(lessonId, practiceScore);
     
-    // Navigate to next lesson or back to launch
-    if (mode === 'quickStart') {
+    const nextLessonId = getNextLessonId(lessonId, mode);
+    
+    if (nextLessonId) {
+      // Navigate to next lesson
       navigation.navigate('TutorialLesson', {
-        lessonId: 'entry-types',
+        lessonId: nextLessonId,
         mode,
         fromGuide,
       });
     } else {
+      // Last lesson completed, return to launch screen
       navigation.navigate('TutorialLaunch', { mode });
     }
   };

@@ -16,6 +16,7 @@ import {
   safeThemeAccess 
 } from '../../components/ui/paperComponents';
 import { useTutorialProgress } from './hooks/useTutorialProgress';
+import { getLessonList, quickStartLessons, completeLessons } from './utils/lessonConfig';
 
 interface TutorialLaunchScreenProps {
   navigation: any;
@@ -35,23 +36,8 @@ export const TutorialLaunchScreen: React.FC<TutorialLaunchScreenProps> = ({
   const { progress, getOverallProgress, hasStarted } = useTutorialProgress();
   const [selectedPath, setSelectedPath] = useState<'quickStart' | 'complete'>(mode === 'practice' ? 'quickStart' : mode);
 
-  const quickStartLessons = [
-    { id: 'core-signifiers', title: 'Core Signifiers', duration: '5 min', icon: 'radio-button-off' },
-    { id: 'entry-types', title: 'Entry Types', duration: '5 min', icon: 'list' },
-    { id: 'migration', title: 'Migration & States', duration: '5 min', icon: 'arrow-forward' },
-  ];
-
-  const completeLessons = [
-    ...quickStartLessons,
-    { id: 'collections', title: 'Collections & Organization', duration: '8 min', icon: 'folder' },
-    { id: 'modern-extensions', title: 'Modern Extensions', duration: '7 min', icon: 'star' },
-    { id: 'swipe-actions', title: 'Digital Workflows', duration: '10 min', icon: 'swap-horizontal' },
-    { id: 'advanced-practice', title: 'Advanced Practice', duration: '10 min', icon: 'create' },
-    { id: 'mastery-assessment', title: 'Mastery Check', duration: '5 min', icon: 'checkmark-circle' },
-  ];
-
   const getCurrentLessons = () => {
-    return selectedPath === 'quickStart' ? quickStartLessons : completeLessons;
+    return getLessonList(selectedPath);
   };
 
   const getTotalDuration = () => {
@@ -84,6 +70,14 @@ export const TutorialLaunchScreen: React.FC<TutorialLaunchScreenProps> = ({
     navigation.navigate('TutorialPractice', { exerciseType: 'mixed' });
   };
 
+  const handleLessonPress = (lessonId: string) => {
+    navigation.navigate('TutorialLesson', {
+      lessonId,
+      mode: selectedPath,
+      fromGuide: true,
+    });
+  };
+
   const renderLessonList = () => {
     const lessons = getCurrentLessons();
     
@@ -94,7 +88,11 @@ export const TutorialLaunchScreen: React.FC<TutorialLaunchScreenProps> = ({
           const isInProgress = progress[lesson.id]?.started && !isCompleted;
           
           return (
-            <View key={lesson.id} style={styles.lessonItem}>
+            <TouchableOpacity 
+              key={lesson.id} 
+              style={styles.lessonItem}
+              onPress={() => handleLessonPress(lesson.id)}
+            >
               <View style={[
                 styles.lessonNumber, 
                 {
@@ -129,7 +127,8 @@ export const TutorialLaunchScreen: React.FC<TutorialLaunchScreenProps> = ({
                   {lesson.duration}
                 </Typography>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+            </TouchableOpacity>
           );
         })}
       </View>
