@@ -33,7 +33,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   const [selectedBullet, setSelectedBullet] = useState(editEntry ? getBulletIndex(editEntry) : 0);
   const [priority, setPriority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
   const [targetDate, setTargetDate] = useState(editEntry?.collectionDate || new Date().toISOString().split('T')[0]);
-  const [selectedSignifiers, setSelectedSignifiers] = useState<string[]>(editEntry?.signifiers || []);
   const { addEntry, updateEntry } = useBuJoStore();
 
   // Helper function to get bullet index from entry
@@ -99,25 +98,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
       color: safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308') },
   ];
 
-  // BuJo Pro Signifiers for enhanced organization
-  const signifiers = [
-    { symbol: '★', label: 'Important', color: '#EAB308', description: 'High importance marker' },
-    { symbol: '€', label: 'Money', color: '#15803D', description: 'Financial related' },
-    { symbol: '⏰', label: 'Time', color: '#DC2626', description: 'Time-sensitive' },
-    { symbol: '↑', label: 'Energy+', color: '#10B981', description: 'Energy boost' },
-    { symbol: '↓', label: 'Energy-', color: '#F59E0B', description: 'Energy drain' },
-    { symbol: '🎯', label: 'Goal', color: '#7C3AED', description: 'Goal-related' },
-    { symbol: '⚡', label: 'Quick', color: '#F59E0B', description: 'Quick task (< 5 min)' },
-    { symbol: '🔥', label: 'Hot', color: '#DC2626', description: 'Urgent/critical' },
-  ];
-
-  const toggleSignifier = (symbol: string) => {
-    setSelectedSignifiers(prev => 
-      prev.includes(symbol) 
-        ? prev.filter(s => s !== symbol)
-        : [...prev, symbol]
-    );
-  };
 
   const currentBullet = bullets[selectedBullet];
   const currentPriority = priorities.find(p => p.level === priority) || priorities[0];
@@ -149,7 +129,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           content: content.trim(),
           status: currentBullet.status,
           priority,
-          signifiers: selectedSignifiers,
           tags,
           contexts,
           collectionDate: targetDate,
@@ -165,7 +144,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           status: currentBullet.status,
           content: content.trim(),
           priority,
-          signifiers: selectedSignifiers,
           tags,
           contexts,
           collection: 'daily',
@@ -339,32 +317,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           </View>
         )}
 
-        {/* BuJo Pro Signifiers */}
-        <View style={styles.signifiersSection}>
-          <Typography variant="caption" style={styles.signifiersLabel}>Signifiers</Typography>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.signifiersContent}>
-            {signifiers.map((signifier) => (
-              <TouchableOpacity
-                key={signifier.symbol}
-                style={[
-                  styles.signifierOption,
-                  selectedSignifiers.includes(signifier.symbol) && styles.selectedSignifierOption
-                ]}
-                onPress={() => toggleSignifier(signifier.symbol)}
-              >
-                <Typography 
-                  variant="body1" 
-                  style={[styles.signifierSymbol, { color: signifier.color }]}
-                >
-                  {signifier.symbol}
-                </Typography>
-                <Typography variant="caption" style={styles.signifierLabel}>
-                  {signifier.label}
-                </Typography>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
 
         {/* Live Preview */}
         <View style={styles.previewSection}>
@@ -383,18 +335,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
                 {currentPriority.symbol}
               </Typography>
             )}
-            {selectedSignifiers.map((symbol) => {
-              const signifier = signifiers.find(s => s.symbol === symbol);
-              return signifier ? (
-                <Typography 
-                  key={symbol}
-                  variant="body1" 
-                  style={[styles.prioritySymbol, { color: signifier.color }]}
-                >
-                  {signifier.symbol}
-                </Typography>
-              ) : null;
-            })}
             <Typography variant="body1" style={styles.previewContent}>
               {content || `Sample ${currentBullet.label.toLowerCase()}...`}
             </Typography>
@@ -615,48 +555,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontStyle: 'italic',
     opacity: 0.8,
-  },
-  signifiersSection: {
-    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  signifiersLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
-    color: '#6B7280',
-    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
-  },
-  signifiersContent: {
-    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
-    alignItems: 'center',
-  },
-  signifierOption: {
-    alignItems: 'center',
-    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.sm,
-    paddingVertical: PAPER_DESIGN_TOKENS.spacing.xs,
-    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    minWidth: 50,
-  },
-  selectedSignifierOption: {
-    borderColor: '#0F2A44',
-    backgroundColor: 'rgba(15, 42, 68, 0.08)',
-  },
-  signifierSymbol: {
-    fontWeight: '600',
-    fontSize: 16,
-    marginBottom: 2,
-  },
-  signifierLabel: {
-    fontSize: 10,
-    textAlign: 'center',
-    color: '#8E8E93',
   },
 });

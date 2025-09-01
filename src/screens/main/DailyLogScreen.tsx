@@ -229,95 +229,71 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   return (
     <PaperBackground variant="lined" showMargin={true} intensity="light">
       <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <Card variant="flat" padding="md" style={styles.header}>
-        <View style={styles.headerContent}>
+        {/* Streamlined Header */}
+        <View style={styles.header}>
+          {/* Primary Date Navigation */}
           <View style={styles.dateNavigation}>
             <TouchableOpacity 
               style={styles.navButton} 
               onPress={() => navigateDate('prev')}
             >
-              <Ionicons name="chevron-back" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              <Ionicons name="chevron-back" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.dateButton} 
               onPress={() => setShowDatePicker(true)}
             >
-              <Typography variant="body" style={styles.dateText}>{formatDateShort(currentDate)}</Typography>
-              <Typography variant="caption1" style={styles.fullDateText}>{formatDate(currentDate).split(',')[0]}</Typography>
+              <Typography variant="h2" style={styles.dateText}>
+                {formatDateShort(currentDate)}
+              </Typography>
+              <Typography variant="caption" style={styles.weekdayText}>
+                {formatDate(currentDate).split(',')[0]}
+              </Typography>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.navButton} 
               onPress={() => navigateDate('next')}
             >
-              <Ionicons name="chevron-forward" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              <Ionicons name="chevron-forward" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
             </TouchableOpacity>
           </View>
-          
-          {/* Stats Toggle and Summary */}
-          {stats.total > 0 && (
-            <View style={styles.statsHeaderSection}>
-              <TouchableOpacity 
-                style={styles.statsToggleButton} 
-                onPress={() => setShowStats(!showStats)}
-              >
-                <Ionicons 
-                  name={showStats ? "eye" : "eye-off"} 
-                  size={16} 
-                  color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
-                />
-                <Typography variant="caption1" style={styles.statsToggleText}>
-                  Stats
-                </Typography>
-              </TouchableOpacity>
-              
-              {showStats && (
-                <Typography variant="footnote" color="textSecondary" style={styles.statsText}>
-                  {stats.total} entries • {stats.completed}/{stats.tasks} tasks • {stats.completionRate}% complete
-                </Typography>
-              )}
-            </View>
-          )}
-          
-          {!isToday && (
-            <PaperButton 
-              variant="highlight" 
-              size="md" 
-              title="📅 Back to Today" 
-              onPress={goToToday}
-              style={styles.todayButton}
-            />
-          )}
+
+          {/* Action Menu */}
+          <View style={styles.headerActions}>
+            {!isToday && (
+              <PaperButton 
+                variant="highlight" 
+                size="sm" 
+                title="Today" 
+                onPress={goToToday}
+                style={styles.todayButton}
+              />
+            )}
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={() => {
+                Alert.alert(
+                  'Actions',
+                  'Choose an action:',
+                  [
+                    { text: '📸 Scan Page', onPress: handleQuickScan },
+                    { text: `👆 Swipe Mode: ${useSwipeableEntries ? 'ON' : 'OFF'}`, onPress: () => setUseSwipeableEntries(!useSwipeableEntries) },
+                    { text: `👁️ Stats: ${showStats ? 'ON' : 'OFF'}`, onPress: () => setShowStats(!showStats) },
+                    ...(hasUndo ? [{ text: '↩️ Undo Last Action', onPress: undoLastAction }] : []),
+                    { text: 'Cancel', onPress: () => {} },
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <View style={styles.headerActions}>
-          {hasUndo && (
-            <PaperButton 
-              variant="pencil" 
-              size="sm" 
-              icon="arrow-undo" 
-              onPress={undoLastAction}
-              style={styles.undoButton}
-            />
-          )}
-          <PaperButton 
-            variant={useSwipeableEntries ? "highlight" : "pencil"} 
-            size="sm" 
-            icon="swap-horizontal" 
-            onPress={() => setUseSwipeableEntries(!useSwipeableEntries)}
-            style={styles.swipeToggleButton}
-          />
-          <PaperButton 
-            variant="ink" 
-            size="sm" 
-            icon="camera-outline" 
-            onPress={handleQuickScan}
-            style={styles.actionButton}
-          />
-        </View>
-        </Card>
+
+        {/* Subtle divider */}
+        <View style={styles.headerDivider} />
         
         {/* Date Picker Modal */}
         {showDatePicker && (
@@ -329,7 +305,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           />
         )}
       
-        {/* Swipe Tutorial Hint */}
+        {/* Smart Swipe Tutorial Hint - Only for first few entries */}
         {useSwipeableEntries && todaysEntries.length > 0 && todaysEntries.length <= 3 && (
           <NotebookCard variant="sticky" style={styles.swipeHint}>
             <View style={styles.swipeHintContent}>
@@ -341,7 +317,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           </NotebookCard>
         )}
 
-        {/* Quick Stats Summary */}
+        {/* Smart Stats Summary - Auto-hide when no entries */}
         {stats.total > 0 && showStats && (
           <NotebookCard variant="page" showHoles={false} style={styles.statsContainer}>
             {/* Core BuJo Types Row */}
@@ -469,46 +445,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
-    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingTop: PAPER_DESIGN_TOKENS.spacing.lg,
+    paddingBottom: PAPER_DESIGN_TOKENS.spacing.md,
   },
-  headerContent: {
-    flex: 1,
-  },
-  dateText: {
-    fontWeight: '600',
-  },
-  statsText: {
-    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
-  },
-  statsHeaderSection: {
-    alignItems: 'center',
-    marginTop: PAPER_DESIGN_TOKENS.spacing.sm,
-  },
-  statsToggleButton: {
+  dateNavigation: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.sm,
-    paddingVertical: PAPER_DESIGN_TOKENS.spacing.xs,
-    backgroundColor: 'rgba(15, 42, 68, 0.08)',
-    borderRadius: 16,
-    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+    flex: 1,
   },
-  statsToggleText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: '500',
+  navButton: {
+    padding: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 20,
+  },
+  dateButton: {
+    alignItems: 'center',
+    flex: 1,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  dateText: {
+    fontWeight: '700',
+    letterSpacing: -0.5,
     color: '#0F2A44',
+    textAlign: 'center',
+  },
+  weekdayText: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
   },
-  actionButton: {
-    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
+  menuButton: {
+    padding: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15, 42, 68, 0.08)',
   },
-  swipeToggleButton: {
-    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
+  headerDivider: {
+    height: 1,
+    backgroundColor: 'rgba(15, 42, 68, 0.1)',
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   statsContainer: {
     marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
@@ -558,34 +545,6 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     marginTop: PAPER_DESIGN_TOKENS.spacing.md,
-  },
-  dateNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  navButton: {
-    padding: 8,
-    marginHorizontal: 4,
-  },
-  dateButton: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  fullDateText: {
-    marginTop: PAPER_DESIGN_TOKENS.spacing.xs,
-  },
-  todayButton: {
-    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
-    alignSelf: 'center', // Center the button
-    transform: [{ rotate: '1deg' }], // Slight tilt for paper effect
-    shadowColor: 'rgba(217, 119, 6, 0.3)', // Orange highlight shadow
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
   },
   entriesList: {
     flex: 1,
