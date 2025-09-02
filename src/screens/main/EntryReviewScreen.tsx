@@ -14,6 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry, OCRResult } from '../../types/BuJo';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { appleIntegrationService } from '../../services/apple-integration/AppleIntegrationService';
+import { DateSelectionModal } from '../../components/DateSelectionModal';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface EntryReviewScreenProps {
   navigation: any;
@@ -30,6 +35,7 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
   navigation,
   route,
 }) => {
+  const { theme } = useTheme();
   const { imageUri, ocrResult, parsedEntries } = route.params;
   
   // Deserialize dates from navigation params
@@ -49,6 +55,14 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       return acc;
     }, {} as {[id: string]: {type: string, status: string}})
   );
+
+  // Date selection modal state
+  const [dateModalVisible, setDateModalVisible] = useState(false);
+  const [dateModalContext, setDateModalContext] = useState<{
+    type: 'single' | 'batch';
+    entryIndex?: number;
+    targetDate?: string;
+  }>({ type: 'single' });
   
   const { addEntry, updateEntry: updateStoreEntry, addScan } = useBuJoStore();
 
@@ -79,6 +93,60 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
       ocrConfidence: 1.0 // Manual entry has perfect confidence
     };
     setEntries([...entries, newEntry]);
+  };
+
+  // Date selection handlers
+  const handleDateSelect = (entryIndex: number) => {
+    setDateModalContext({
+      type: 'single',
+      entryIndex,
+      targetDate: entries[entryIndex]?.collectionDate,
+    });
+    setDateModalVisible(true);
+  };
+
+  const handleBatchDateSelect = (targetDate: string) => {
+    setDateModalContext({
+      type: 'batch',
+      targetDate,
+    });
+    setDateModalVisible(true);
+  };
+
+  const handleDateModalSelect = (selectedDate: string) => {
+    if (dateModalContext.type === 'single' && dateModalContext.entryIndex !== undefined) {
+      // Update single entry
+      updateEntry(dateModalContext.entryIndex, 'collectionDate', selectedDate);
+    } else if (dateModalContext.type === 'batch') {
+      // Update all entries with the same date as targetDate
+      const targetDate = dateModalContext.targetDate;
+      if (targetDate) {
+        const updatedEntries = entries.map(entry => 
+          entry.collectionDate === targetDate 
+            ? { ...entry, collectionDate: selectedDate }
+            : entry
+        );
+        setEntries(updatedEntries);
+      }
+    }
+    setDateModalVisible(false);
+  };
+
+  const handleBatchDateForAll = () => {
+    // Get the most common date to use as target
+    const dateCounts = entries.reduce((acc, entry) => {
+      acc[entry.collectionDate] = (acc[entry.collectionDate] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const mostCommonDate = Object.entries(dateCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0] || new Date().toISOString().split('T')[0];
+
+    setDateModalContext({
+      type: 'batch',
+      targetDate: mostCommonDate,
+    });
+    setDateModalVisible(true);
   };
 
   const saveEntries = async () => {
@@ -228,16 +296,26 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     const [showSelector, setShowSelector] = useState(false);
     
     const bullets = [
-      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', color: '#1C1C1E', description: 'Things you need to do' },
-      { symbol: '✗', type: 'task', status: 'complete', label: 'Complete', color: '#34C759', description: 'Task completed' },
-      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', color: '#FF9500', description: 'Task migrated to future' },
-      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', color: '#007AFF', description: 'Task scheduled in calendar' },
-      { symbol: '/', type: 'task', status: 'cancelled', label: 'Cancelled', color: '#8E8E93', description: 'Task no longer relevant' },
-      { symbol: '○', type: 'event', status: 'incomplete', label: 'Event', color: '#007AFF', description: 'Appointments and experiences' },
-      { symbol: '—', type: 'note', status: 'incomplete', label: 'Note', color: '#8E8E93', description: 'Ideas, thoughts, observations' },
-      { symbol: '★', type: 'inspiration', status: 'incomplete', label: 'Inspiration', color: '#FFD60A', description: 'Ideas that inspire action' },
-      { symbol: '&', type: 'research', status: 'incomplete', label: 'Research', color: '#5856D6', description: 'Things to investigate or explore' },
-      { symbol: '◇', type: 'memory', status: 'incomplete', label: 'Memory', color: '#FF2D55', description: 'Gratitude, memories, and reflections' },
+      { symbol: '•', type: 'task', status: 'incomplete', label: 'Task', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.task, '#2B2B2B'), description: 'Things you need to do' },
+      { symbol: '✗', type: 'task', status: 'complete', label: 'Complete', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.taskComplete, '#15803D'), description: 'Task completed' },
+      { symbol: '>', type: 'task', status: 'migrated', label: 'Migrated', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.taskMigrated, '#D97706'), description: 'Task migrated to future' },
+      { symbol: '<', type: 'task', status: 'scheduled', label: 'Scheduled', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.taskScheduled, '#1E40AF'), description: 'Task scheduled in calendar' },
+      { symbol: '—', type: 'task', status: 'cancelled', label: 'Cancelled', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.taskCancelled, '#9CA3AF'), description: 'Task no longer relevant' },
+      { symbol: '○', type: 'event', status: 'incomplete', label: 'Event', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.event, '#0F2A44'), description: 'Appointments and experiences' },
+      { symbol: '–', type: 'note', status: 'incomplete', label: 'Note', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.note, '#6B7280'), description: 'Ideas, thoughts, observations' },
+      { symbol: '!', type: 'inspiration', status: 'incomplete', label: 'Inspiration', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.inspiration, '#EAB308'), description: 'Ideas that inspire action' },
+      { symbol: '?', type: 'research', status: 'incomplete', label: 'Research', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.research, '#7C3AED'), description: 'Things to investigate or explore' },
+      { symbol: '◇', type: 'memory', status: 'incomplete', label: 'Memory', 
+        color: safeThemeAccess(theme, t => t.colors.bujo?.memory, '#BE185D'), description: 'Gratitude, memories, and reflections' },
     ];
     
     // Current bullet based on entry's current type/status (for the button)
@@ -273,25 +351,29 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
     return (
       <View style={styles.bulletSelectorContainer}>
         <View style={styles.detectedInfo}>
-          <Text style={styles.detectedLabel}>
+          <Typography variant="caption1" color="textSecondary" style={styles.detectedLabel}>
             {getConfidenceIndicator()} Detected: {originalBullet.label}
-          </Text>
-          <Text style={styles.detectedDescription}>
+          </Typography>
+          <Typography variant="caption2" color="textTertiary" style={styles.detectedDescription}>
             {currentBullet.description}
-          </Text>
+          </Typography>
         </View>
         
         <TouchableOpacity 
           style={styles.currentBulletButton}
           onPress={() => setShowSelector(!showSelector)}
         >
-          <Text style={[styles.currentBulletSymbol, { color: currentBullet.color }]}>{currentBullet.symbol}</Text>
-          <Text style={styles.currentBulletLabel}>{currentBullet.label}</Text>
+          <BuJoSymbol 
+            type={currentBullet.type} 
+            status={currentBullet.status} 
+            size="sm"
+          />
+          <Typography variant="footnote" style={styles.currentBulletLabel}>{currentBullet.label}</Typography>
         </TouchableOpacity>
         
         {showSelector && (
-          <View style={styles.bulletSelector}>
-            <Text style={styles.selectorTitle}>Select bullet type:</Text>
+          <Card variant="elevated" padding="md" style={styles.bulletSelector}>
+            <Typography variant="footnote" style={styles.selectorTitle}>Select bullet type:</Typography>
             <View style={styles.bulletGrid}>
               {bullets.map((bullet, bulletIndex) => (
                 <TouchableOpacity
@@ -302,64 +384,86 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
                   ]}
                   onPress={() => handleBulletSelect(bullet)}
                 >
-                  <Text style={[
-                    styles.bulletSymbol,
-                    { color: bullet.color },
-                    currentBullet.symbol === bullet.symbol && styles.bulletSymbolActive
-                  ]}>
-                    {bullet.symbol}
-                  </Text>
-                  <Text style={[
-                    styles.bulletLabel,
-                    currentBullet.symbol === bullet.symbol && styles.bulletLabelActive
-                  ]}>
+                  <BuJoSymbol 
+                    type={bullet.type} 
+                    status={bullet.status} 
+                    size="sm"
+                  />
+                  <Typography 
+                    variant="caption1"
+                    style={[
+                      styles.bulletLabel,
+                      currentBullet.symbol === bullet.symbol && { 
+                        color: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF') 
+                      }
+                    ]}
+                  >
                     {bullet.label}
-                  </Text>
+                  </Typography>
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </Card>
         )}
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Review Entries</Text>
-        <TouchableOpacity onPress={saveEntries} disabled={saving}>
-          <Text style={[styles.saveButton, saving && styles.saveButtonDisabled]}>
-            {saving ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content}>
-        {/* OCR Result Info */}
-        <View style={styles.ocrInfo}>
-          <View style={styles.imagePreview}>
-            <Image source={{ uri: imageUri }} style={styles.image} />
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="elevated" padding="md" style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons 
+              name="arrow-back" 
+              size={24} 
+              color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+            />
+          </TouchableOpacity>
+          <Typography variant="headline" color="text">Review Entries</Typography>
+          <View style={styles.headerRight}>
+            <TouchableOpacity onPress={handleBatchDateForAll} style={styles.dateButton}>
+              <Ionicons 
+                name="calendar-outline" 
+                size={20} 
+                color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+              />
+            </TouchableOpacity>
+            <PaperButton 
+              variant="ink" 
+              size="sm" 
+              onPress={saveEntries} 
+              disabled={saving}
+            >
+              <Typography variant="callout">
+                {saving ? 'Saving...' : 'Save'}
+              </Typography>
+            </PaperButton>
           </View>
-          <View style={styles.ocrStats}>
-            <Text style={styles.confidence}>
-              Confidence: {Math.round(ocrResult.confidence * 100)}%
-            </Text>
-            <Text style={styles.entriesCount}>
+        </Card>
+
+        <ScrollView style={styles.content}>
+          {/* OCR Result Info */}
+          <Card variant="elevated" padding="lg" style={styles.ocrInfo}>
+            <View style={styles.imagePreview}>
+              <Image source={{ uri: imageUri }} style={styles.image} />
+            </View>
+            <View style={styles.ocrStats}>
+              <Typography variant="callout" style={styles.confidence}>
+                Confidence: {Math.round(ocrResult.confidence * 100)}%
+              </Typography>
+              <Typography variant="footnote" color="textSecondary">
+                {entries.length} entries found
+              </Typography>
+            </View>
+          </Card>
+
+          {/* Entries List */}
+          <Card variant="elevated" padding="lg" style={styles.entriesSection}>
+            <Typography variant="title2" color="text" style={styles.sectionTitle}>
               {entries.length} entries found
-            </Text>
-          </View>
-        </View>
-
-        {/* Entries List */}
-        <View style={styles.entriesSection}>
-          <Text style={styles.sectionTitle}>
-            {entries.length} entries found
-          </Text>
+            </Typography>
           
           {(() => {
             // Group entries by date
@@ -398,42 +502,76 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
 
                 return (
                   <View key={date} style={styles.dateGroup}>
-                    <View style={styles.dateHeader}>
-                      <Text style={styles.dateLabel}>{formatDate(date)}</Text>
-                      <Text style={styles.entryCount}>
-                        {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
-                      </Text>
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.dateHeader}
+                      onPress={() => handleBatchDateSelect(date)}
+                    >
+                      <View style={styles.dateHeaderLeft}>
+                        <Typography variant="callout" style={styles.dateLabel}>{formatDate(date)}</Typography>
+                        <Typography variant="footnote" color="textSecondary" style={styles.entryCount}>
+                          {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
+                        </Typography>
+                      </View>
+                      <Ionicons 
+                        name="calendar-outline" 
+                        size={20} 
+                        color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+                      />
+                    </TouchableOpacity>
                     
                     {group.entries.map((entry, groupIndex) => {
                       const originalIndex = group.indices[groupIndex];
                       return (
-                        <View key={originalIndex} style={styles.entryCard}>
+                        <Card key={originalIndex} variant="flat" padding="md" style={styles.entryCard}>
                           <View style={styles.entryHeader}>
                             <BulletSelector key={`${originalIndex}-${entries[originalIndex]?.type}-${entries[originalIndex]?.status}`} entry={entries[originalIndex]} index={originalIndex} />
-                            <TouchableOpacity
-                              style={styles.deleteButton}
-                              onPress={() => deleteEntry(originalIndex)}
-                            >
-                              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                            </TouchableOpacity>
+                            <View style={styles.entryActions}>
+                              <TouchableOpacity
+                                style={styles.dateActionButton}
+                                onPress={() => handleDateSelect(originalIndex)}
+                              >
+                                <Ionicons 
+                                  name="calendar-outline" 
+                                  size={16} 
+                                  color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={() => deleteEntry(originalIndex)}
+                              >
+                                <Ionicons 
+                                  name="trash-outline" 
+                                  size={20} 
+                                  color={safeThemeAccess(theme, t => t.colors.error, '#B91C1C')} 
+                                />
+                              </TouchableOpacity>
+                            </View>
                           </View>
                           
                           <TextInput
-                            style={styles.entryInput}
+                            style={[
+                              styles.entryInput,
+                              {
+                                backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8'),
+                                borderColor: safeThemeAccess(theme, t => t.colors.border, '#E8E3D5'),
+                                color: safeThemeAccess(theme, t => t.colors.text, '#2B2B2B')
+                              }
+                            ]}
                             value={entry.content}
                             onChangeText={(text) => updateEntry(originalIndex, 'content', text)}
                             placeholder="Enter bullet journal entry..."
+                            placeholderTextColor={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')}
                             multiline
                             autoCapitalize="sentences"
                           />
                           
                           {entry.ocrConfidence !== undefined && (
-                            <Text style={styles.confidenceText}>
+                            <Typography variant="caption1" color="textSecondary" style={styles.confidenceText}>
                               OCR Confidence: {Math.round(entry.ocrConfidence * 100)}%
-                            </Text>
+                            </Typography>
                           )}
-                        </View>
+                        </Card>
                       );
                     })}
                   </View>
@@ -441,60 +579,84 @@ export const EntryReviewScreen: React.FC<EntryReviewScreenProps> = ({
               });
           })()}
 
-          {/* Add New Entry Button */}
-          <TouchableOpacity style={styles.addButton} onPress={addNewEntry}>
-            <Ionicons name="add" size={24} color="#007AFF" />
-            <Text style={styles.addButtonText}>Add Entry</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Add New Entry Button */}
+            <PaperButton 
+              variant="outline" 
+              size="md" 
+              onPress={addNewEntry}
+              style={styles.addButton}
+            >
+              <Ionicons 
+                name="add" 
+                size={24} 
+                color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+              />
+              <Typography variant="callout" style={styles.addButtonText}>Add Entry</Typography>
+            </PaperButton>
+          </Card>
 
-        {/* OCR Text Preview */}
-        <View style={styles.ocrTextSection}>
-          <Text style={styles.sectionTitle}>Raw OCR Text</Text>
-          <View style={styles.ocrTextContainer}>
-            <Text style={styles.ocrText}>{ocrResult.text}</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {/* OCR Text Preview */}
+          <Card variant="elevated" padding="lg" style={styles.ocrTextSection}>
+            <Typography variant="title2" color="text" style={styles.sectionTitle}>Raw OCR Text</Typography>
+            <Card variant="flat" padding="md" style={styles.ocrTextContainer}>
+              <Typography variant="footnote" style={styles.ocrText}>{ocrResult.text}</Typography>
+            </Card>
+          </Card>
+        </ScrollView>
+        
+        {/* Date Selection Modal */}
+        <DateSelectionModal
+          visible={dateModalVisible}
+          onClose={() => setDateModalVisible(false)}
+          onSelectDate={handleDateModalSelect}
+          initialDate={dateModalContext.targetDate}
+          title={
+            dateModalContext.type === 'single' 
+              ? 'Select Entry Date' 
+              : `Change Date for ${entries.filter(e => e.collectionDate === dateModalContext.targetDate).length} Entries`
+          }
+          showBatchOption={dateModalContext.type === 'single'}
+          onBatchSelect={() => {
+            if (dateModalContext.entryIndex !== undefined) {
+              const entryDate = entries[dateModalContext.entryIndex]?.collectionDate;
+              if (entryDate) {
+                handleBatchDateSelect(entryDate);
+              }
+            }
+          }}
+        />
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1C1C1E',
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  saveButton: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
+  dateButton: {
+    padding: 8,
   },
   content: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   ocrInfo: {
     flexDirection: 'row',
-    padding: 20,
-    backgroundColor: '#FFFFFF',
     marginBottom: 12,
   },
   imagePreview: {
@@ -504,32 +666,19 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#F2F2F7',
   },
   ocrStats: {
     flex: 1,
     justifyContent: 'center',
   },
   confidence: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
     marginBottom: 4,
   },
-  entriesCount: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
   entriesSection: {
-    backgroundColor: '#FFFFFF',
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    padding: 20,
-    paddingBottom: 12,
+    marginBottom: 12,
   },
   dateGroup: {
     marginBottom: 24,
@@ -540,27 +689,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#F2F2F7',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: 'rgba(139, 69, 19, 0.1)',
   },
-  dateLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-  },
-  entryCount: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
+  dateHeaderLeft: {
+    flex: 1,
   },
   entryCard: {
     marginHorizontal: 20,
     marginBottom: 16,
-    padding: 16,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
   },
   entryHeader: {
     flexDirection: 'row',
@@ -568,21 +706,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  entryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateActionButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
   bulletSelectorContainer: {
     flex: 1,
   },
   detectedInfo: {
     marginBottom: 8,
   },
-  detectedLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
   detectedDescription: {
-    fontSize: 11,
-    color: '#A8A8A8',
-    fontStyle: 'italic',
     marginTop: 2,
   },
   currentBulletButton: {
@@ -590,41 +729,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#F2F2F7',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
     alignSelf: 'flex-start',
   },
-  currentBulletSymbol: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginRight: 6,
-    fontFamily: 'Menlo', // Monospace for consistent alignment
-  },
   currentBulletLabel: {
-    fontSize: 14,
-    color: '#1C1C1E',
-    fontWeight: '500',
+    marginLeft: 6,
   },
   bulletSelector: {
     marginTop: 12,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   selectorTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1C1E',
     marginBottom: 8,
   },
   bulletGrid: {
@@ -638,82 +753,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#F2F2F7',
     borderWidth: 1,
-    borderColor: '#E5E5E7',
   },
   bulletButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  bulletSymbol: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginRight: 4,
-    fontFamily: 'Menlo', // Monospace for consistent alignment
-  },
-  bulletSymbolActive: {
-    color: '#FFFFFF',
+    backgroundColor: '#0F2A44',
+    borderColor: '#0F2A44',
   },
   bulletLabel: {
-    fontSize: 12,
-    color: '#1C1C1E',
-    fontWeight: '500',
-  },
-  bulletLabelActive: {
-    color: '#FFFFFF',
+    marginLeft: 4,
   },
   deleteButton: {
     padding: 8,
   },
   entryInput: {
     fontSize: 16,
-    color: '#1C1C1E',
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
     minHeight: 44,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
   },
   confidenceText: {
-    fontSize: 12,
-    color: '#8E8E93',
     marginTop: 8,
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
     marginHorizontal: 20,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
-    borderRadius: 12,
   },
   addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
     marginLeft: 8,
   },
   ocrTextSection: {
-    backgroundColor: '#FFFFFF',
     marginBottom: 20,
   },
   ocrTextContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
+    marginTop: 12,
   },
   ocrText: {
-    fontSize: 14,
-    color: '#1C1C1E',
     lineHeight: 20,
     fontFamily: 'Menlo',
   },

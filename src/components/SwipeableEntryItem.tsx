@@ -1,17 +1,23 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Animated,
   Dimensions,
+  Pressable,
 } from 'react-native';
 import {
-  PanGestureHandler,
-  State,
-  PanGestureHandlerStateChangeEvent,
-  PanGestureHandlerGestureEvent,
+  Gesture,
+  GestureDetector,
 } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDecay,
+  runOnJS,
+  clamp,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../types/BuJo';
 import { BuJoEntryItem } from './BuJoEntryItem';
@@ -21,258 +27,237 @@ import {
   SWIPE_THRESHOLDS,
   SwipeAction,
 } from '../utils/swipeActions';
+import { useTheme } from '../theme';
+import { safeThemeAccess } from '../theme/paperStyleUtils';
+import { haptic } from '../utils/haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SwipeableEntryItemProps {
   entry: BuJoEntry;
-  onSwipeAction: (entry: BuJoEntry, action: SwipeAction) => void;
+  onSwipeAction: (entry: BuJoEntry, action: { action: string; key: string }) => void;
   onPress: (entry: BuJoEntry, action: 'complete' | 'migrate' | 'schedule' | 'cancel' | 'edit') => void;
   showDate?: boolean;
   isCompact?: boolean;
 }
 
-export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
+// Industry-standard spring configuration based on research
+const SPRING_CONFIG = {
+  stiffness: 170,   // iOS/Android standard
+  damping: 26,      // Smooth, not snappy
+  mass: 1,          // Natural weight
+} as const;
+
+// Velocity threshold for natural gesture recognition  
+const VELOCITY_THRESHOLD = 500;
+const SWIPE_THRESHOLD = 40;
+
+const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   entry,
   onSwipeAction,
   onPress,
   showDate = false,
   isCompact = false,
 }) => {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const actionOpacity = useRef(new Animated.Value(0)).current;
-  const currentAction = useRef<SwipeAction | null>(null);
+  const { theme } = useTheme();
   
-  // Memoize swipe config to prevent unnecessary recalculations
+  // Modern Reanimated v3 shared values (run on UI thread)
+  const translateX = useSharedValue(0);
+  
+  // Memoize swipe config for performance
   const swipeConfig = useMemo(() => getSwipeConfig(entry), [entry.type, entry.status]);
-  
-  // Cleanup animations on unmount
-  useEffect(() => {
-    return () => {
-      translateX.stopAnimation();
-      actionOpacity.stopAnimation();
-    };
-  }, [translateX, actionOpacity]);
 
-  const handleGestureEvent = (event: PanGestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
-    
-    // Limit swipe distance
-    const clampedTranslation = Math.max(
-      -SWIPE_THRESHOLDS.MAX,
-      Math.min(SWIPE_THRESHOLDS.MAX, translationX)
-    );
-    
-    translateX.setValue(clampedTranslation);
-    
-    // Get current action and update opacity
-    const action = getCurrentAction(clampedTranslation, swipeConfig);
-    currentAction.current = action;
-    
-    if (action) {
-      const threshold = action.threshold;
-      const progress = Math.abs(clampedTranslation) / threshold;
-      actionOpacity.setValue(Math.min(1, progress));
-    } else {
-      actionOpacity.setValue(0);
-    }
+  // Helper functions for action arrays
+  const getLeftActions = () => {
+    const { leftShort, leftLong } = swipeConfig;
+    const actions = [];
+    if (leftShort) actions.push(leftShort);
+    if (leftLong) actions.push(leftLong);
+    return actions;
   };
 
-  const handleStateChange = (event: PanGestureHandlerStateChangeEvent) => {
-    if (event.nativeEvent.state === State.END) {
-      const { translationX, velocityX } = event.nativeEvent;
+  const getRightActions = () => {
+    const { rightShort, rightLong } = swipeConfig;
+    const actions = [];
+    if (rightShort) actions.push(rightShort);
+    if (rightLong) actions.push(rightLong);
+    return actions;
+  };
+
+  // Modern Gesture.Pan() with industry-standard implementation
+  const panGesture = Gesture.Pan()
+    .onChange((event) => {
+      'worklet';
+      // Direct 1:1 translation (no artificial resistance) for natural feel
+      const clampedTranslation = clamp(
+        event.translationX,
+        -SWIPE_THRESHOLDS.MAX,
+        SWIPE_THRESHOLDS.MAX
+      );
       
-      // Check if we should trigger an action
-      const action = getCurrentAction(translationX, swipeConfig);
+      translateX.value = clampedTranslation;
+    })
+    .onFinalize((event) => {
+      'worklet';
+      const { velocityX, translationX } = event;
       
-      if (action && (Math.abs(translationX) >= action.threshold || Math.abs(velocityX) > 800)) {
-        // Trigger the action
-        onSwipeAction(entry, action);
-        
-        // Animate out and back
-        Animated.sequence([
-          Animated.timing(translateX, {
-            toValue: translationX > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateX, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
+      // Get actions synchronously within worklet
+      const leftActionsCount = swipeConfig.leftShort ? (swipeConfig.leftLong ? 2 : 1) : 0;
+      const rightActionsCount = swipeConfig.rightShort ? (swipeConfig.rightLong ? 2 : 1) : 0;
+      
+      // Smart velocity-based threshold (fast swipes need less distance)
+      const velocityFactor = Math.abs(velocityX) > VELOCITY_THRESHOLD ? 0.7 : 1;
+      const effectiveThreshold = SWIPE_THRESHOLD * velocityFactor;
+      
+      const leftSwipe = translationX > effectiveThreshold;
+      const rightSwipe = translationX < -effectiveThreshold;
+      
+      if (leftSwipe && leftActionsCount > 0) {
+        // Show left actions with smooth spring
+        const targetX = leftActionsCount * 80;
+        translateX.value = withSpring(targetX, SPRING_CONFIG);
+        runOnJS(haptic.swipeAction)();
+      } else if (rightSwipe && rightActionsCount > 0) {
+        // Show right actions with smooth spring  
+        const targetX = -(rightActionsCount * 80);
+        translateX.value = withSpring(targetX, SPRING_CONFIG);
+        runOnJS(haptic.swipeAction)();
       } else {
-        // Spring back to center
-        Animated.spring(translateX, {
-          toValue: 0,
-          speed: 20,
-          bounciness: 10,
-          useNativeDriver: true,
-        }).start();
+        // Use withDecay for natural velocity continuation, then spring back
+        translateX.value = withDecay({
+          velocity: velocityX,
+          deceleration: 0.998,
+          clamp: [-SWIPE_THRESHOLDS.MAX, SWIPE_THRESHOLDS.MAX],
+        }, () => {
+          // After decay, smoothly return to center
+          translateX.value = withSpring(0, SPRING_CONFIG);
+        });
       }
-      
-      // Reset opacity
-      Animated.timing(actionOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-      
-      currentAction.current = null;
-    }
+    });
+
+  // Handle action button presses
+  const handleActionPress = (action: SwipeAction) => {
+    // Haptic feedback for action press
+    haptic.buttonPress();
+    
+    // Smooth animation back to center using modern spring config
+    translateX.value = withSpring(0, SPRING_CONFIG, () => {
+      // Execute action after animation completes
+      runOnJS(onSwipeAction)(entry, { action: action.action, key: action.key });
+    });
   };
+
+  // Modern useAnimatedStyle for smooth UI thread animations
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  }, []);
+
+  const leftActionsStyle = useAnimatedStyle(() => {
+    const isRevealed = translateX.value > 20;
+    const opacity = isRevealed ? 1 : 0;
+    return {
+      opacity,
+      transform: [{ scale: isRevealed ? 1 : 0.9 }],
+    };
+  }, []);
+
+  const rightActionsStyle = useAnimatedStyle(() => {
+    const isRevealed = translateX.value < -20;
+    const opacity = isRevealed ? 1 : 0;
+    return {
+      opacity,
+      transform: [{ scale: isRevealed ? 1 : 0.9 }],
+    };
+  }, []);
 
   const renderLeftActions = () => {
-    const { leftShort, leftLong } = swipeConfig;
+    const actions = getLeftActions();
+    if (actions.length === 0) return null;
     
     return (
-      <Animated.View 
-        style={[
-          styles.actionsContainer,
-          styles.leftActions,
-          {
-            opacity: actionOpacity,
-            transform: [
-              {
-                translateX: translateX.interpolate({
-                  inputRange: [0, SWIPE_THRESHOLDS.MAX],
-                  outputRange: [-100, 0],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        {leftLong && (
-          <Animated.View
+      <View style={[styles.actionsContainer, styles.leftActions]}>
+        {actions.map((action, index) => (
+          <View
+            key={action.key}
             style={[
-              styles.actionItem,
-              { backgroundColor: leftLong.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [0, leftLong.threshold - 20, leftLong.threshold],
-                  outputRange: [0, 0, 1],
-                  extrapolate: 'clamp',
-                }),
+              styles.actionButton,
+              { 
+                backgroundColor: action.backgroundColor,
+                left: index * 80,
               },
             ]}
           >
-            <Ionicons name={leftLong.icon as any} size={24} color={leftLong.color} />
-            <Text style={[styles.actionText, { color: leftLong.color }]}>
-              {leftLong.label}
-            </Text>
-          </Animated.View>
-        )}
-        {leftShort && (
-          <Animated.View
-            style={[
-              styles.actionItem,
-              { backgroundColor: leftShort.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [0, leftShort.threshold - 20, leftShort.threshold],
-                  outputRange: [0, 0, 1],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ]}
-          >
-            <Ionicons name={leftShort.icon as any} size={24} color={leftShort.color} />
-            <Text style={[styles.actionText, { color: leftShort.color }]}>
-              {leftShort.label}
-            </Text>
-          </Animated.View>
-        )}
-      </Animated.View>
+            <Pressable
+              style={styles.actionPressable}
+              onPress={() => handleActionPress(action)}
+            >
+              <Ionicons name={action.icon as any} size={20} color={action.color} />
+              <Text style={[styles.actionText, { color: action.color }]}>
+                {action.label}
+              </Text>
+            </Pressable>
+          </View>
+        ))}
+      </View>
     );
   };
 
   const renderRightActions = () => {
-    const { rightShort, rightLong } = swipeConfig;
+    const actions = getRightActions();
+    if (actions.length === 0) return null;
     
     return (
-      <Animated.View 
-        style={[
-          styles.actionsContainer,
-          styles.rightActions,
-          {
-            opacity: actionOpacity,
-            transform: [
-              {
-                translateX: translateX.interpolate({
-                  inputRange: [-SWIPE_THRESHOLDS.MAX, 0],
-                  outputRange: [0, 100],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        {rightShort && (
-          <Animated.View
+      <View style={[styles.actionsContainer, styles.rightActions]}>
+        {actions.map((action, index) => (
+          <View
+            key={action.key}
             style={[
-              styles.actionItem,
-              { backgroundColor: rightShort.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [-rightShort.threshold, -rightShort.threshold + 20, 0],
-                  outputRange: [1, 0, 0],
-                  extrapolate: 'clamp',
-                }),
+              styles.actionButton,
+              { 
+                backgroundColor: action.backgroundColor,
+                right: index * 80,
               },
             ]}
           >
-            <Ionicons name={rightShort.icon as any} size={24} color={rightShort.color} />
-            <Text style={[styles.actionText, { color: rightShort.color }]}>
-              {rightShort.label}
-            </Text>
-          </Animated.View>
-        )}
-        {rightLong && (
-          <Animated.View
-            style={[
-              styles.actionItem,
-              { backgroundColor: rightLong.backgroundColor },
-              {
-                opacity: translateX.interpolate({
-                  inputRange: [-rightLong.threshold, -rightLong.threshold + 20, 0],
-                  outputRange: [1, 0, 0],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ]}
-          >
-            <Ionicons name={rightLong.icon as any} size={24} color={rightLong.color} />
-            <Text style={[styles.actionText, { color: rightLong.color }]}>
-              {rightLong.label}
-            </Text>
-          </Animated.View>
-        )}
-      </Animated.View>
+            <Pressable
+              style={styles.actionPressable}
+              onPress={() => handleActionPress(action)}
+            >
+              <Ionicons name={action.icon as any} size={20} color={action.color} />
+              <Text style={[styles.actionText, { color: action.color }]}>
+                {action.label}
+              </Text>
+            </Pressable>
+          </View>
+        ))}
+      </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      {/* Background Actions */}
-      {renderLeftActions()}
-      {renderRightActions()}
+    <View style={[styles.container, {
+      backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
+    }]}>
+      {/* Left Actions */}
+      <Animated.View style={[styles.leftActions, leftActionsStyle]}>
+        {renderLeftActions()}
+      </Animated.View>
       
-      {/* Swipeable Entry */}
-      <PanGestureHandler
-        onGestureEvent={handleGestureEvent}
-        onHandlerStateChange={handleStateChange}
-        activeOffsetX={[-10, 10]}
-        failOffsetY={[-5, 5]}
-      >
+      {/* Right Actions */}
+      <Animated.View style={[styles.rightActions, rightActionsStyle]}>
+        {renderRightActions()}
+      </Animated.View>
+      
+      {/* Main Content with Modern Gesture Detection */}
+      <GestureDetector gesture={panGesture}>
         <Animated.View
           style={[
             styles.entryContainer,
+            animatedStyle,
             {
-              transform: [{ translateX }],
+              backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
             },
           ]}
         >
@@ -283,18 +268,23 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
             isCompact={isCompact}
           />
         </Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
     </View>
   );
 };
+
+// Memoized export for performance optimization
+const MemoizedSwipeableEntryItem = React.memo(SwipeableEntryItem);
+export { MemoizedSwipeableEntryItem as SwipeableEntryItem };
+export default MemoizedSwipeableEntryItem;
 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
     marginBottom: 8,
+    overflow: 'hidden',
   },
   entryContainer: {
-    backgroundColor: '#FAF7F0',
     zIndex: 2,
   },
   actionsContainer: {
@@ -306,25 +296,43 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   leftActions: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     left: 0,
-    paddingLeft: 20,
-  },
-  rightActions: {
-    right: 0,
-    paddingRight: 20,
-    justifyContent: 'flex-end',
-  },
-  actionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginHorizontal: 4,
+    justifyContent: 'flex-start',
+    zIndex: 1,
+  },
+  rightActions: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    zIndex: 1,
+  },
+  actionButton: {
+    width: 80,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+  },
+  actionPressable: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    marginLeft: 8,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

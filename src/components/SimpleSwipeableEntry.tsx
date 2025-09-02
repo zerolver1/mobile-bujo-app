@@ -282,6 +282,13 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
       if (triggeredAction) {
         triggerHaptic('medium');
         onSwipeAction(entry, triggeredAction.action);
+      } else if (Math.abs(translationX) < 20) {
+        // Handle tap - minimal movement means it was a tap
+        if (entry.type === 'task' && entry.status === 'incomplete') {
+          onPress(entry, 'edit');
+        } else {
+          onPress(entry, 'edit');
+        }
       }
       
       // Animate back to center
@@ -348,12 +355,14 @@ export const SimpleSwipeableEntry: React.FC<SimpleSwipeableEntryProps> = ({
             }
           ]}
         >
-          <BuJoEntryItem
-            entry={entry}
-            onPress={(entry, action) => onPress(entry, action)}
-            showDate={showDate}
-            isCompact={isCompact}
-          />
+          <View pointerEvents="none">
+            <BuJoEntryItem
+              entry={entry}
+              onPress={(entry, action) => onPress(entry, action)}
+              showDate={showDate}
+              isCompact={isCompact}
+            />
+          </View>
         </Animated.View>
       </PanGestureHandler>
     </View>

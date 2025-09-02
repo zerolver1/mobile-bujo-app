@@ -433,7 +433,8 @@ class MistralOCRService {
         confidence: 0.95, // Mistral OCR typically has 99%+ accuracy
         blocks,
         // Store parsed entries for easier processing
-        parsedEntries: parsedData.entries
+        parsedEntries: parsedData.entries,
+        metadata: parsedData.metadata || { page_date: parsedData.page_date }
       } as OCRResult;
     } catch (error) {
       console.error('MistralOCR: Error parsing response:', error);

@@ -7,57 +7,87 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface SimpleSignInScreenProps {
   onSignIn: () => void;
 }
 
 export const SimpleSignInScreen: React.FC<SimpleSignInScreenProps> = ({ onSignIn }) => {
+  const { theme } = useTheme();
+  
   return (
-    <SafeAreaView style={styles.container}>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
       <View style={styles.content}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Bullet Journal</Text>
-          <Text style={styles.subtitle}>
+        <Card style={[styles.header, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
+          <Typography variant="largeTitle" style={[styles.title, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>Bullet Journal</Typography>
+          <Typography variant="body" style={[styles.subtitle, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>
             Bridge your analog journal with digital productivity
-          </Text>
-        </View>
+          </Typography>
+        </Card>
 
         {/* Bullet Journal Visual */}
-        <View style={styles.visualContainer}>
+        <Card style={[styles.visualContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
           <View style={styles.paperPage}>
             <View style={styles.sampleEntries}>
               <View style={styles.entryRow}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.entryText}>Complete project proposal</Text>
+                <Typography variant="body" style={styles.bullet}>•</Typography>
+                <Typography variant="body" style={[styles.entryText, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>Complete project proposal</Typography>
               </View>
               <View style={styles.entryRow}>
-                <Text style={styles.bullet}>○</Text>
-                <Text style={styles.entryText}>Team meeting 2:00 PM</Text>
+                <Typography variant="body" style={styles.bullet}>○</Typography>
+                <Typography variant="body" style={[styles.entryText, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>Team meeting 2:00 PM</Typography>
               </View>
               <View style={styles.entryRow}>
-                <Text style={styles.bullet}>—</Text>
-                <Text style={styles.entryText}>Great ideas from the session</Text>
+                <Typography variant="body" style={styles.bullet}>—</Typography>
+                <Typography variant="body" style={[styles.entryText, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>Great ideas from the session</Typography>
               </View>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Demo Sign In Button */}
         <View style={styles.authButtons}>
-          <TouchableOpacity style={styles.demoButton} onPress={onSignIn}>
+          <PaperButton
+            variant="primary"
+            size="lg"
+            onPress={onSignIn}
+            style={styles.demoButton}
+          >
             <Ionicons name="play-outline" size={20} color="white" />
-            <Text style={styles.demoButtonText}>Try Demo</Text>
-          </TouchableOpacity>
+            <Typography variant="body" style={styles.demoButtonText}>Try Demo</Typography>
+          </PaperButton>
         </View>
 
         {/* Privacy Notice */}
-        <Text style={styles.privacyText}>
+        <Typography variant="caption" style={[styles.privacyText, {
+          color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+        }]}>
           Demo mode - Your data stays on your device and won't be saved permanently.
-        </Text>
+        </Typography>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

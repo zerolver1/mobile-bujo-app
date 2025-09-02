@@ -10,11 +10,15 @@ import {
 import { useOAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 // Required for OAuth
 WebBrowser.maybeCompleteAuthSession();
 
 export const SignInScreen: React.FC = () => {
+  const { theme } = useTheme();
   const { startOAuthFlow: startAppleFlow } = useOAuth({ strategy: 'oauth_apple' });
   const { startOAuthFlow: startGoogleFlow } = useOAuth({ strategy: 'oauth_google' });
 
@@ -45,56 +49,88 @@ export const SignInScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
       <View style={styles.content}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Bullet Journal</Text>
-          <Text style={styles.subtitle}>
+        <Card style={[styles.header, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
+          <Typography variant="largeTitle" style={[styles.title, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>Bullet Journal</Typography>
+          <Typography variant="body" style={[styles.subtitle, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>
             Bridge your analog journal with digital productivity
-          </Text>
-        </View>
+          </Typography>
+        </Card>
 
         {/* Bullet Journal Visual */}
-        <View style={styles.visualContainer}>
+        <Card style={[styles.visualContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}>
           <View style={styles.paperPage}>
             <View style={styles.dotGrid} />
             <View style={styles.sampleEntries}>
               <View style={styles.entryRow}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.entryText}>Complete project proposal</Text>
+                <Typography variant="body" style={styles.bullet}>•</Typography>
+                <Typography variant="body" style={[styles.entryText, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>Complete project proposal</Typography>
               </View>
               <View style={styles.entryRow}>
-                <Text style={styles.bullet}>○</Text>
-                <Text style={styles.entryText}>Team meeting 2:00 PM</Text>
+                <Typography variant="body" style={styles.bullet}>○</Typography>
+                <Typography variant="body" style={[styles.entryText, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>Team meeting 2:00 PM</Typography>
               </View>
               <View style={styles.entryRow}>
-                <Text style={styles.bullet}>—</Text>
-                <Text style={styles.entryText}>Great ideas from the session</Text>
+                <Typography variant="body" style={styles.bullet}>—</Typography>
+                <Typography variant="body" style={[styles.entryText, {
+                  color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+                }]}>Great ideas from the session</Typography>
               </View>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Sign In Buttons */}
         <View style={styles.authButtons}>
-          <TouchableOpacity style={styles.appleButton} onPress={handleAppleSignIn}>
+          <PaperButton
+            variant="primary"
+            size="lg"
+            onPress={handleAppleSignIn}
+            style={styles.appleButton}
+          >
             <Ionicons name="logo-apple" size={20} color="white" />
-            <Text style={styles.appleButtonText}>Continue with Apple</Text>
-          </TouchableOpacity>
+            <Typography variant="body" style={styles.appleButtonText}>Continue with Apple</Typography>
+          </PaperButton>
 
-          <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
+          <PaperButton
+            variant="secondary"
+            size="lg"
+            onPress={handleGoogleSignIn}
+            style={styles.googleButton}
+          >
             <Ionicons name="logo-google" size={20} color="#4285F4" />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
+            <Typography variant="body" style={[styles.googleButtonText, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>Continue with Google</Typography>
+          </PaperButton>
         </View>
 
         {/* Privacy Notice */}
-        <Text style={styles.privacyText}>
+        <Typography variant="caption" style={[styles.privacyText, {
+          color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+        }]}>
           Your journal data stays private and secure. We process everything on your device.
-        </Text>
+        </Typography>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

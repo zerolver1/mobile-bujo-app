@@ -25,24 +25,31 @@ export const SWIPE_THRESHOLDS = {
   MAX: 200,
 };
 
-// Color palette for swipe actions
+// Paper-themed ink colors for swipe actions
 export const SWIPE_COLORS = {
-  complete: { bg: '#34C759', text: '#FFFFFF' },
-  migrate: { bg: '#FF9500', text: '#FFFFFF' },
-  schedule: { bg: '#007AFF', text: '#FFFFFF' },
-  cancel: { bg: '#FF3B30', text: '#FFFFFF' },
-  archive: { bg: '#8E8E93', text: '#FFFFFF' },
-  convert: { bg: '#5856D6', text: '#FFFFFF' },
-  share: { bg: '#32D74B', text: '#FFFFFF' },
-  delete: { bg: '#FF453A', text: '#FFFFFF' },
-  calendar: { bg: '#007AFF', text: '#FFFFFF' },
-  reminder: { bg: '#AF52DE', text: '#FFFFFF' },
-  investigate: { bg: '#34C759', text: '#FFFFFF' },
-  defer: { bg: '#FF9500', text: '#FFFFFF' },
-  photo: { bg: '#FF2D55', text: '#FFFFFF' },
-  gratitude: { bg: '#FFD60A', text: '#000000' },
-  private: { bg: '#8E8E93', text: '#FFFFFF' },
-  collection: { bg: '#FFD60A', text: '#000000' },
+  // Primary actions - ink colors
+  complete: { bg: '#15803D', text: '#FFFFFF' },      // Forest green ink
+  migrate: { bg: '#D97706', text: '#FFFFFF' },       // Orange ink
+  schedule: { bg: '#1E40AF', text: '#FFFFFF' },      // Royal blue ink
+  cancel: { bg: '#9CA3AF', text: '#2B2B2B' },        // Light pencil
+  
+  // Secondary actions - muted inks
+  archive: { bg: '#6B7280', text: '#FFFFFF' },       // Graphite pencil
+  convert: { bg: '#7C3AED', text: '#FFFFFF' },       // Purple ink
+  share: { bg: '#15803D', text: '#FFFFFF' },         // Green ink
+  delete: { bg: '#B91C1C', text: '#FFFFFF' },        // Red ink
+  
+  // Planning actions - blue inks
+  calendar: { bg: '#0F2A44', text: '#FFFFFF' },      // Fountain pen blue
+  reminder: { bg: '#1E40AF', text: '#FFFFFF' },      // Royal blue ink
+  defer: { bg: '#D97706', text: '#FFFFFF' },         // Orange ink
+  
+  // Special actions - decorative inks
+  investigate: { bg: '#7C3AED', text: '#FFFFFF' },   // Purple ink (research)
+  photo: { bg: '#BE185D', text: '#FFFFFF' },         // Magenta ink (memory)
+  gratitude: { bg: '#EAB308', text: '#2B2B2B' },     // Golden ink (inspiration)
+  private: { bg: '#6B7280', text: '#FFFFFF' },       // Graphite (note)
+  collection: { bg: '#0F2A44', text: '#FFFFFF' },    // Fountain pen blue (event)
 };
 
 // Get swipe configuration based on entry type and status

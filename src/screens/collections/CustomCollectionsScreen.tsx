@@ -13,12 +13,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry, BuJoCollection } from '../../types/BuJo';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card, PaperButton } from '../../components/ui/paperComponents';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface CustomCollectionsScreenProps {
   navigation: any;
 }
 
 export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { 
     entries, 
     getCustomCollections,
@@ -139,7 +143,9 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
     return (
       <TouchableOpacity
         key={collection.id}
-        style={styles.collectionCard}
+        style={[styles.collectionCard, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF')
+        }]}
         onPress={() => {
           navigation.navigate('CollectionDetail', { collection });
         }}
@@ -152,7 +158,9 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
                 { backgroundColor: collection.color }
               ]} 
             />
-            <Text style={styles.collectionTitle}>{collection.name}</Text>
+            <Typography variant="subtitle" style={[styles.collectionTitle, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>{collection.name}</Typography>
           </View>
           <View style={styles.collectionActions}>
             <TouchableOpacity
@@ -170,17 +178,23 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
           </View>
         </View>
 
-        <Text style={styles.collectionDescription}>
+        <Typography variant="body" style={[styles.collectionDescription, {
+          color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+        }]}>
           {collection.description}
-        </Text>
+        </Typography>
 
         <View style={styles.collectionStats}>
-          <Text style={styles.entryCount}>
+          <Typography variant="caption" style={[styles.entryCount, {
+            color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+          }]}>
             {collectionEntries.length} entries
-          </Text>
-          <Text style={styles.createdDate}>
+          </Typography>
+          <Typography variant="caption" style={[styles.createdDate, {
+            color: safeThemeAccess(theme, t => t.colors.placeholder, '#8E8E93')
+          }]}>
             Created {collection.createdAt.toLocaleDateString()}
-          </Text>
+          </Typography>
         </View>
 
         {collectionEntries.length > 0 && (
@@ -213,27 +227,35 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
         setShowCreateModal(false);
       }}
     >
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
+      <PaperBackground>
+        <SafeAreaView style={[styles.modalContainer, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+        }]}>
+          <Card style={[styles.modalHeader, {
+            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+            borderRadius: 0
+          }]}>
           <TouchableOpacity
             onPress={() => {
               resetForm();
               setShowCreateModal(false);
             }}
           >
-            <Text style={styles.cancelButton}>Cancel</Text>
+            <Typography variant="body" style={styles.cancelButton}>Cancel</Typography>
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>
+          <Typography variant="subtitle" style={styles.modalTitle}>
             {editingCollection ? 'Edit Collection' : 'New Collection'}
-          </Text>
+          </Typography>
           <TouchableOpacity onPress={handleCreateCollection}>
-            <Text style={styles.saveButton}>Save</Text>
+            <Typography variant="body" style={styles.saveButton}>Save</Typography>
           </TouchableOpacity>
-        </View>
+          </Card>
 
         <ScrollView style={styles.modalContent}>
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Name</Text>
+            <Typography variant="body" style={[styles.formLabel, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>Name</Typography>
             <TextInput
               style={styles.textInput}
               value={formData.name}
@@ -244,7 +266,9 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Description</Text>
+            <Typography variant="body" style={[styles.formLabel, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>Description</Typography>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={formData.description}
@@ -256,7 +280,9 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Color</Text>
+            <Typography variant="body" style={[styles.formLabel, {
+              color: safeThemeAccess(theme, t => t.colors.text, '#1C1C1E')
+            }]}>Color</Typography>
             <View style={styles.colorGrid}>
               {colors.map((color) => (
                 <TouchableOpacity
@@ -272,22 +298,29 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
+        </SafeAreaView>
+      </PaperBackground>
     </Modal>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <PaperBackground>
+      <SafeAreaView style={[styles.container, {
+        backgroundColor: safeThemeAccess(theme, t => t.colors.background, '#FAF7F0')
+      }]}>
+        {/* Header */}
+        <Card style={[styles.header, {
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#FFFFFF'),
+          borderRadius: 0
+        }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Custom Collections</Text>
+        <Typography variant="subtitle" style={styles.headerTitle}>Custom Collections</Typography>
         <TouchableOpacity onPress={() => setShowCreateModal(true)}>
           <Ionicons name="add" size={24} color="#007AFF" />
         </TouchableOpacity>
-      </View>
+        </Card>
 
       {/* Content */}
       <ScrollView 
@@ -320,7 +353,8 @@ export const CustomCollectionsScreen: React.FC<CustomCollectionsScreenProps> = (
       </ScrollView>
 
       {renderCreateModal()}
-    </SafeAreaView>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

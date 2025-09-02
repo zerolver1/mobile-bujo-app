@@ -12,6 +12,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
+import { useTheme } from '../../theme';
+import { PaperBackground, Typography, Card } from '../../components/ui/paperComponents';
+import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
+import { safeThemeAccess } from '../../theme/paperStyleUtils';
 
 interface IndexScreenProps {
   navigation: any;
@@ -21,6 +25,7 @@ type FilterType = 'all' | 'task' | 'event' | 'note' | 'idea';
 type FilterStatus = 'all' | 'complete' | 'incomplete';
 
 export const IndexScreen: React.FC<IndexScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { entries } = useBuJoStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
@@ -150,170 +155,173 @@ export const IndexScreen: React.FC<IndexScreenProps> = ({ navigation }) => {
   };
 
   const renderEntry = ({ item: entry }: { item: BuJoEntry }) => (
-    <TouchableOpacity style={styles.entryItem}>
-      <View style={styles.entryHeader}>
-        <Text
+    <Card variant="flat" padding="md" style={styles.entryItem}>
+      <TouchableOpacity activeOpacity={0.7}>
+        <View style={styles.entryHeader}>
+          <Typography
+            variant="body"
+            style={[
+              styles.bullet,
+              { color: getEntryTypeColor(entry.type) }
+            ]}
+          >
+            {getBulletSymbol(entry)}
+          </Typography>
+          <Typography variant="caption" color="textSecondary">
+            {new Date(entry.collectionDate).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </Typography>
+        </View>
+
+        <Typography
+          variant="body"
+          color="text"
           style={[
-            styles.bullet,
-            { color: getEntryTypeColor(entry.type) }
+            styles.entryText,
+            entry.status === 'complete' && styles.completedText
           ]}
         >
-          {getBulletSymbol(entry)}
-        </Text>
-        <Text style={styles.entryDate}>
-          {new Date(entry.collectionDate).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          })}
-        </Text>
-      </View>
+          {entry.content}
+        </Typography>
 
-      <Text
-        style={[
-          styles.entryText,
-          entry.status === 'complete' && styles.completedText
-        ]}
-      >
-        {entry.content}
-      </Text>
-
-      {(entry.tags.length > 0 || entry.contexts.length > 0) && (
-        <View style={styles.tagContainer}>
-          {entry.contexts.map(ctx => (
-            <TouchableOpacity
-              key={ctx}
-              style={[
-                styles.contextTag,
-                selectedContexts.includes(ctx) && styles.selectedTag
-              ]}
-              onPress={() => toggleContext(ctx)}
-            >
-              <Text
+        {(entry.tags.length > 0 || entry.contexts.length > 0) && (
+          <View style={styles.tagContainer}>
+            {entry.contexts.map(ctx => (
+              <TouchableOpacity
+                key={ctx}
                 style={[
-                  styles.contextTagText,
-                  selectedContexts.includes(ctx) && styles.selectedTagText
+                  styles.contextTag,
+                  selectedContexts.includes(ctx) && styles.selectedTag
                 ]}
+                onPress={() => toggleContext(ctx)}
               >
-                @{ctx}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          {entry.tags.map(tag => (
-            <TouchableOpacity
-              key={tag}
-              style={[
-                styles.hashTag,
-                selectedTags.includes(tag) && styles.selectedTag
-              ]}
-              onPress={() => toggleTag(tag)}
-            >
-              <Text
+                <Typography
+                  variant="caption"
+                  color={selectedContexts.includes(ctx) ? 'surface' : 'textSecondary'}
+                >
+                  @{ctx}
+                </Typography>
+              </TouchableOpacity>
+            ))}
+            {entry.tags.map(tag => (
+              <TouchableOpacity
+                key={tag}
                 style={[
-                  styles.hashTagText,
-                  selectedTags.includes(tag) && styles.selectedTagText
+                  styles.hashTag,
+                  selectedTags.includes(tag) && styles.selectedTag
                 ]}
+                onPress={() => toggleTag(tag)}
               >
-                #{tag}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-    </TouchableOpacity>
+                <Typography
+                  variant="caption"
+                  color={selectedTags.includes(tag) ? 'surface' : 'textSecondary'}
+                >
+                  #{tag}
+                </Typography>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </TouchableOpacity>
+    </Card>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Index & Search</Text>
-        <TouchableOpacity onPress={clearFilters}>
-          <Text style={styles.clearButton}>Clear</Text>
-        </TouchableOpacity>
-      </View>
+    <PaperBackground variant="lined" showMargin={true} intensity="light">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <Card variant="elevated" padding="md" style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+          </TouchableOpacity>
+          <Typography variant="headline" color="text">Index & Search</Typography>
+          <TouchableOpacity onPress={clearFilters}>
+            <Typography variant="body" color="primary">Clear</Typography>
+          </TouchableOpacity>
+        </Card>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#8E8E93" />
-          <TextInput
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search entries..."
-            placeholderTextColor="#8E8E93"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+        {/* Search Bar */}
+        <Card variant="flat" padding="md" style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93')} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search entries..."
+              placeholderTextColor={safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93')}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93')} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </Card>
 
-      {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScrollView}>
-        <View style={styles.filtersContainer}>
-          {/* Type Filters */}
-          {(['all', 'task', 'event', 'note', 'idea'] as FilterType[]).map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.filterButton,
-                filterType === type && styles.activeFilterButton
-              ]}
-              onPress={() => setFilterType(type)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  filterType === type && styles.activeFilterButtonText
-                ]}
-              >
-                {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Quick Filters */}
+        <Card variant="flat" padding="sm" style={styles.quickFiltersCard}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.filtersContainer}>
+              {/* Essential Type Filters */}
+              {(['all', 'task', 'event', 'note'] as FilterType[]).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.filterChip,
+                    filterType === type && styles.activeFilterChip
+                  ]}
+                  onPress={() => setFilterType(type)}
+                >
+                  <Typography
+                    variant="caption"
+                    color={filterType === type ? 'surface' : 'textSecondary'}
+                  >
+                    {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Typography>
+                </TouchableOpacity>
+              ))}
+              
+              {/* Status separator */}
+              <View style={styles.filterSeparator} />
+              
+              {/* Status Filters */}
+              {(['complete', 'incomplete'] as FilterStatus[]).map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  style={[
+                    styles.filterChip,
+                    filterStatus === status && styles.activeFilterChip
+                  ]}
+                  onPress={() => setFilterStatus(status === filterStatus ? 'all' : status)}
+                >
+                  <Typography
+                    variant="caption"
+                    color={filterStatus === status ? 'surface' : 'textSecondary'}
+                  >
+                    {status === 'complete' ? '✓ Done' : '○ Todo'}
+                  </Typography>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </Card>
 
-          {/* Status Filters */}
-          {(['all', 'complete', 'incomplete'] as FilterStatus[]).map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterButton,
-                filterStatus === status && styles.activeFilterButton
-              ]}
-              onPress={() => setFilterStatus(status)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  filterStatus === status && styles.activeFilterButtonText
-                ]}
-              >
-                {status === 'all' ? 'All Status' : status.charAt(0).toUpperCase() + status.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-
-      {/* Results */}
-      <View style={styles.resultsContainer}>
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsCount}>
-            {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'}
-          </Text>
-          {(selectedTags.length > 0 || selectedContexts.length > 0) && (
-            <Text style={styles.activeFilters}>
-              {selectedTags.length + selectedContexts.length} active filters
-            </Text>
-          )}
-        </View>
+        {/* Results */}
+        <View style={styles.resultsContainer}>
+          <Card variant="flat" padding="sm" style={styles.resultsHeader}>
+            <Typography variant="caption" color="textSecondary">
+              {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'}
+            </Typography>
+            {(selectedTags.length > 0 || selectedContexts.length > 0) && (
+              <Typography variant="caption" color="primary">
+                {selectedTags.length + selectedContexts.length} active tag filters
+              </Typography>
+            )}
+          </Card>
 
         <FlatList
           data={filteredEntries}
@@ -321,18 +329,31 @@ export const IndexScreen: React.FC<IndexScreenProps> = ({ navigation }) => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.entriesList}
           showsVerticalScrollIndicator={false}
+          // Performance optimizations for index entries
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={15}
+          initialNumToRender={10}
+          windowSize={15}
+          getItemLayout={(data, index) => ({
+            length: 60, // Index entry height
+            offset: 60 * index,
+            index,
+          })}
           ListEmptyComponent={() => (
             <View style={styles.emptyState}>
-              <Ionicons name="search" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>No entries found</Text>
-              <Text style={styles.emptyDescription}>
+              <Ionicons name="search" size={48} color={safeThemeAccess(theme, t => t.colors.textTertiary, '#C7C7CC')} />
+              <Typography variant="headline" color="textSecondary" style={styles.emptyTitle}>
+                No entries found
+              </Typography>
+              <Typography variant="body" color="textSecondary" style={styles.emptyDescription}>
                 Try adjusting your search terms or filters
-              </Text>
+              </Typography>
             </View>
           )}
         />
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </PaperBackground>
   );
 };
 

@@ -2,8 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { PaperTabBar } from '../components/ui/PaperTabBar';
+import { useTheme } from '../theme';
+import { safeThemeAccess } from '../theme/paperStyleUtils';
+import { PAPER_DESIGN_TOKENS } from '../theme/paperDesignTokens';
 import { EntryReviewParams } from '../types/BuJo';
 
 // Screens
@@ -15,12 +18,21 @@ import { EntryReviewScreen } from '../screens/main/EntryReviewScreen';
 import { QuickCaptureScreen } from '../screens/main/QuickCaptureScreen';
 import { BuJoGuideScreen } from '../screens/settings/BuJoGuideScreen';
 import { AppleSyncSettingsScreen } from '../screens/settings/AppleSyncSettingsScreen';
+import { TutorialLaunchScreen } from '../screens/tutorial/TutorialLaunchScreen';
+import { TutorialLessonScreen } from '../screens/tutorial/TutorialLessonScreen';
+import { TutorialPracticeScreen } from '../screens/tutorial/TutorialPracticeScreen';
+import { PrivacyPolicyScreen } from '../screens/settings/PrivacyPolicyScreen';
+import { TermsOfServiceScreen } from '../screens/settings/TermsOfServiceScreen';
 import { MonthlyLogScreen } from '../screens/collections/MonthlyLogScreen';
 import { FutureLogScreen } from '../screens/collections/FutureLogScreen';
 import { CustomCollectionsScreen } from '../screens/collections/CustomCollectionsScreen';
 import { CollectionDetailScreen } from '../screens/collections/CollectionDetailScreen';
 import { IndexScreen } from '../screens/collections/IndexScreen';
 import { MemoryLogScreen } from '../screens/memory/MemoryLogScreen';
+import { DesignSystemScreen } from '../screens/design/DesignSystemScreen';
+import { SearchScreen } from '../screens/main/SearchScreen';
+import { MigrationScreen } from '../screens/main/MigrationScreen';
+import { DataManagementScreen } from '../screens/settings/DataManagementScreen';
 
 // Type definitions
 export type RootTabParamList = {
@@ -42,62 +54,53 @@ export type RootStackParamList = {
   CollectionDetail: { collection: any };
   Index: undefined;
   MemoryLog: undefined;
+  DesignSystem: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
+  Search: undefined;
+  Migration: undefined;
+  DataManagement: undefined;
+  // Tutorial System Routes
+  TutorialLaunch: { mode: 'quickStart' | 'complete' | 'practice' };
+  TutorialLesson: { lessonId: string; mode: 'quickStart' | 'complete'; fromGuide?: boolean };
+  TutorialPractice: { exerciseType: string };
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const Stack = createStackNavigator<RootStackParamList>();
 
 const MainTabNavigator: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
+      tabBar={(props) => <PaperTabBar {...props} />}
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          switch (route.name) {
-            case 'DailyLog':
-              iconName = focused ? 'today' : 'today-outline';
-              break;
-            case 'Capture':
-              iconName = focused ? 'camera' : 'camera-outline';
-              break;
-            case 'Collections':
-              iconName = focused ? 'library' : 'library-outline';
-              break;
-            case 'Settings':
-              iconName = focused ? 'settings' : 'settings-outline';
-              break;
-            default:
-              iconName = 'help-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5E7',
-          paddingTop: Platform.OS === 'ios' ? 0 : 5,
-          height: Platform.OS === 'ios' ? 84 : 65,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-          marginBottom: Platform.OS === 'ios' ? 2 : 5,
-        },
+        // Tab bar is now handled by PaperTabBar component
         headerStyle: {
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E5E7',
+          backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8'),
+          borderBottomWidth: 0.5,
+          borderBottomColor: safeThemeAccess(theme, t => t.colors.border, '#E8E3D5'),
+          elevation: 0,
+          shadowOpacity: 0,
+          height: 100, // Compromise: visible but compact
+          paddingTop: 0,
+          paddingBottom: 0,
         },
         headerTitleStyle: {
-          fontSize: 17,
+          fontSize: 17, // Readable but still compact
           fontWeight: '600',
-          color: '#1C1C1E',
+          color: safeThemeAccess(theme, t => t.colors.text, '#2B2B2B'),
+          fontFamily: Platform.select({
+            ios: 'Georgia',
+            android: 'serif',
+            default: 'System',
+          }),
+          letterSpacing: 0.3,
+          marginBottom: 0,
+          lineHeight: 20, // Proper text rendering
         },
-        headerTintColor: '#007AFF',
+        headerTintColor: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44'),
       })}
     >
       <Tab.Screen 
@@ -152,9 +155,8 @@ const RootNavigator: React.FC = () => {
         name="EntryReview" 
         component={EntryReviewScreen}
         options={{
-          headerShown: true,
+          headerShown: false,
           presentation: 'modal',
-          headerTitle: 'Review Entries',
         }}
       />
       <Stack.Screen 
@@ -168,6 +170,30 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="BuJoGuide" 
         component={BuJoGuideScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TutorialLaunch" 
+        component={TutorialLaunchScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TutorialLesson" 
+        component={TutorialLessonScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TutorialPractice" 
+        component={TutorialPracticeScreen}
         options={{
           headerShown: false,
           presentation: 'card',
@@ -224,6 +250,54 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="MemoryLog" 
         component={MemoryLogScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="DesignSystem" 
+        component={DesignSystemScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="PrivacyPolicy" 
+        component={PrivacyPolicyScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="TermsOfService" 
+        component={TermsOfServiceScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="Search" 
+        component={SearchScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="Migration" 
+        component={MigrationScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="DataManagement" 
+        component={DataManagementScreen}
         options={{
           headerShown: false,
           presentation: 'card',
