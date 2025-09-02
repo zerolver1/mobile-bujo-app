@@ -857,8 +857,9 @@ export class BuJoSyncService {
     const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
     if (!supabase || !hasValidUserId) return;
 
-    const localData = await AsyncStorage.getItem('bujo-page-scans');
-    const localScans: PageScan[] = localData ? JSON.parse(localData) : [];
+    // Get local scans from BuJoStore
+    const { scans: localScans } = useBuJoStore.getState();
+    console.log(`🔍 Found ${localScans.length} page scans to sync`);
 
     // Get remote scans (use guest_user_id for guest users, user_id for authenticated users)
     const { data: remoteScans, error } = this.isGuestMode && this.guestUserId
@@ -886,21 +887,42 @@ export class BuJoSyncService {
   }
 
   private async uploadPageScan(scan: PageScan) {
-    if (!supabase || !this.userId) return;
+    // Check if we have a valid user ID (either authenticated user or guest user)
+    const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
+    if (!supabase || !hasValidUserId) return;
 
     // Note: Image upload to Supabase Storage would happen here
     // For now, we'll just sync the metadata
 
-    await supabase.from('page_scans').insert({
-      id: scan.id,
-      user_id: this.userId,
-      image_url: scan.imageUri, // This would be the Supabase Storage URL
-      image_hash: scan.hash,
-      ocr_text: scan.ocrText,
-      ocr_confidence: scan.confidence,
-      processed_at: scan.processedAt.toISOString(),
-      processing_status: 'completed',
-    });
+    const data = this.isGuestMode && this.guestUserId
+      ? {
+          id: scan.id,
+          guest_user_id: this.guestUserId,
+          image_url: scan.imageUri, // This would be the Supabase Storage URL
+          image_hash: scan.hash,
+          ocr_text: scan.ocrText,
+          ocr_confidence: scan.confidence,
+          processed_at: scan.processedAt.toISOString(),
+          processing_status: 'completed',
+        }
+      : {
+          id: scan.id,
+          user_id: this.userId,
+          image_url: scan.imageUri, // This would be the Supabase Storage URL
+          image_hash: scan.hash,
+          ocr_text: scan.ocrText,
+          ocr_confidence: scan.confidence,
+          processed_at: scan.processedAt.toISOString(),
+          processing_status: 'completed',
+        };
+
+    const { error } = await supabase.from('page_scans').insert(data);
+    
+    if (error) {
+      console.error('Error uploading page scan:', error);
+    } else {
+      console.log(`✅ Page scan uploaded to Supabase: ${scan.hash.substring(0, 8)}...`);
+    }
   }
 
   // Update last sync timestamp
