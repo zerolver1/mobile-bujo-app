@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,7 +28,7 @@ export const SearchScreen: React.FC = () => {
   const allResearch = useEntriesByType('research');
   const allMemories = useEntriesByType('memory');
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -143,7 +143,7 @@ export const SearchScreen: React.FC = () => {
         lineHeight: 22,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { flex: 1 },
@@ -171,7 +171,7 @@ export const SearchScreen: React.FC = () => {
     emptyStateDescription: { textAlign: 'center', lineHeight: 22 },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const handleSearchResults = useCallback((results: BuJoEntry[]) => {
     setSearchResults(results);

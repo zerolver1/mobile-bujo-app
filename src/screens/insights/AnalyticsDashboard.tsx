@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -40,7 +40,7 @@ export const AnalyticsDashboard: React.FC = () => {
   const { entries } = useBuJoStore();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -211,7 +211,7 @@ export const AnalyticsDashboard: React.FC = () => {
         marginBottom: theme.spacing?.xs || 4,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { flex: 1 },
@@ -246,7 +246,7 @@ export const AnalyticsDashboard: React.FC = () => {
     insightIcon: { marginBottom: 4 },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const analytics = useMemo((): AnalyticsData => {
     if (!entries || entries.length === 0) {

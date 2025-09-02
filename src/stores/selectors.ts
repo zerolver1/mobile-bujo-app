@@ -101,12 +101,16 @@ export const useProductivityStats = () => {
 
 export const useRecentActivity = (days = 7) => {
   const entries = useBuJoStore(state => state.entries);
-  return useMemo(() => {
+  
+  const cutoffTime = useMemo(() => {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    
-    return entries.filter(e => e.createdAt >= cutoffDate);
-  }, [entries, days]);
+    return cutoffDate.getTime();
+  }, [days]);
+  
+  return useMemo(() => {
+    return entries.filter(e => new Date(e.createdAt).getTime() >= cutoffTime);
+  }, [entries, cutoffTime]);
 };
 
 // Search selector with memoization
@@ -127,16 +131,20 @@ export const useSearchEntries = (query: string) => {
 // Migration helpers
 export const useMigrationCandidates = () => {
   const entries = useBuJoStore(state => state.entries);
+  
+  const oneDayAgo = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0]; // Convert to YYYY-MM-DD for comparison
+  }, []);
+
   return useMemo(() => {
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    
     return entries.filter(entry => 
       entry.type === 'task' && 
       entry.status === 'incomplete' &&
-      new Date(entry.collectionDate) < oneDayAgo
+      entry.collectionDate < oneDayAgo
     );
-  }, [entries]);
+  }, [entries, oneDayAgo]);
 };
 
 // Memory optimization - only re-render when specific fields change

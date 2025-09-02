@@ -31,7 +31,7 @@ export const MigrationScreen: React.FC = () => {
     setMigrationDate(today.toISOString().split('T')[0]);
   }, []);
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -181,7 +181,7 @@ export const MigrationScreen: React.FC = () => {
         borderColor: theme.colors.primary,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { flex: 1 },
@@ -216,7 +216,7 @@ export const MigrationScreen: React.FC = () => {
     checkboxSelected: { backgroundColor: '#0F2A44', borderColor: '#0F2A44' },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   // Calculate migration statistics
   const migrationStats = useMemo(() => {
