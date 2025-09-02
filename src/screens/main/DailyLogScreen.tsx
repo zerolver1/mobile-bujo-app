@@ -8,6 +8,9 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
+  TextInput,
+  Keyboard,
+  RefreshControl,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +21,7 @@ import { BuJoEntryItem } from '../../components/BuJoEntryItem';
 import { SwipeableEntryItem } from '../../components/SwipeableEntryItem';
 import { useSwipeGestures } from '../../hooks/useSwipeGestures';
 import { useTheme } from '../../theme';
+import { haptic } from '../../utils/haptics';
 import { 
   PaperBackground, 
   PaperButton, 
@@ -28,6 +32,7 @@ import {
   createPaperShadow,
   safeThemeAccess 
 } from '../../components/ui/paperComponents';
+import { PaperLoading } from '../../components/ui/PaperLoading';
 
 interface DailyLogScreenProps {
   navigation: any;
@@ -48,6 +53,10 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [useSwipeableEntries, setUseSwipeableEntries] = useState(true);
   const [showStats, setShowStats] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showSwipeBanner, setShowSwipeBanner] = useState(true);
   
   const insets = useSafeAreaInsets();
 
@@ -70,12 +79,23 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
   }, [entries, currentDate]);
 
   const handleAddQuickEntry = () => {
+    haptic.buttonPress();
     navigation.navigate('QuickCapture');
   };
 
   const handleQuickScan = () => {
+    haptic.buttonPress();
     navigation.navigate('Capture');
   };
+
+  // Filter entries based on search query
+  const filteredEntries = searchQuery.trim() 
+    ? todaysEntries.filter(entry => 
+        entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        entry.contexts.some(ctx => ctx.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : todaysEntries;
 
   const getEntryStats = () => {
     const tasks = todaysEntries.filter(e => e.type === 'task');
@@ -223,6 +243,29 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
     setCurrentDate(today);
   };
 
+  // Paper-themed pull-to-refresh with ink spreading animation
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    
+    // Haptic feedback for paper journal page turn
+    haptic.pageTurn();
+    
+    try {
+      // Re-initialize the store to fetch fresh data
+      await initialize();
+      
+      // Small delay to show the beautiful paper animation
+      setTimeout(() => {
+        setRefreshing(false);
+        haptic.success(); // Success feedback like closing a journal
+      }, 1000);
+    } catch (error) {
+      console.error('Error refreshing entries:', error);
+      setRefreshing(false);
+      haptic.error(); // Error feedback like pen running out of ink
+    }
+  };
+
   const isToday = currentDate === new Date().toISOString().split('T')[0];
   const { theme } = useTheme();
 
@@ -273,6 +316,17 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
             )}
             {/* Action Buttons */}
             <View style={styles.actionButtonsContainer}>
+              {/* Search Button */}
+              <TouchableOpacity 
+                style={[styles.actionButton, isSearching && styles.actionButtonActive]}
+                onPress={() => {
+                  haptic.selection();
+                  setIsSearching(!isSearching);
+                }}
+              >
+                <Ionicons name="search" size={20} color={isSearching ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              </TouchableOpacity>
+              
               {/* Scan Page Button */}
               <TouchableOpacity 
                 style={styles.actionButton}
@@ -284,7 +338,10 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
               {/* Swipe Mode Toggle Button */}
               <TouchableOpacity 
                 style={[styles.actionButton, useSwipeableEntries && styles.actionButtonActive]}
-                onPress={() => setUseSwipeableEntries(!useSwipeableEntries)}
+                onPress={() => {
+                  haptic.selection();
+                  setUseSwipeableEntries(!useSwipeableEntries);
+                }}
               >
                 <Ionicons name="swap-horizontal" size={20} color={useSwipeableEntries ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
               </TouchableOpacity>
@@ -292,7 +349,10 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
               {/* Stats Toggle Button */}
               <TouchableOpacity 
                 style={[styles.actionButton, showStats && styles.actionButtonActive]}
-                onPress={() => setShowStats(!showStats)}
+                onPress={() => {
+                  haptic.selection();
+                  setShowStats(!showStats);
+                }}
               >
                 <Ionicons name={showStats ? "eye" : "eye-off"} size={20} color={showStats ? '#FFFFFF' : safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
               </TouchableOpacity>
@@ -312,6 +372,58 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
 
         {/* Subtle divider */}
         <View style={styles.headerDivider} />
+
+        {/* Swipe Info Banner */}
+        {useSwipeableEntries && showSwipeBanner && (
+          <View style={styles.swipeBanner}>
+            <View style={styles.swipeBannerContent}>
+              <Ionicons name="information-circle" size={16} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+              <Typography variant="caption2" color="textSecondary" style={styles.swipeBannerText}>
+                Swipe left/right on entries for quick actions
+              </Typography>
+              <TouchableOpacity 
+                onPress={() => setShowSwipeBanner(false)}
+                style={styles.dismissButton}
+              >
+                <Ionicons name="close" size={16} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Search Bar */}
+        {isSearching && (
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={18} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search entries, tags, or contexts..."
+                placeholderTextColor={safeThemeAccess(theme, t => t.colors.placeholder, '#9CA3AF')}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+                returnKeyType="search"
+                onSubmitEditing={Keyboard.dismiss}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+                </TouchableOpacity>
+              )}
+            </View>
+            <PaperButton
+              variant="pencil"
+              size="sm"
+              title="Cancel"
+              onPress={() => {
+                setIsSearching(false);
+                setSearchQuery('');
+                Keyboard.dismiss();
+              }}
+            />
+          </View>
+        )}
 
         
         {/* Date Picker Modal */}
@@ -396,10 +508,33 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           </NotebookCard>
         )}
 
+        {/* Search Results Info */}
+        {isSearching && searchQuery.trim() && (
+          <View style={styles.searchResultsInfo}>
+            <Typography variant="caption1" color="textSecondary">
+              {filteredEntries.length === 0 
+                ? 'No entries found' 
+                : `Found ${filteredEntries.length} ${filteredEntries.length === 1 ? 'entry' : 'entries'}`
+              }
+            </Typography>
+          </View>
+        )}
+
+        {/* Paper Loading Overlay for Refresh */}
+        {refreshing && (
+          <View style={styles.refreshOverlay}>
+            <PaperLoading 
+              type="page-flip" 
+              message="Refreshing journal..." 
+              size="md" 
+            />
+          </View>
+        )}
+
         {/* Entries List */}
-        {todaysEntries.length > 0 ? (
+        {(isSearching && searchQuery.trim() ? filteredEntries.length > 0 : todaysEntries.length > 0) ? (
           <FlatList
-          data={todaysEntries}
+          data={filteredEntries}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             useSwipeableEntries ? (
@@ -420,6 +555,17 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           contentContainerStyle={styles.listContainer}
           style={styles.entriesList}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')}
+              colors={[safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')]}
+              progressBackgroundColor={safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')}
+              title="Refreshing journal..."
+              titleColor={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')}
+            />
+          }
           />
         ) : (
           <View style={styles.emptyState}>
@@ -631,5 +777,74 @@ const styles = StyleSheet.create({
     textShadowRadius: 1,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+  },
+  
+  // Search Styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
+    backgroundColor: 'rgba(245, 242, 232, 0.5)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15, 42, 68, 0.1)',
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.md,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 42, 68, 0.1)',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2B2B2B',
+    padding: 0,
+  },
+  searchResultsInfo: {
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  swipeBanner: {
+    backgroundColor: 'rgba(21, 128, 61, 0.1)', // Soft green background
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(21, 128, 61, 0.2)',
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  swipeBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  swipeBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  dismissButton: {
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  },
+  refreshOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(249, 246, 240, 0.85)', // Semi-transparent paper background
+    zIndex: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backdropFilter: 'blur(2px)', // Subtle blur effect
   },
 });

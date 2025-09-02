@@ -29,6 +29,7 @@ import {
 } from '../utils/swipeActions';
 import { useTheme } from '../theme';
 import { safeThemeAccess } from '../theme/paperStyleUtils';
+import { haptic } from '../utils/haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -115,10 +116,12 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
         // Show left actions with smooth spring
         const targetX = leftActionsCount * 80;
         translateX.value = withSpring(targetX, SPRING_CONFIG);
+        runOnJS(haptic.swipeAction)();
       } else if (rightSwipe && rightActionsCount > 0) {
         // Show right actions with smooth spring  
         const targetX = -(rightActionsCount * 80);
         translateX.value = withSpring(targetX, SPRING_CONFIG);
+        runOnJS(haptic.swipeAction)();
       } else {
         // Use withDecay for natural velocity continuation, then spring back
         translateX.value = withDecay({
@@ -134,6 +137,9 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
 
   // Handle action button presses
   const handleActionPress = (action: SwipeAction) => {
+    // Haptic feedback for action press
+    haptic.buttonPress();
+    
     // Smooth animation back to center using modern spring config
     translateX.value = withSpring(0, SPRING_CONFIG, () => {
       // Execute action after animation completes

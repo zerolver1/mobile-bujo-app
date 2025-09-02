@@ -19,6 +19,7 @@ import {
   PaperButton, 
   Typography, 
   Card,
+  NotebookCard,
   PAPER_DESIGN_TOKENS,
   safeThemeAccess 
 } from '../../components/ui/paperComponents';
@@ -101,31 +102,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
       <SafeAreaView style={styles.container}>
         <ScrollView style={styles.scrollView}>
         {/* App Logo Header */}
-        <View style={styles.logoSection}>
-          <Image 
-            source={require('../../../assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png')} 
-            style={styles.appLogo}
-            resizeMode="contain"
-          />
-          <Typography variant="title1" style={styles.appTitle}>Bullet Journal</Typography>
-          <Typography variant="caption1" style={styles.appSubtitle}>Digital Bullet Journaling</Typography>
-        </View>
+        <NotebookCard variant="page" showHoles={true} style={styles.logoCard}>
+          <View style={styles.logoSection}>
+            <Image 
+              source={require('../../../assets/d7e9cb17-153c-48bb-bf38-5e839a589a61.png')} 
+              style={styles.appLogo}
+              resizeMode="contain"
+            />
+            <Typography variant="title1" style={styles.appTitle}>Bullet Journal</Typography>
+            <Typography variant="caption1" style={styles.appSubtitle}>Digital Bullet Journaling</Typography>
+          </View>
+        </NotebookCard>
 
         {/* Account Section */}
         <View style={styles.section}>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Account</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Demo User"
               subtitle={`${subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)} Plan`}
               icon="person-outline"
               showChevron={false}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Subscription Section */}
@@ -133,9 +134,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Subscription</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Usage This Month"
               subtitle={`${usageStats.monthlyScans} scans used`}
@@ -160,7 +159,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               icon="refresh-outline"
               onPress={handleRestorePurchases}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Processing Section */}
@@ -168,9 +167,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Processing</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Processing Mode"
               subtitle={speedPreference === 'speed' 
@@ -188,7 +185,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               }
               showChevron={false}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Apple Integration Section */}
@@ -196,16 +193,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Apple Integration</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Apple Sync Settings"
               subtitle="Configure sync with Reminders & Calendar"
               icon="phone-portrait-outline"
               onPress={() => navigation.navigate('AppleSyncSettings')}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Preferences Section */}
@@ -213,9 +208,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Preferences</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Auto-Sync"
               subtitle="Automatically sync with Apple apps"
@@ -264,7 +257,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               }
               showChevron={false}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Appearance Section */}
@@ -272,9 +265,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Appearance</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Theme"
               subtitle={themeMode === 'system' 
@@ -349,7 +340,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               }
               showChevron={false}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Support Section */}
@@ -357,9 +348,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <Typography variant="caption" style={[styles.sectionHeader, { 
             color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
           }]}>Support</Typography>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Design System"
               subtitle="Preview app components & theming"
@@ -411,21 +400,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               icon="document-text-outline"
               onPress={() => navigation.navigate('TermsOfService')}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* Sign Out */}
         <View style={styles.section}>
-          <Card style={[styles.card, {
-            backgroundColor: safeThemeAccess(theme, t => t.colors.surface, '#F5F2E8')
-          }]}>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
             <SettingRow
               title="Sign Out"
               icon="log-out-outline"
               onPress={handleSignOut}
               showChevron={false}
             />
-          </Card>
+          </NotebookCard>
         </View>
 
         {/* App Info */}
@@ -451,10 +438,15 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  logoCard: {
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.xl,
+    transform: [{ rotate: '-0.3deg' }], // Slight tilt for organic feel
+  },
   logoSection: {
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 16,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.xl2,
+    paddingHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
   },
   appLogo: {
     width: 80,
@@ -486,8 +478,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   card: {
-    marginHorizontal: 20,
-    borderRadius: 12,
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    transform: [{ rotate: '0.2deg' }], // Subtle paper tilt
   },
   settingRow: {
     flexDirection: 'row',
@@ -499,11 +491,17 @@ const styles = StyleSheet.create({
   settingIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 8, // More paper-like, less circular
+    backgroundColor: 'rgba(15, 42, 68, 0.08)', // Paper ink color
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    // Subtle inner shadow for depth
+    shadowColor: 'rgba(15, 42, 68, 0.1)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 1,
   },
   settingContent: {
     flex: 1,

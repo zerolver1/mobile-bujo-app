@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BuJoEntry } from '../../types/BuJo';
 import { useBuJoStore } from '../../stores/BuJoStore';
+import { haptic } from '../../utils/haptics';
 import { useTheme } from '../../theme';
 import { PaperBackground, PaperButton, Typography, PAPER_DESIGN_TOKENS } from '../../components/ui/paperComponents';
 import { BuJoSymbol } from '../../components/ui/BuJoSymbols';
@@ -26,6 +27,73 @@ interface QuickCaptureScreenProps {
   };
 }
 
+interface EntryTemplate {
+  id: string;
+  name: string;
+  content: string;
+  bulletIndex: number;
+  priority: 'none' | 'low' | 'medium' | 'high';
+  tags: string[];
+  contexts: string[];
+}
+
+const ENTRY_TEMPLATES: EntryTemplate[] = [
+  {
+    id: 'daily-standup',
+    name: '🏢 Daily Standup',
+    content: 'Daily standup @work\n• Yesterday: \n• Today: \n• Blockers: ',
+    bulletIndex: 0,
+    priority: 'medium',
+    tags: ['standup'],
+    contexts: ['work']
+  },
+  {
+    id: 'meeting',
+    name: '📅 Meeting Notes',
+    content: 'Meeting with [attendees] @work #meeting\n• Agenda: \n• Notes: \n• Action items: ',
+    bulletIndex: 5,
+    priority: 'medium',
+    tags: ['meeting'],
+    contexts: ['work']
+  },
+  {
+    id: 'project-task',
+    name: '📋 Project Task',
+    content: 'Work on [project] @work #project\n• Requirements: \n• Timeline: ',
+    bulletIndex: 0,
+    priority: 'high',
+    tags: ['project'],
+    contexts: ['work']
+  },
+  {
+    id: 'personal-goal',
+    name: '🎯 Personal Goal',
+    content: '[Goal description] @personal #goals\n• Why: \n• Steps: \n• By when: ',
+    bulletIndex: 0,
+    priority: 'medium',
+    tags: ['goals'],
+    contexts: ['personal']
+  },
+  {
+    id: 'reflection',
+    name: '💭 Daily Reflection',
+    content: 'Daily reflection @personal #reflection\n• What went well: \n• What could improve: \n• Tomorrow focus: ',
+    bulletIndex: 6,
+    priority: 'none',
+    tags: ['reflection'],
+    contexts: ['personal']
+  },
+  {
+    id: 'habit-tracker',
+    name: '✅ Habit Check',
+    content: 'Habit: [habit name] @personal #habits\n• Completed: \n• Notes: ',
+    bulletIndex: 0,
+    priority: 'low',
+    tags: ['habits'],
+    contexts: ['personal']
+  }
+];
+
 export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const editEntry = route?.params?.editEntry;
@@ -33,6 +101,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
   const [selectedBullet, setSelectedBullet] = useState(editEntry ? getBulletIndex(editEntry) : 0);
   const [priority, setPriority] = useState<'none' | 'low' | 'medium' | 'high'>(editEntry?.priority || 'none');
   const [targetDate, setTargetDate] = useState(editEntry?.collectionDate || new Date().toISOString().split('T')[0]);
+  const [showTemplates, setShowTemplates] = useState(false);
   const { addEntry, updateEntry } = useBuJoStore();
 
   // Helper function to get bullet index from entry
@@ -112,6 +181,18 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
     return matches ? matches.map(context => context.substring(1)) : [];
   };
 
+  const applyTemplate = (template: EntryTemplate) => {
+    haptic.penTap(); // Like selecting a template with pen
+    setContent(template.content);
+    setSelectedBullet(template.bulletIndex);
+    setPriority(template.priority);
+    setShowTemplates(false);
+    // Focus text input after a short delay
+    setTimeout(() => {
+      // The text input will focus when templates are hidden
+    }, 100);
+  };
+
   const handleSave = async () => {
     if (!content.trim()) {
       Alert.alert('Empty Entry', 'Please enter some content for your bullet journal entry.');
@@ -134,6 +215,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           collectionDate: targetDate,
         });
         
+        haptic.success(); // Success haptic for save
         Alert.alert('Success', 'Entry updated successfully!', [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
@@ -151,6 +233,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
         };
 
         addEntry(entry);
+        haptic.success(); // Success haptic for save
         
         Alert.alert(
           'Entry Added',
@@ -207,8 +290,47 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({ navigati
           <Typography variant="h2" style={styles.headerTitle}>
             {editEntry ? 'Edit Entry' : 'New Entry'}
           </Typography>
-          <View style={styles.headerSpacer} />
+          {!editEntry && (
+            <TouchableOpacity 
+              onPress={() => {
+                haptic.selection();
+                setShowTemplates(!showTemplates);
+              }} 
+              style={styles.templatesButton}
+            >
+              <Ionicons 
+                name={showTemplates ? "close" : "library-outline"} 
+                size={24} 
+                color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} 
+              />
+            </TouchableOpacity>
+          )}
+          {editEntry && <View style={styles.headerSpacer} />}
         </View>
+
+        {/* Templates Section */}
+        {!editEntry && showTemplates && (
+          <View style={styles.templatesSection}>
+            <Typography variant="caption1" style={styles.templatesTitle}>Quick Templates</Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templatesScroll}>
+              {ENTRY_TEMPLATES.map((template) => (
+                <TouchableOpacity
+                  key={template.id}
+                  style={styles.templateCard}
+                  onPress={() => applyTemplate(template)}
+                  activeOpacity={0.7}
+                >
+                  <Typography variant="body2" style={styles.templateName}>
+                    {template.name}
+                  </Typography>
+                  <Typography variant="caption2" style={styles.templatePreview} numberOfLines={2}>
+                    {template.content.split('\n')[0]}
+                  </Typography>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Hero Content Input - This is the main focus */}
         <View style={styles.heroSection}>
@@ -555,5 +677,52 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontStyle: 'italic',
     opacity: 0.8,
+  },
+  
+  // Templates Styles
+  templatesButton: {
+    padding: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15, 42, 68, 0.08)',
+  },
+  templatesSection: {
+    backgroundColor: 'rgba(245, 242, 232, 0.7)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15, 42, 68, 0.1)',
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.md,
+  },
+  templatesTitle: {
+    fontWeight: '600',
+    color: '#0F2A44',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.sm,
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  templatesScroll: {
+    paddingLeft: PAPER_DESIGN_TOKENS.spacing.xl,
+  },
+  templateCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: PAPER_DESIGN_TOKENS.spacing.md,
+    marginRight: PAPER_DESIGN_TOKENS.spacing.sm,
+    minWidth: 160,
+    maxWidth: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 42, 68, 0.1)',
+    // Subtle paper shadow
+    shadowColor: 'rgba(15, 42, 68, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  templateName: {
+    fontWeight: '600',
+    color: '#0F2A44',
+    marginBottom: PAPER_DESIGN_TOKENS.spacing.xs,
+  },
+  templatePreview: {
+    color: '#6B7280',
+    lineHeight: 16,
   },
 });

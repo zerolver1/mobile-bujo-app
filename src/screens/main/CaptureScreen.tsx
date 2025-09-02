@@ -605,7 +605,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({ navigation }) => {
               onPress={() => setShowTips(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="lightbulb-outline" size={18} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+              <Ionicons name="bulb-outline" size={18} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
               <Typography variant="caption1" color="text" style={styles.tipsToggleText}>
                 Show Tips
               </Typography>

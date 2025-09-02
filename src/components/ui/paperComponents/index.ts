@@ -20,6 +20,7 @@ export { InkButton, type InkButtonProps } from '../InkButton';
 
 // Utility components
 export { GlassMorphism, type GlassMorphismProps } from '../GlassMorphism';
+export { PaperLoading, type PaperLoadingProps } from '../PaperLoading';
 
 // Paper-themed navigation and symbols
 export { PaperTabBar } from '../PaperTabBar';
@@ -103,6 +104,21 @@ export const PAPER_COMPONENT_EXAMPLES = {
     <Typography variant="caption1" color="textTertiary">
       Today, 2:30 PM
     </Typography>
+  `,
+
+  // Loading states
+  loadingStates: `
+    {/* Ink spreading animation for general loading */}
+    <PaperLoading type="ink-spreading" message="Loading entries..." size="md" />
+    
+    {/* Page flip for navigation/screen changes */}
+    <PaperLoading type="page-flip" message="Opening journal..." size="lg" />
+    
+    {/* Writing animation for saving content */}
+    <PaperLoading type="writing" message="Saving entry..." size="sm" />
+    
+    {/* Scanning for search/filtering */}
+    <PaperLoading type="scanning" message="Searching..." size="md" />
   `,
   
   // Card layouts
