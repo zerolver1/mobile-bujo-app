@@ -147,9 +147,8 @@ const RootNavigator: React.FC = () => {
         name="EntryReview" 
         component={EntryReviewScreen}
         options={{
-          headerShown: true,
+          headerShown: false,
           presentation: 'modal',
-          headerTitle: 'Review Entries',
         }}
       />
       <Stack.Screen 

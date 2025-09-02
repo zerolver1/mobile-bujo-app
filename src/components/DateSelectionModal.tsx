@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
-import { Typography, Card, PaperButton } from './ui/paperComponents';
+import { Typography, Card, PaperButton, PaperBackground } from './ui/paperComponents';
 import { safeThemeAccess } from '../theme/paperStyleUtils';
+import { PAPER_DESIGN_TOKENS } from '../theme/paperDesignTokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -195,25 +196,26 @@ export const DateSelectionModal: React.FC<DateSelectionModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#8E8E93" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{title}</Text>
-          <View style={styles.headerRight}>
-            {showBatchOption && (
-              <TouchableOpacity onPress={onBatchSelect} style={styles.batchButton}>
-                <Ionicons name="copy-outline" size={20} color="#007AFF" />
-                <Text style={styles.batchButtonText}>All</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+      <PaperBackground variant="subtle" intensity="light">
+        <View style={styles.container}>
+          {/* Header */}
+          <Card variant="flat" padding="md" style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')} />
+            </TouchableOpacity>
+            <Typography variant="headline" color="text" style={styles.title}>{title}</Typography>
+            <View style={styles.headerRight}>
+              {showBatchOption && (
+                <TouchableOpacity onPress={onBatchSelect} style={styles.batchButton}>
+                  <Ionicons name="copy-outline" size={20} color={safeThemeAccess(theme, t => t.colors.primary, '#0F2A44')} />
+                  <Typography variant="caption1" color="primary" style={styles.batchButtonText}>All</Typography>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Card>
 
         {/* View Mode Toggle */}
-        <View style={styles.toggleContainer}>
+        <Card variant="flat" padding="sm" style={styles.toggleContainer}>
           <TouchableOpacity
             style={[styles.toggleButton, viewMode === 'quick' && styles.activeToggle]}
             onPress={() => setViewMode('quick')}
@@ -221,11 +223,18 @@ export const DateSelectionModal: React.FC<DateSelectionModalProps> = ({
             <Ionicons
               name="flash-outline"
               size={20}
-              color={viewMode === 'quick' ? '#007AFF' : '#8E8E93'}
+              color={viewMode === 'quick' 
+                ? safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
+                : safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')
+              }
             />
-            <Text style={[styles.toggleText, viewMode === 'quick' && styles.activeToggleText]}>
+            <Typography 
+              variant="body2" 
+              color={viewMode === 'quick' ? 'primary' : 'textSecondary'}
+              style={styles.toggleText}
+            >
               Quick
-            </Text>
+            </Typography>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, viewMode === 'calendar' && styles.activeToggle]}
@@ -234,13 +243,20 @@ export const DateSelectionModal: React.FC<DateSelectionModalProps> = ({
             <Ionicons
               name="calendar-outline"
               size={20}
-              color={viewMode === 'calendar' ? '#007AFF' : '#8E8E93'}
+              color={viewMode === 'calendar' 
+                ? safeThemeAccess(theme, t => t.colors.primary, '#0F2A44') 
+                : safeThemeAccess(theme, t => t.colors.textSecondary, '#6B7280')
+              }
             />
-            <Text style={[styles.toggleText, viewMode === 'calendar' && styles.activeToggleText]}>
+            <Typography 
+              variant="body2" 
+              color={viewMode === 'calendar' ? 'primary' : 'textSecondary'}
+              style={styles.toggleText}
+            >
               Calendar
-            </Text>
+            </Typography>
           </TouchableOpacity>
-        </View>
+        </Card>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {viewMode === 'quick' ? (
@@ -341,14 +357,16 @@ export const DateSelectionModal: React.FC<DateSelectionModalProps> = ({
 
         {/* Action Button */}
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.confirmButton}
+          <PaperButton
+            variant="ink"
+            size="lg"
+            title="Confirm Date"
             onPress={() => handleSelectDate(selectedDate)}
-          >
-            <Text style={styles.confirmButtonText}>Confirm Date</Text>
-          </TouchableOpacity>
+            style={styles.confirmButton}
+          />
         </View>
       </View>
+      </PaperBackground>
     </Modal>
   );
 };
@@ -356,25 +374,21 @@ export const DateSelectionModal: React.FC<DateSelectionModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: 'transparent', // Let PaperBackground show through
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: 'rgba(15, 42, 68, 0.1)', // Paper-themed border
   },
   closeButton: {
     padding: 4,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    flex: 1,
+    textAlign: 'center',
   },
   headerRight: {
     flexDirection: 'row',
@@ -396,28 +410,23 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 12,
-    padding: 4,
+    marginHorizontal: PAPER_DESIGN_TOKENS.spacing.xl,
+    marginTop: PAPER_DESIGN_TOKENS.spacing.md,
+    borderRadius: 8,
   },
   toggleButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: PAPER_DESIGN_TOKENS.spacing.sm,
+    borderRadius: 6,
   },
   activeToggle: {
-    backgroundColor: '#F0F7FF',
+    backgroundColor: 'rgba(15, 42, 68, 0.08)', // Subtle paper blue tint
   },
   toggleText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#8E8E93',
-    marginLeft: 8,
+    marginLeft: PAPER_DESIGN_TOKENS.spacing.xs,
   },
   activeToggleText: {
     color: '#007AFF',
@@ -531,20 +540,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
+    padding: PAPER_DESIGN_TOKENS.spacing.xl,
+    backgroundColor: 'rgba(245, 242, 232, 0.5)', // Paper surface tint
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: 'rgba(15, 42, 68, 0.1)', // Paper-themed border
   },
   confirmButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    // PaperButton will handle its own styling
   },
 });
