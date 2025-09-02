@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BuJoEntry, BuJoCollection, PageScan, CustomSignifier, QuarterlyPlan } from '../types/BuJo';
+import { BuJoEntry, BuJoCollection, PageScan, CustomSignifier, QuarterlyPlan, CrossReference } from '../types/BuJo';
 import { bujoSyncService } from '../services/supabase/BuJoSyncService';
 
 interface BuJoState {
@@ -11,6 +11,7 @@ interface BuJoState {
   scans: PageScan[];
   customSignifiers: CustomSignifier[];
   quarterlyPlans: QuarterlyPlan[];
+  crossReferences: CrossReference[];
   
   // Current state
   currentDate: string; // YYYY-MM-DD
@@ -65,6 +66,12 @@ interface BuJoState {
   // Migration
   migrateEntries: (fromDate: string, toDate: string, entryIds: string[]) => void;
   
+  // Cross-references
+  addCrossReference: (reference: CrossReference) => void;
+  removeCrossReference: (sourceEntryId: string, targetEntryId: string) => void;
+  getCrossReferencesForEntry: (entryId: string) => CrossReference[];
+  getLinkedEntries: (entryId: string) => BuJoEntry[];
+  
   // Persistence
   saveToStorage: () => Promise<void>;
   loadFromStorage: () => Promise<void>;
@@ -91,6 +98,7 @@ const STORAGE_KEYS = {
   SCANS: 'bujo_scans',
   CUSTOM_SIGNIFIERS: 'bujo_custom_signifiers',
   QUARTERLY_PLANS: 'bujo_quarterly_plans',
+  CROSS_REFERENCES: 'bujo_cross_references',
   METADATA: 'bujo_metadata'
 };
 
@@ -152,6 +160,7 @@ export const useBuJoStore = create<BuJoState>()(
     scans: [],
     customSignifiers: [],
     quarterlyPlans: [],
+    crossReferences: [],
     currentDate: formatDate(new Date()),
     selectedCollection: null,
     syncStatus: 'idle' as const,
@@ -538,10 +547,102 @@ export const useBuJoStore = create<BuJoState>()(
     }));
   },
   
+  // Cross-reference methods
+  addCrossReference: (reference) => {
+    set((state) => {
+      // Add to cross-references list
+      const newCrossReferences = [...state.crossReferences, reference];
+      
+      // Update entries to include linked entry IDs
+      const updatedEntries = state.entries.map(entry => {
+        if (entry.id === reference.sourceEntryId) {
+          const linkedEntries = entry.linkedEntries || [];
+          return {
+            ...entry,
+            linkedEntries: [...linkedEntries, reference.targetEntryId]
+          };
+        }
+        if (entry.id === reference.targetEntryId) {
+          const referencedBy = entry.referencedBy || [];
+          return {
+            ...entry,
+            referencedBy: [...referencedBy, reference.sourceEntryId]
+          };
+        }
+        return entry;
+      });
+      
+      return {
+        crossReferences: newCrossReferences,
+        entries: updatedEntries
+      };
+    });
+
+    // Auto-save to storage
+    const { saveToStorage } = get();
+    saveToStorage().catch(error => 
+      console.error('Failed to auto-save after adding cross-reference:', error)
+    );
+  },
+
+  removeCrossReference: (sourceEntryId, targetEntryId) => {
+    set((state) => {
+      // Remove from cross-references list
+      const newCrossReferences = state.crossReferences.filter(ref => 
+        !(ref.sourceEntryId === sourceEntryId && ref.targetEntryId === targetEntryId)
+      );
+      
+      // Update entries to remove linked entry IDs
+      const updatedEntries = state.entries.map(entry => {
+        if (entry.id === sourceEntryId) {
+          const linkedEntries = entry.linkedEntries || [];
+          return {
+            ...entry,
+            linkedEntries: linkedEntries.filter(id => id !== targetEntryId)
+          };
+        }
+        if (entry.id === targetEntryId) {
+          const referencedBy = entry.referencedBy || [];
+          return {
+            ...entry,
+            referencedBy: referencedBy.filter(id => id !== sourceEntryId)
+          };
+        }
+        return entry;
+      });
+      
+      return {
+        crossReferences: newCrossReferences,
+        entries: updatedEntries
+      };
+    });
+
+    // Auto-save to storage
+    const { saveToStorage } = get();
+    saveToStorage().catch(error => 
+      console.error('Failed to auto-save after removing cross-reference:', error)
+    );
+  },
+
+  getCrossReferencesForEntry: (entryId) => {
+    const { crossReferences } = get();
+    return crossReferences.filter(ref => 
+      ref.sourceEntryId === entryId || ref.targetEntryId === entryId
+    );
+  },
+
+  getLinkedEntries: (entryId) => {
+    const { entries } = get();
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry || !entry.linkedEntries) return [];
+    
+    return entries.filter(e => entry.linkedEntries!.includes(e.id));
+  },
+  
   // Persistence methods
   saveToStorage: async () => {
     try {
-      const { entries, collections, scans, customSignifiers, quarterlyPlans } = get();
+      const { entries, collections, scans, customSignifiers, quarterlyPlans, crossReferences } = get();
       
       // Save each data type separately for better performance
       await Promise.all([
@@ -550,6 +651,7 @@ export const useBuJoStore = create<BuJoState>()(
         saveToAsyncStorage(STORAGE_KEYS.SCANS, scans),
         saveToAsyncStorage(STORAGE_KEYS.CUSTOM_SIGNIFIERS, customSignifiers),
         saveToAsyncStorage(STORAGE_KEYS.QUARTERLY_PLANS, quarterlyPlans),
+        saveToAsyncStorage(STORAGE_KEYS.CROSS_REFERENCES, crossReferences),
         saveToAsyncStorage(STORAGE_KEYS.METADATA, {
           lastSaved: new Date().toISOString(),
           version: '1.0.0'
@@ -565,12 +667,13 @@ export const useBuJoStore = create<BuJoState>()(
   
   loadFromStorage: async () => {
     try {
-      const [entries, collections, scans, customSignifiers, quarterlyPlans] = await Promise.all([
+      const [entries, collections, scans, customSignifiers, quarterlyPlans, crossReferences] = await Promise.all([
         loadFromAsyncStorage<BuJoEntry[]>(STORAGE_KEYS.ENTRIES, []),
         loadFromAsyncStorage<BuJoCollection[]>(STORAGE_KEYS.COLLECTIONS, []),
         loadFromAsyncStorage<PageScan[]>(STORAGE_KEYS.SCANS, []),
         loadFromAsyncStorage<CustomSignifier[]>(STORAGE_KEYS.CUSTOM_SIGNIFIERS, []),
-        loadFromAsyncStorage<QuarterlyPlan[]>(STORAGE_KEYS.QUARTERLY_PLANS, [])
+        loadFromAsyncStorage<QuarterlyPlan[]>(STORAGE_KEYS.QUARTERLY_PLANS, []),
+        loadFromAsyncStorage<CrossReference[]>(STORAGE_KEYS.CROSS_REFERENCES, [])
       ]);
       
       set({
@@ -578,7 +681,8 @@ export const useBuJoStore = create<BuJoState>()(
         collections,
         scans,
         customSignifiers,
-        quarterlyPlans
+        quarterlyPlans,
+        crossReferences
       });
       
       console.log(`BuJo data loaded from storage: ${entries.length} entries, ${collections.length} collections, ${scans.length} scans, ${customSignifiers.length} custom signifiers`);

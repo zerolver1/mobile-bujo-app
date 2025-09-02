@@ -32,6 +32,11 @@ export interface BuJoEntry {
   // Custom signifier support
   customSignifierId?: string; // Links to CustomSignifier if type is 'custom'
   
+  // Cross-reference system
+  linkedEntries?: string[]; // IDs of related entries
+  referencedBy?: string[]; // IDs of entries that reference this one
+  transitionHistory?: EntryTransition[]; // Migration/completion chain
+  
   // Memory/gratitude specific fields
   mood?: 'excellent' | 'good' | 'neutral' | 'poor';
   gratitude?: string[];
@@ -131,6 +136,28 @@ export interface QuarterlyGoal {
   milestones: string[];
   completedMilestones: string[];
   targetDate?: Date;
+}
+
+// Cross-reference system
+export interface EntryTransition {
+  id: string;
+  fromEntryId: string;
+  toEntryId: string;
+  action: 'migrated' | 'completed' | 'split' | 'combined' | 'referenced';
+  fromDate: string; // YYYY-MM-DD
+  toDate: string; // YYYY-MM-DD
+  note?: string;
+  createdAt: Date;
+}
+
+export interface CrossReference {
+  id: string;
+  sourceEntryId: string;
+  targetEntryId: string;
+  type: 'related' | 'prerequisite' | 'follow_up' | 'reference' | 'custom';
+  label?: string;
+  note?: string;
+  createdAt: Date;
 }
 
 // Navigation Types
