@@ -28,7 +28,7 @@ export const BulkSelectionHelper: React.FC<BulkSelectionHelperProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -114,7 +114,7 @@ export const BulkSelectionHelper: React.FC<BulkSelectionHelperProps> = ({
         color: theme.colors.background,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#F5F2E8', borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
@@ -134,7 +134,7 @@ export const BulkSelectionHelper: React.FC<BulkSelectionHelperProps> = ({
     filterTextActive: { color: '#F9F6F0' },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const isAllSelected = useMemo(() => 
     entries.length > 0 && selectedEntries.length === entries.length,

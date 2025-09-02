@@ -48,7 +48,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   const [selectedPriority, setSelectedPriority] = useState<BuJoEntry['priority']>('none');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -193,7 +193,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
         marginVertical: theme.spacing?.sm || 8,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { backgroundColor: '#F5F2E8', borderTopWidth: 1, borderTopColor: '#E0E0E0', paddingVertical: 8, paddingHorizontal: 16 },
@@ -222,7 +222,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
     processingText: { textAlign: 'center', fontStyle: 'italic', color: '#666', marginVertical: 8 },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const selectedEntriesData = useMemo(() => 
     entries.filter(e => selectedEntries.includes(e.id)),

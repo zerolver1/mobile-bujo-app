@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -31,7 +31,7 @@ export const CrossReferenceIndicator: React.FC<CrossReferenceIndicatorProps> = (
   const crossReferences = getCrossReferencesForEntry(entry.id);
   const totalLinks = crossReferences.length;
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -112,7 +112,7 @@ export const CrossReferenceIndicator: React.FC<CrossReferenceIndicatorProps> = (
         color: theme.colors.textSecondary,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
@@ -129,7 +129,7 @@ export const CrossReferenceIndicator: React.FC<CrossReferenceIndicatorProps> = (
     quickLinkContent: { flex: 1, fontSize: 10, color: '#666' },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const handleLinkPress = (linkedEntry: BuJoEntry) => {
     if (onLinkPress) {

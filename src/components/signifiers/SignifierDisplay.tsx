@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -37,7 +37,7 @@ export const SignifierDisplay: React.FC<SignifierDisplayProps> = ({
   const { theme } = useTheme();
   const { customSignifiers } = useBuJoStore();
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -82,7 +82,7 @@ export const SignifierDisplay: React.FC<SignifierDisplayProps> = ({
         marginLeft: 4,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
@@ -92,7 +92,7 @@ export const SignifierDisplay: React.FC<SignifierDisplayProps> = ({
     overflowIndicator: { fontSize: 10, color: '#666', fontStyle: 'italic', marginLeft: 4 },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   if (!signifiers || signifiers.length === 0) {
     return null;

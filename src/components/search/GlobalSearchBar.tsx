@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   TextInput,
@@ -47,7 +47,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
     }
   }, [query, searchResults, onSearchResult]);
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -144,7 +144,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
         color: theme.colors.textSecondary,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { backgroundColor: '#F5F2E8', padding: 16, borderRadius: 8 },
@@ -164,7 +164,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
     searchingText: { marginLeft: 8, color: '#666' },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

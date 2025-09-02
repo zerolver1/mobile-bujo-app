@@ -41,7 +41,7 @@ export const CrossReferenceManager: React.FC<CrossReferenceManagerProps> = ({
   const currentEntry = entries.find(e => e.id === entryId);
   const existingReferences = currentEntry?.linkedEntries || [];
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -173,7 +173,7 @@ export const CrossReferenceManager: React.FC<CrossReferenceManagerProps> = ({
         marginLeft: theme.spacing?.sm || 8,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     modalContainer: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
@@ -201,7 +201,7 @@ export const CrossReferenceManager: React.FC<CrossReferenceManagerProps> = ({
     button: { marginLeft: 8 },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const referenceTypes = [
     { key: 'related', label: 'Related' },

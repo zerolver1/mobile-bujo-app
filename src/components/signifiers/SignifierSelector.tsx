@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -42,7 +42,7 @@ export const SignifierSelector: React.FC<SignifierSelectorProps> = ({
   const { customSignifiers } = useBuJoStore();
   const [showCustomManager, setShowCustomManager] = useState(false);
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -129,7 +129,7 @@ export const SignifierSelector: React.FC<SignifierSelectorProps> = ({
         color: theme.colors.textSecondary,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     container: { marginVertical: 8 },
@@ -148,7 +148,7 @@ export const SignifierSelector: React.FC<SignifierSelectorProps> = ({
     selectedCount: { fontSize: 12, color: '#666' },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const toggleSignifier = (signifierId: string) => {
     if (selectedSignifiers.includes(signifierId)) {

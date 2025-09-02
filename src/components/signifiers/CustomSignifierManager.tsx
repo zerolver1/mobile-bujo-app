@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -70,7 +70,7 @@ export const CustomSignifierManager: React.FC<CustomSignifierManagerProps> = ({
   const [newColor, setNewColor] = useState(PREDEFINED_COLORS[0]);
   const [showSymbolPicker, setShowSymbolPicker] = useState(false);
 
-  const getStyles = () => {
+  const getStyles = useMemo(() => {
     if (!theme?.colors || !theme?.typography) {
       return fallbackStyles;
     }
@@ -242,7 +242,7 @@ export const CustomSignifierManager: React.FC<CustomSignifierManagerProps> = ({
         fontSize: theme.typography.textStyles?.body?.fontSize || 17,
       },
     });
-  };
+  }, [theme]);
 
   const fallbackStyles = StyleSheet.create({
     modalContainer: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
@@ -275,7 +275,7 @@ export const CustomSignifierManager: React.FC<CustomSignifierManagerProps> = ({
     addButtonText: { color: '#F9F6F0', fontWeight: '600', fontSize: 17 },
   });
 
-  const styles = getStyles();
+  const styles = getStyles;
 
   const resetForm = useCallback(() => {
     setNewSymbol('');
