@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BuJoEntry, BuJoCollection, PageScan, CustomSignifier, QuarterlyPlan } from '../types/BuJo';
+import { bujoSyncService } from '../services/supabase/BuJoSyncService';
 
 interface BuJoState {
   // Data
@@ -13,6 +15,11 @@ interface BuJoState {
   // Current state
   currentDate: string; // YYYY-MM-DD
   selectedCollection: BuJoCollection | null;
+  
+  // Cloud sync state
+  syncStatus: 'idle' | 'syncing' | 'error';
+  syncError: string | null;
+  lastSyncAt: Date | null;
   
   // Navigation
   setCurrentDate: (date: string) => void;
@@ -65,6 +72,16 @@ interface BuJoState {
   
   // Initialization
   initialize: () => Promise<void>;
+  
+  // Cloud sync
+  syncToCloud: () => Promise<void>;
+  syncFromCloud: () => Promise<void>;
+  setSyncStatus: (status: 'idle' | 'syncing' | 'error', error?: string) => void;
+  
+  // Performance optimization - selective selectors
+  getEntriesForDate: (date: string) => BuJoEntry[];
+  getEntriesCount: () => number;
+  hasUnsyncedChanges: () => boolean;
 }
 
 // Storage keys
@@ -77,7 +94,16 @@ const STORAGE_KEYS = {
   METADATA: 'bujo_metadata'
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 15);
+// Generate proper UUID v4 for database compatibility
+const generateId = () => {
+  // Simple UUID v4 generation for React Native
+  const template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+  return template.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
@@ -118,15 +144,19 @@ const loadFromAsyncStorage = async <T>(key: string, defaultValue: T): Promise<T>
   }
 };
 
-export const useBuJoStore = create<BuJoState>((set, get) => ({
-  // Initial state
-  entries: [],
-  collections: [],
-  scans: [],
-  customSignifiers: [],
-  quarterlyPlans: [],
-  currentDate: formatDate(new Date()),
-  selectedCollection: null,
+export const useBuJoStore = create<BuJoState>()(
+  subscribeWithSelector((set, get) => ({
+    // Initial state
+    entries: [],
+    collections: [],
+    scans: [],
+    customSignifiers: [],
+    quarterlyPlans: [],
+    currentDate: formatDate(new Date()),
+    selectedCollection: null,
+    syncStatus: 'idle' as const,
+    syncError: null,
+    lastSyncAt: null,
   
   // Entry management
   addEntry: (entryData) => {
@@ -154,9 +184,17 @@ export const useBuJoStore = create<BuJoState>((set, get) => ({
       });
     }
     
-    // Auto-save to storage
-    saveToStorage().catch(error => 
-      console.error('Failed to auto-save after adding entry:', error)
+    // Auto-save to storage and sync to cloud
+    const syncPromises = [
+      saveToStorage()
+    ];
+    
+    if (bujoSyncService) {
+      syncPromises.push(bujoSyncService.createEntry(entry));
+    }
+    
+    Promise.all(syncPromises).catch(error => 
+      console.error('Failed to save/sync after adding entry:', error)
     );
     
     return entry;
@@ -206,10 +244,20 @@ export const useBuJoStore = create<BuJoState>((set, get) => ({
       )
     }));
     
-    // Auto-save to storage
+    // Auto-save to storage and sync to cloud
     const { saveToStorage } = get();
-    saveToStorage().catch(error => 
-      console.error('Failed to auto-save after updating entry:', error)
+    const updatedEntry = get().entries.find(e => e.id === id);
+    
+    const syncPromises = [
+      saveToStorage()
+    ];
+    
+    if (bujoSyncService && updatedEntry) {
+      syncPromises.push(bujoSyncService.updateEntry(id, updatedEntry));
+    }
+    
+    Promise.all(syncPromises).catch(error => 
+      console.error('Failed to save/sync after updating entry:', error)
     );
   },
   
@@ -575,15 +623,171 @@ export const useBuJoStore = create<BuJoState>((set, get) => ({
     );
   },
   
+  // Migrate old short IDs to proper UUIDs
+  migrateOldIds: () => {
+    const { entries, collections } = get();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    let migrationCount = 0;
+    
+    // Migrate entries with old IDs
+    const updatedEntries = entries.map(entry => {
+      if (!uuidRegex.test(entry.id)) {
+        migrationCount++;
+        return { ...entry, id: generateId() };
+      }
+      return entry;
+    });
+    
+    // Migrate collections with old IDs
+    const updatedCollections = collections.map(collection => {
+      if (!uuidRegex.test(collection.id)) {
+        migrationCount++;
+        return { ...collection, id: generateId() };
+      }
+      return collection;
+    });
+    
+    if (migrationCount > 0) {
+      console.log(`🔄 Migrated ${migrationCount} items to proper UUID format`);
+      set({ entries: updatedEntries, collections: updatedCollections });
+      // Save the updated data
+      get().saveToStorage().catch(console.error);
+    }
+  },
+
   // Initialize from storage
   initialize: async () => {
     try {
       await get().loadFromStorage();
       console.log('BuJo store initialized from storage');
+      
+      // Migrate any old short IDs to proper UUIDs
+      get().migrateOldIds();
+      
+      // Attempt to sync with cloud if service available (silently)
+      try {
+        await get().syncFromCloud();
+      } catch (syncError) {
+        // Silent failure - app works fine without cloud sync
+      }
     } catch (error) {
       console.error('BuJo store initialization failed:', error);
       // Continue with empty state
       console.log('BuJo store initialized with empty state');
     }
+  },
+  
+  // Cloud sync methods
+  syncToCloud: async () => {
+    if (!bujoSyncService) return;
+    
+    set({ syncStatus: 'syncing', syncError: null });
+    
+    try {
+      const { entries, collections } = get();
+      
+      // Sync entries in batches for performance
+      const batchSize = 50;
+      for (let i = 0; i < entries.length; i += batchSize) {
+        const batch = entries.slice(i, i + batchSize);
+        await Promise.all(batch.map(entry => bujoSyncService.createEntry(entry)));
+      }
+      
+      // Sync collections
+      await Promise.all(collections.map(collection => 
+        bujoSyncService.createCollection(collection)
+      ));
+      
+      set({ 
+        syncStatus: 'idle', 
+        lastSyncAt: new Date() 
+      });
+      
+      console.log('✅ Cloud sync completed successfully');
+    } catch (error) {
+      console.error('Cloud sync failed:', error);
+      set({ 
+        syncStatus: 'error', 
+        syncError: error instanceof Error ? error.message : 'Unknown sync error' 
+      });
+    }
+  },
+  
+  syncFromCloud: async () => {
+    if (!bujoSyncService) return;
+    
+    set({ syncStatus: 'syncing', syncError: null });
+    
+    try {
+      const [cloudEntries, cloudCollections] = await Promise.all([
+        bujoSyncService.getEntries().catch(() => []), // Gracefully handle missing tables
+        bujoSyncService.getCollections().catch(() => [])
+      ]);
+      
+      if (cloudEntries.length === 0 && cloudCollections.length === 0) {
+        // No cloud data available (probably tables don't exist yet)
+        console.log('ℹ️ No cloud data available - using local data only');
+        set({ 
+          syncStatus: 'idle', 
+          syncError: 'Database tables not yet created. Local data only.' 
+        });
+        return;
+      }
+      
+      // Simple merge strategy: cloud data wins for newer items
+      const localEntries = get().entries;
+      const mergedEntries = [...cloudEntries];
+      
+      // Add local entries that don't exist in cloud
+      localEntries.forEach(localEntry => {
+        const existsInCloud = cloudEntries.some(cloudEntry => cloudEntry.id === localEntry.id);
+        if (!existsInCloud) {
+          mergedEntries.push(localEntry);
+        }
+      });
+      
+      set({
+        entries: mergedEntries,
+        collections: cloudCollections,
+        syncStatus: 'idle',
+        lastSyncAt: new Date()
+      });
+      
+      // Save merged data locally
+      await get().saveToStorage();
+      
+      console.log(`✅ Synced from cloud: ${cloudEntries.length} entries, ${cloudCollections.length} collections`);
+    } catch (error) {
+      console.warn('Cloud sync from failed:', error);
+      set({ 
+        syncStatus: 'idle', // Don't show as error if it's just missing tables
+        syncError: 'Cloud sync not available. Using local data only.' 
+      });
+    }
+  },
+  
+  setSyncStatus: (status, error) => {
+    set({ 
+      syncStatus: status, 
+      syncError: error || null 
+    });
+  },
+  
+  // Performance optimization - selective selectors
+  getEntriesForDate: (date) => {
+    const { entries } = get();
+    return entries.filter(entry => entry.collectionDate === date);
+  },
+  
+  getEntriesCount: () => {
+    return get().entries.length;
+  },
+  
+  hasUnsyncedChanges: () => {
+    const { lastSyncAt } = get();
+    if (!lastSyncAt) return true;
+    
+    const { entries } = get();
+    return entries.some(entry => entry.createdAt > lastSyncAt);
   }
-}));
+})));

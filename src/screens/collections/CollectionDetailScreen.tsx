@@ -225,6 +225,16 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
           renderItem={renderAssignmentEntryItem}
           contentContainerStyle={styles.modalContent}
           showsVerticalScrollIndicator={false}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={8}
+          initialNumToRender={6}
+          windowSize={8}
+          getItemLayout={(data, index) => ({
+            length: 70,
+            offset: 70 * index,
+            index,
+          })}
         />
         </SafeAreaView>
       </PaperBackground>
@@ -289,6 +299,16 @@ export const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
           renderItem={({ item }) => renderEntryItem({ item, showRemove: true })}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          initialNumToRender={8}
+          windowSize={10}
+          getItemLayout={(data, index) => ({
+            length: 80,
+            offset: 80 * index,
+            index,
+          })}
         />
       ) : (
         <View style={styles.emptyState}>

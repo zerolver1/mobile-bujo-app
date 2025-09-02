@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Alert,
@@ -12,16 +11,18 @@ import {
   Keyboard,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBuJoStore } from '../../stores/BuJoStore';
 import { BuJoEntry } from '../../types/BuJo';
 import { BuJoEntryItem } from '../../components/BuJoEntryItem';
 import { SwipeableEntryItem } from '../../components/SwipeableEntryItem';
 import { useSwipeGestures } from '../../hooks/useSwipeGestures';
 import { useTheme } from '../../theme';
 import { haptic } from '../../utils/haptics';
+import { useBuJoStore } from '../../stores/BuJoStore';
+import { performanceMonitor, flatListOptimizations, debounce } from '../../utils/performance';
 import { 
   PaperBackground, 
   PaperButton, 
@@ -38,27 +39,75 @@ interface DailyLogScreenProps {
   navigation: any;
 }
 
-export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) => {
-  const { 
-    entries, 
-    currentDate, 
-    setCurrentDate,
-    getDailyLog, 
-    addEntry, 
-    updateEntry,
-    initialize 
-  } = useBuJoStore();
+const DailyLogScreenComponent: React.FC<DailyLogScreenProps> = ({ navigation }) => {
+  // Performance monitoring
+  useEffect(() => {
+    performanceMonitor.startTiming('DailyLogScreen_Render');
+    return () => {
+      performanceMonitor.endTiming('DailyLogScreen_Render');
+    };
+  }, []);
+  
+  // Simple direct store access to avoid selector loops with defensive checks
+  const currentDate = useBuJoStore(state => state?.currentDate || new Date().toISOString().split('T')[0]);
+  const allEntries = useBuJoStore(state => state?.entries || []);
+  const addEntry = useBuJoStore(state => state?.addEntry);
+  const updateEntry = useBuJoStore(state => state?.updateEntry);
+  const deleteEntry = useBuJoStore(state => state?.deleteEntry);
+  const syncStatus = useBuJoStore(state => state?.syncStatus || 'idle');
+  const lastSyncAt = useBuJoStore(state => state?.lastSyncAt);
+  const syncToCloud = useBuJoStore(state => state?.syncToCloud);
+  
+  // Early return if store is not properly initialized
+  if (!addEntry || !updateEntry || !deleteEntry) {
+    return (
+      <PaperBackground variant="subtle" intensity="light">
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <PaperLoading message="Initializing BuJo..." size="md" />
+        </SafeAreaView>
+      </PaperBackground>
+    );
+  }
+  
+  // Calculate hasUnsyncedChanges locally to avoid function calls in selectors
+  const hasUnsyncedChanges = useMemo(() => {
+    if (!lastSyncAt) return true;
+    return allEntries.some(entry => entry.createdAt > lastSyncAt);
+  }, [lastSyncAt, allEntries]);
+  
+  // Memoized today's entries to prevent re-filtering on every render
+  const todaysEntriesFromStore = useMemo(() => 
+    allEntries.filter(entry => entry.collectionDate === currentDate),
+    [allEntries, currentDate]
+  );
 
-  const [todaysEntries, setTodaysEntries] = useState<BuJoEntry[]>([]);
+  // Use todaysEntriesFromStore directly instead of local state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [useSwipeableEntries, setUseSwipeableEntries] = useState(true);
   const [showStats, setShowStats] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showSwipeBanner, setShowSwipeBanner] = useState(true);
   
   const insets = useSafeAreaInsets();
+
+  // Swipe action handlers
+  const handleMigrateEntry = useCallback((entry: BuJoEntry) => {
+    // Handle migration to future log
+    navigation.navigate('FutureLog', { migrateEntry: entry });
+  }, [navigation]);
+
+  const handleScheduleEntry = useCallback((entry: BuJoEntry) => {
+    // Handle scheduling to specific date
+    navigation.navigate('QuickCapture', { scheduleEntry: entry });
+  }, [navigation]);
+
+  const handleEditEntry = useCallback((entry: BuJoEntry) => {
+    // Handle editing entry
+    navigation.navigate('QuickCapture', { editEntry: entry });
+  }, [navigation]);
 
   // Initialize swipe gestures
   const { handleSwipeAction, undoLastAction, hasUndo } = useSwipeGestures({
@@ -68,15 +117,51 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
     navigation
   });
 
-  useEffect(() => {
-    initialize();
-  }, []);
+  // Navigation functions  
+  const setCurrentDate = useBuJoStore(state => state.setCurrentDate);
 
+  const navigateDate = useCallback((direction: 'prev' | 'next') => {
+    const current = new Date(currentDate);
+    const newDate = new Date(current);
+    
+    if (direction === 'prev') {
+      newDate.setDate(newDate.getDate() - 1);
+    } else {
+      newDate.setDate(newDate.getDate() + 1);
+    }
+    
+    const newDateString = newDate.toISOString().split('T')[0];
+    setCurrentDate(newDateString);
+  }, [currentDate, setCurrentDate]);
+
+  const goToToday = useCallback(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setCurrentDate(today);
+  }, [setCurrentDate]);
+
+  // Handle date picker selection
+  const handleDatePickerChange = useCallback((event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const newDateString = selectedDate.toISOString().split('T')[0];
+      setCurrentDate(newDateString);
+    }
+  }, [setCurrentDate]);
+
+  // Entry action handlers
+  const handleEntryAction = useCallback((entry: BuJoEntry) => {
+    // Handle entry tap action
+    navigation.navigate('QuickCapture', { editEntry: entry });
+  }, [navigation]);
+
+  // Debounce search query to improve performance
   useEffect(() => {
-    // Filter entries for today
-    const today = entries.filter(entry => entry.collectionDate === currentDate);
-    setTodaysEntries(today);
-  }, [entries, currentDate]);
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   const handleAddQuickEntry = () => {
     haptic.buttonPress();
@@ -88,24 +173,30 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
     navigation.navigate('Capture');
   };
 
-  // Filter entries based on search query
-  const filteredEntries = searchQuery.trim() 
-    ? todaysEntries.filter(entry => 
-        entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        entry.contexts.some(ctx => ctx.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : todaysEntries;
+  // Optimized filtering with memoization and debounced search
+  const filteredEntries = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return todaysEntriesFromStore;
+    
+    const query = debouncedSearchQuery.toLowerCase();
+    return todaysEntriesFromStore.filter(entry => {
+      // Early return optimizations
+      if (entry.content.toLowerCase().includes(query)) return true;
+      if (entry.tags.some(tag => tag.toLowerCase().includes(query))) return true;
+      if (entry.contexts.some(ctx => ctx.toLowerCase().includes(query))) return true;
+      return false;
+    });
+  }, [todaysEntriesFromStore, debouncedSearchQuery]);
 
-  const getEntryStats = () => {
-    const tasks = todaysEntries.filter(e => e.type === 'task');
+  // Memoized stats calculation
+  const entryStats = useMemo(() => {
+    const tasks = todaysEntriesFromStore.filter(e => e.type === 'task');
     const completedTasks = tasks.filter(e => e.status === 'complete');
-    const events = todaysEntries.filter(e => e.type === 'event');
-    const notes = todaysEntries.filter(e => e.type === 'note');
-    const inspiration = todaysEntries.filter(e => e.type === 'inspiration');
-    const research = todaysEntries.filter(e => e.type === 'research');
-    const memory = todaysEntries.filter(e => e.type === 'memory');
-    const custom = todaysEntries.filter(e => e.type === 'custom');
+    const events = todaysEntriesFromStore.filter(e => e.type === 'event');
+    const notes = todaysEntriesFromStore.filter(e => e.type === 'note');
+    const inspiration = todaysEntriesFromStore.filter(e => e.type === 'inspiration');
+    const research = todaysEntriesFromStore.filter(e => e.type === 'research');
+    const memory = todaysEntriesFromStore.filter(e => e.type === 'memory');
+    const custom = todaysEntriesFromStore.filter(e => e.type === 'custom');
     
     // BuJo Pro groupings
     const coreEntries = tasks.length + events.length + notes.length;
@@ -113,7 +204,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
     const reflectiveEntries = memory.length;
     
     return {
-      total: todaysEntries.length,
+      total: todaysEntriesFromStore.length,
       // Core BuJo types
       tasks: tasks.length,
       completed: completedTasks.length,
@@ -132,71 +223,8 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
       // Check if we have extended types to show second row
       hasExtendedTypes: inspiration.length > 0 || research.length > 0 || memory.length > 0 || custom.length > 0
     };
-  };
+  }, [todaysEntriesFromStore]);
 
-  const stats = getEntryStats();
-
-  const handleEntryAction = (entry: BuJoEntry, action: 'complete' | 'migrate' | 'schedule' | 'cancel' | 'edit') => {
-    switch (action) {
-      case 'complete':
-        updateEntry(entry.id, { status: 'complete' });
-        break;
-      case 'migrate':
-        // Navigate to date picker for migration
-        handleMigrateEntry(entry);
-        break;
-      case 'schedule':
-        // Navigate to date picker for scheduling
-        handleScheduleEntry(entry);
-        break;
-      case 'cancel':
-        updateEntry(entry.id, { status: 'cancelled' });
-        break;
-      case 'edit':
-        // Navigate to entry edit screen
-        handleEditEntry(entry);
-        break;
-    }
-  };
-  
-  const handleMigrateEntry = (entry: BuJoEntry) => {
-    // For now, migrate to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowString = tomorrow.toISOString().split('T')[0];
-    
-    updateEntry(entry.id, {
-      status: 'migrated',
-      collectionDate: tomorrowString,
-      scheduledDate: tomorrow
-    });
-    
-    Alert.alert(
-      'Task Migrated',
-      `"${entry.content}" has been migrated to tomorrow's daily log.`
-    );
-  };
-  
-  const handleScheduleEntry = (entry: BuJoEntry) => {
-    // For now, schedule for next week
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    updateEntry(entry.id, {
-      status: 'scheduled',
-      scheduledDate: nextWeek
-    });
-    
-    Alert.alert(
-      'Task Scheduled',
-      `"${entry.content}" has been scheduled for ${nextWeek.toLocaleDateString()}.`
-    );
-  };
-  
-  const handleEditEntry = (entry: BuJoEntry) => {
-    // Navigate to quick capture with pre-filled data
-    navigation.navigate('QuickCapture', { editEntry: entry });
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -216,55 +244,38 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
     });
   };
 
-  const navigateDate = (direction: 'prev' | 'next') => {
-    const currentDateObj = new Date(currentDate);
-    const newDate = new Date(currentDateObj);
-    
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 1);
-    }
-    
-    const newDateString = newDate.toISOString().split('T')[0];
-    setCurrentDate(newDateString);
-  };
 
-  const handleDatePickerChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      const newDateString = selectedDate.toISOString().split('T')[0];
-      setCurrentDate(newDateString);
-    }
-  };
 
-  const goToToday = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setCurrentDate(today);
-  };
 
-  // Paper-themed pull-to-refresh with ink spreading animation
-  const handleRefresh = async () => {
+  // Paper-themed pull-to-refresh with cloud sync
+  const handleRefresh = useCallback(async () => {
+    performanceMonitor.startTiming('Refresh_Operation');
     setRefreshing(true);
     
     // Haptic feedback for paper journal page turn
     haptic.pageTurn();
     
     try {
-      // Re-initialize the store to fetch fresh data
-      await initialize();
+      // Start cloud sync in background without waiting
+      if (hasUnsyncedChanges || syncStatus === 'idle') {
+        syncToCloud?.().catch(error => 
+          console.warn('Background sync failed:', error)
+        );
+      }
       
-      // Small delay to show the beautiful paper animation
+      // Quick refresh without blocking
       setTimeout(() => {
         setRefreshing(false);
         haptic.success(); // Success feedback like closing a journal
-      }, 1000);
+        performanceMonitor.endTiming('Refresh_Operation');
+      }, 300); // Reduced from 1000ms to 300ms
     } catch (error) {
       console.error('Error refreshing entries:', error);
       setRefreshing(false);
       haptic.error(); // Error feedback like pen running out of ink
+      performanceMonitor.endTiming('Refresh_Operation');
     }
-  };
+  }, [hasUnsyncedChanges, syncStatus, syncToCloud]);
 
   const isToday = currentDate === new Date().toISOString().split('T')[0];
   const { theme } = useTheme();
@@ -366,6 +377,25 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
                   <Ionicons name="arrow-undo" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
+              
+              {/* Sync Status Indicator */}
+              <View style={styles.syncStatusContainer}>
+                {syncStatus === 'syncing' && (
+                  <View style={[styles.syncIndicator, { backgroundColor: '#F59E0B' }]}>
+                    <Ionicons name="refresh" size={12} color="#FFFFFF" />
+                  </View>
+                )}
+                {hasUnsyncedChanges && syncStatus !== 'syncing' && (
+                  <View style={[styles.syncIndicator, { backgroundColor: '#EF4444' }]}>
+                    <Ionicons name="cloud-offline" size={12} color="#FFFFFF" />
+                  </View>
+                )}
+                {!hasUnsyncedChanges && syncStatus === 'idle' && (
+                  <View style={[styles.syncIndicator, { backgroundColor: '#10B981' }]}>
+                    <Ionicons name="cloud-done" size={12} color="#FFFFFF" />
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
@@ -437,7 +467,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         )}
       
         {/* Smart Swipe Tutorial Hint - Only for first few entries */}
-        {useSwipeableEntries && todaysEntries.length > 0 && todaysEntries.length <= 3 && (
+        {useSwipeableEntries && todaysEntriesFromStore.length > 0 && todaysEntriesFromStore.length <= 3 && (
           <NotebookCard variant="sticky" style={styles.swipeHint}>
             <View style={styles.swipeHintContent}>
               <Ionicons name="swap-horizontal" size={16} color={safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93')} />
@@ -449,57 +479,57 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         )}
 
         {/* Smart Stats Summary - Auto-hide when no entries */}
-        {stats.total > 0 && showStats && (
+        {entryStats.total > 0 && showStats && (
           <NotebookCard variant="page" showHoles={false} style={styles.statsContainer}>
             {/* Core BuJo Types Row */}
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
-                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.tasks}</Typography>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.tasks}</Typography>
                 <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Tasks</Typography>
               </View>
               <View style={styles.statCard}>
-                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.events}</Typography>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.events}</Typography>
                 <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Events</Typography>
               </View>
               <View style={styles.statCard}>
-                <Typography variant="title3" color="text" style={styles.statNumber}>{stats.notes}</Typography>
+                <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.notes}</Typography>
                 <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Notes</Typography>
               </View>
               <View style={styles.statCard}>
                 <Typography 
                   variant="title3" 
-                  style={[styles.statNumber, { color: stats.completionRate > 50 ? safeThemeAccess(theme, t => t.colors.success, '#15803D') : safeThemeAccess(theme, t => t.colors.warning, '#D97706') }]}
+                  style={[styles.statNumber, { color: entryStats.completionRate > 50 ? safeThemeAccess(theme, t => t.colors.success, '#15803D') : safeThemeAccess(theme, t => t.colors.warning, '#D97706') }]}
                 >
-                  {stats.completionRate}%
+                  {entryStats.completionRate}%
                 </Typography>
                 <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Done</Typography>
               </View>
             </View>
             
             {/* Extended Types Row - only show if we have extended entries */}
-            {stats.hasExtendedTypes && (
+            {entryStats.hasExtendedTypes && (
               <View style={[styles.statsRow, styles.extendedStatsRow]}>
-                {stats.inspiration > 0 && (
+                {entryStats.inspiration > 0 && (
                   <View style={styles.statCard}>
-                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.inspiration}</Typography>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.inspiration}</Typography>
                     <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Ideas</Typography>
                   </View>
                 )}
-                {stats.research > 0 && (
+                {entryStats.research > 0 && (
                   <View style={styles.statCard}>
-                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.research}</Typography>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.research}</Typography>
                     <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Research</Typography>
                   </View>
                 )}
-                {stats.memory > 0 && (
+                {entryStats.memory > 0 && (
                   <View style={styles.statCard}>
-                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.memory}</Typography>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.memory}</Typography>
                     <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Memory</Typography>
                   </View>
                 )}
-                {stats.custom > 0 && (
+                {entryStats.custom > 0 && (
                   <View style={styles.statCard}>
-                    <Typography variant="title3" color="text" style={styles.statNumber}>{stats.custom}</Typography>
+                    <Typography variant="title3" color="text" style={styles.statNumber}>{entryStats.custom}</Typography>
                     <Typography variant="caption2" color="textTertiary" style={styles.statLabel}>Custom</Typography>
                   </View>
                 )}
@@ -509,7 +539,7 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         )}
 
         {/* Search Results Info */}
-        {isSearching && searchQuery.trim() && (
+        {isSearching && debouncedSearchQuery.trim() && (
           <View style={styles.searchResultsInfo}>
             <Typography variant="caption1" color="textSecondary">
               {filteredEntries.length === 0 
@@ -532,10 +562,11 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
         )}
 
         {/* Entries List */}
-        {(isSearching && searchQuery.trim() ? filteredEntries.length > 0 : todaysEntries.length > 0) ? (
+        {(isSearching && debouncedSearchQuery.trim() ? filteredEntries.length > 0 : todaysEntriesFromStore.length > 0) ? (
           <FlatList
           data={filteredEntries}
-          keyExtractor={(item) => item.id}
+          keyExtractor={flatListOptimizations.keyExtractor}
+          {...flatListOptimizations}
           renderItem={({ item }) => (
             useSwipeableEntries ? (
               <SwipeableEntryItem 
@@ -555,6 +586,17 @@ export const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ navigation }) =>
           contentContainerStyle={styles.listContainer}
           style={styles.entriesList}
           showsVerticalScrollIndicator={false}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={16}
+          windowSize={10}
+          initialNumToRender={8}
+          getItemLayout={(data, index) => ({
+            length: 80, // Estimated height of each entry
+            offset: 80 * index,
+            index,
+          })}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -847,4 +889,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backdropFilter: 'blur(2px)', // Subtle blur effect
   },
+  syncStatusContainer: {
+    marginLeft: PAPER_DESIGN_TOKENS.spacing.sm,
+  },
+  syncIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
 });
+
+// Memoized export to prevent unnecessary re-renders
+export const DailyLogScreen = React.memo(DailyLogScreenComponent);

@@ -4,6 +4,8 @@ import * as Haptics from 'expo-haptics';
 import { BuJoEntry } from '../types/BuJo';
 import { SwipeAction } from '../utils/swipeActions';
 import { useBuJoStore } from '../stores/BuJoStore';
+import { bujoSyncService } from '../services/supabase/BuJoSyncService';
+import { iosSyncService } from '../services/IOSSyncService';
 
 interface UseSwipeGesturesProps {
   onMigrate?: (entry: BuJoEntry) => void;
@@ -68,10 +70,33 @@ export const useSwipeGestures = ({
     // Trigger appropriate haptic feedback
     await triggerHaptic('medium');
 
+    // Helper to track all actions
+    const trackEntryAction = async (updatedEntry: Partial<BuJoEntry>, transitionType: string, reason?: string) => {
+      if (bujoSyncService) {
+        try {
+          const newEntry = { ...entry, ...updatedEntry };
+          await bujoSyncService.trackTransition(
+            entry.id,
+            entry,
+            newEntry as BuJoEntry,
+            transitionType,
+            reason || `swipe_${action.action}`,
+            { swipeAction: action.key, timestamp: Date.now() }
+          );
+        } catch (error) {
+          console.warn(`Failed to track ${transitionType} transition:`, error);
+        }
+      }
+    };
+
     switch (action.action) {
       case 'complete':
-        updateEntry(entry.id, { status: 'complete' });
+        const completedEntry = { status: 'complete' as const, completedAt: new Date() };
+        updateEntry(entry.id, completedEntry);
         await triggerHaptic('success');
+        
+        // Track completion transition for iOS sync and BuJo Pro
+        await trackEntryAction(completedEntry, 'completed', 'user_completed');
         break;
 
       case 'migrate':
@@ -93,11 +118,18 @@ export const useSwipeGestures = ({
         break;
 
       case 'cancel':
-        updateEntry(entry.id, { status: 'cancelled' });
+        const cancelledEntry = { status: 'cancelled' as const };
+        updateEntry(entry.id, cancelledEntry);
         await triggerHaptic('warning');
+        
+        // Track cancellation for BuJo Pro methodology
+        await trackEntryAction(cancelledEntry, 'cancelled', 'user_cancelled');
         break;
 
       case 'edit':
+        // Track edit action initiation
+        await trackEntryAction({}, 'edit_initiated', 'user_edit_swipe');
+        
         if (onEdit) {
           onEdit(entry);
         } else if (navigation) {
@@ -115,6 +147,9 @@ export const useSwipeGestures = ({
               text: 'Delete',
               style: 'destructive',
               onPress: async () => {
+                // Track deletion for BuJo Pro audit trail
+                await trackEntryAction({}, 'deleted', 'user_deleted');
+                
                 if (onDelete) {
                   onDelete(entry);
                 } else {
@@ -167,51 +202,100 @@ export const useSwipeGestures = ({
         }
         
         if (targetType && targetType !== entry.type) {
-          updateEntry(entry.id, { type: targetType, status: targetStatus });
+          const originalType = entry.type;
+          const convertedEntry = { type: targetType, status: targetStatus };
+          updateEntry(entry.id, convertedEntry);
           await triggerHaptic('success');
+          
+          // Track type conversion for BuJo Pro methodology and iOS sync
+          await trackEntryAction(
+            convertedEntry, 
+            'converted',
+            `type_conversion_${originalType}_to_${targetType}`
+          );
+          
           Alert.alert(
             'Converted Entry',
-            `"${entry.content}" converted from ${entry.type} to ${targetType}.`
+            `"${entry.content}" converted from ${originalType} to ${targetType}.`
           );
         }
         break;
 
       case 'archive':
         // Archive the entry (move to archived collection)
-        updateEntry(entry.id, { collection: 'custom', status: 'cancelled' });
+        const archivedEntry = { collection: 'custom' as const, status: 'cancelled' as const };
+        updateEntry(entry.id, archivedEntry);
         Alert.alert('Entry Archived', `"${entry.content}" has been archived.`);
+        
+        // Track archival for BuJo Pro methodology
+        await trackEntryAction(archivedEntry, 'archived', 'user_archived');
         break;
 
       case 'share':
         // Share functionality would go here
         Alert.alert('Share', `Sharing: "${entry.content}"`);
+        
+        // Track share action for analytics
+        await trackEntryAction({}, 'shared', 'user_share_swipe');
         break;
 
       case 'calendar':
         // Add to calendar - integrate with Apple Calendar
-        Alert.alert('Calendar', `Adding "${entry.content}" to calendar`);
+        try {
+          const eventId = await iosSyncService.syncEntryToCalendar(entry);
+          if (eventId) {
+            Alert.alert('✅ Calendar', `"${entry.content}" added to Apple Calendar`);
+          } else {
+            Alert.alert('Calendar', `Adding "${entry.content}" to calendar (iOS sync not available)`);
+          }
+        } catch (error) {
+          Alert.alert('Calendar', `Adding "${entry.content}" to calendar`);
+        }
+        
+        // Track iOS calendar integration
+        await trackEntryAction({}, 'synced_to_calendar', 'ios_calendar_integration');
         break;
 
       case 'reminder':
         // Set reminder - integrate with Apple Reminders
-        Alert.alert('Reminder', `Setting reminder for "${entry.content}"`);
+        try {
+          const reminderId = await iosSyncService.syncEntryToReminders(entry);
+          if (reminderId) {
+            Alert.alert('✅ Reminder', `"${entry.content}" added to Apple Reminders`);
+          } else {
+            Alert.alert('Reminder', `Setting reminder for "${entry.content}" (iOS sync not available)`);
+          }
+        } catch (error) {
+          Alert.alert('Reminder', `Setting reminder for "${entry.content}"`);
+        }
+        
+        // Track iOS reminder integration
+        await trackEntryAction({}, 'synced_to_reminders', 'ios_reminders_integration');
         break;
 
       case 'investigate':
         // Mark research as investigated
-        updateEntry(entry.id, { status: 'complete' });
+        const investigatedEntry = { status: 'complete' as const };
+        updateEntry(entry.id, investigatedEntry);
         await triggerHaptic('success');
+        
+        // Track research completion for BuJo Pro research methodology
+        await trackEntryAction(investigatedEntry, 'investigated', 'research_completed');
         break;
 
       case 'defer':
         // Defer to future
         const futureDate = new Date();
         futureDate.setMonth(futureDate.getMonth() + 1);
-        updateEntry(entry.id, {
+        const deferredEntry = {
           collectionDate: futureDate.toISOString().split('T')[0],
-          status: 'scheduled'
-        });
+          status: 'scheduled' as const
+        };
+        updateEntry(entry.id, deferredEntry);
         Alert.alert('Deferred', `"${entry.content}" deferred to ${futureDate.toLocaleDateString()}`);
+        
+        // Track deferral as BuJo migration
+        await trackEntryAction(deferredEntry, 'deferred', 'future_migration');
         break;
 
       case 'photo':
@@ -219,25 +303,36 @@ export const useSwipeGestures = ({
         if (navigation) {
           navigation.navigate('Camera', { entryId: entry.id });
         }
+        
+        // Track photo attachment action
+        await trackEntryAction({}, 'photo_attachment_initiated', 'memory_enhancement');
         break;
 
       case 'gratitude':
         // Add to gratitude log
-        updateEntry(entry.id, { 
+        const gratitudeEntry = { 
           tags: [...(entry.tags || []), 'gratitude'],
-          priority: 'high'
-        });
+          priority: 'high' as const
+        };
+        updateEntry(entry.id, gratitudeEntry);
         Alert.alert('Added to Gratitude', `"${entry.content}" added to gratitude log`);
         await triggerHaptic('success');
+        
+        // Track gratitude tagging for BuJo Pro insights
+        await trackEntryAction(gratitudeEntry, 'gratitude_tagged', 'wellbeing_tracking');
         break;
 
       case 'private':
         // Make private/archive
-        updateEntry(entry.id, { 
+        const privateEntry = { 
           tags: [...(entry.tags || []), 'private'],
-          collection: 'custom'
-        });
+          collection: 'custom' as const
+        };
+        updateEntry(entry.id, privateEntry);
         Alert.alert('Made Private', `"${entry.content}" is now private`);
+        
+        // Track privacy action for BuJo Pro security
+        await trackEntryAction(privateEntry, 'made_private', 'privacy_protection');
         break;
 
       case 'collection':
@@ -245,6 +340,9 @@ export const useSwipeGestures = ({
         if (navigation) {
           navigation.navigate('CollectionPicker', { entryId: entry.id });
         }
+        
+        // Track collection assignment initiation
+        await trackEntryAction({}, 'collection_assignment_initiated', 'organization_action');
         break;
 
       default:

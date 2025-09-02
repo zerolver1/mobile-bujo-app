@@ -15,7 +15,7 @@ interface BuJoEntryItemProps {
   isCompact?: boolean;
 }
 
-export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({ 
+const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({ 
   entry, 
   onPress, 
   showDate = false,
@@ -270,6 +270,11 @@ export const BuJoEntryItem: React.FC<BuJoEntryItemProps> = ({
     </View>
   );
 };
+
+// Memoized export for performance optimization
+const MemoizedBuJoEntryItem = React.memo(BuJoEntryItem);
+export { MemoizedBuJoEntryItem as BuJoEntryItem };
+export default MemoizedBuJoEntryItem;
 
 const styles = StyleSheet.create({
   container: {

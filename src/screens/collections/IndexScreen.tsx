@@ -329,6 +329,16 @@ export const IndexScreen: React.FC<IndexScreenProps> = ({ navigation }) => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.entriesList}
           showsVerticalScrollIndicator={false}
+          // Performance optimizations for index entries
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={15}
+          initialNumToRender={10}
+          windowSize={15}
+          getItemLayout={(data, index) => ({
+            length: 60, // Index entry height
+            offset: 60 * index,
+            index,
+          })}
           ListEmptyComponent={() => (
             <View style={styles.emptyState}>
               <Ionicons name="search" size={48} color={safeThemeAccess(theme, t => t.colors.textTertiary, '#C7C7CC')} />

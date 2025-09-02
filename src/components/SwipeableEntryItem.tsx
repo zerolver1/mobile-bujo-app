@@ -52,7 +52,7 @@ const SPRING_CONFIG = {
 const VELOCITY_THRESHOLD = 500;
 const SWIPE_THRESHOLD = 40;
 
-export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
+const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
   entry,
   onSwipeAction,
   onPress,
@@ -272,6 +272,11 @@ export const SwipeableEntryItem: React.FC<SwipeableEntryItemProps> = ({
     </View>
   );
 };
+
+// Memoized export for performance optimization
+const MemoizedSwipeableEntryItem = React.memo(SwipeableEntryItem);
+export { MemoizedSwipeableEntryItem as SwipeableEntryItem };
+export default MemoizedSwipeableEntryItem;
 
 const styles = StyleSheet.create({
   container: {

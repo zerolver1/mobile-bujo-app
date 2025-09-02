@@ -293,6 +293,15 @@ export const MonthlyLogScreen: React.FC<MonthlyLogScreenProps> = ({ navigation, 
           numColumns={7}
           scrollEnabled={false}
           contentContainerStyle={styles.calendarGrid}
+          // Performance optimizations for calendar
+          removeClippedSubviews={false} // Keep false for calendar grid layout
+          maxToRenderPerBatch={21} // 3 weeks at a time
+          initialNumToRender={42} // Full month
+          getItemLayout={(data, index) => ({
+            length: 50, // Calendar day height
+            offset: 50 * Math.floor(index / 7), // Row height
+            index,
+          })}
         />
         </Card>
 

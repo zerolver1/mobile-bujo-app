@@ -414,6 +414,16 @@ export const MemoryLogScreen: React.FC<MemoryLogScreenProps> = ({ navigation }) 
               scrollEnabled={false}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.memoriesList}
+              // Performance optimizations for memory cards
+              removeClippedSubviews={false} // Keep false for complex layouts
+              maxToRenderPerBatch={6}
+              initialNumToRender={4}
+              windowSize={6}
+              getItemLayout={(data, index) => ({
+                length: 120, // Memory card estimated height
+                offset: 120 * index,
+                index,
+              })}
             />
           ) : (
             <View style={styles.emptyState}>
