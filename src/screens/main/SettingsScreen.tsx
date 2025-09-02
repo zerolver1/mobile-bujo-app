@@ -212,6 +212,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           </NotebookCard>
         </View>
 
+        {/* BuJo Features Section */}
+        <View style={styles.section}>
+          <Typography variant="caption" style={[styles.sectionHeader, { 
+            color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
+          }]}>BuJo Pro Features</Typography>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
+            <SettingRow
+              title="Search & Discover"
+              subtitle="Find entries across all collections and dates"
+              icon="search-outline"
+              onPress={() => navigation.navigate('Search')}
+            />
+            <View style={[styles.separator, {
+              backgroundColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7')
+            }]} />
+            <SettingRow
+              title="Migration Review"
+              subtitle="Review and migrate incomplete tasks (Core BuJo)"
+              icon="arrow-forward-circle-outline"
+              onPress={() => navigation.navigate('Migration')}
+            />
+          </NotebookCard>
+        </View>
+
         {/* Apple Integration Section */}
         <View style={styles.section}>
           <Typography variant="caption" style={[styles.sectionHeader, { 

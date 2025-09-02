@@ -30,6 +30,8 @@ import { CollectionDetailScreen } from '../screens/collections/CollectionDetailS
 import { IndexScreen } from '../screens/collections/IndexScreen';
 import { MemoryLogScreen } from '../screens/memory/MemoryLogScreen';
 import { DesignSystemScreen } from '../screens/design/DesignSystemScreen';
+import { SearchScreen } from '../screens/main/SearchScreen';
+import { MigrationScreen } from '../screens/main/MigrationScreen';
 
 // Type definitions
 export type RootTabParamList = {
@@ -54,6 +56,8 @@ export type RootStackParamList = {
   DesignSystem: undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
+  Search: undefined;
+  Migration: undefined;
   // Tutorial System Routes
   TutorialLaunch: { mode: 'quickStart' | 'complete' | 'practice' };
   TutorialLesson: { lessonId: string; mode: 'quickStart' | 'complete'; fromGuide?: boolean };
@@ -266,6 +270,22 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="TermsOfService" 
         component={TermsOfServiceScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="Search" 
+        component={SearchScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="Migration" 
+        component={MigrationScreen}
         options={{
           headerShown: false,
           presentation: 'card',
