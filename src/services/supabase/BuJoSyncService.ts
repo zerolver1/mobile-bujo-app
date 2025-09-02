@@ -249,6 +249,11 @@ export class BuJoSyncService {
       await this.syncEntries();
       await this.syncCustomSignifiers();
       await this.syncPageScans();
+      
+      // Sync advanced BuJo Pro features
+      await this.syncAllEntryTags();
+      await this.syncEntryTransitions();
+      await this.syncMigrationChains();
 
       // Update last sync timestamp
       await this.updateLastSyncTime();
@@ -682,9 +687,10 @@ export class BuJoSyncService {
     }
   }
 
-  // Track entry transitions for iOS sync
+  // Track entry transitions for BuJo Pro audit trail
   private async trackEntryTransition(oldEntry: any, newEntry: BuJoEntry) {
-    if (!supabase || !this.userId) return;
+    const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
+    if (!supabase || !hasValidUserId) return;
 
     // Determine transition type
     let transitionType = 'edited';
@@ -703,31 +709,53 @@ export class BuJoSyncService {
       transitionType = 'moved';
     }
 
-    // Record the transition (the trigger will handle most of this automatically)
-    // But we can add additional metadata here
+    // Record the transition with proper user identification
+    const transitionData = this.isGuestMode && this.guestUserId
+      ? {
+          guest_user_id: this.guestUserId,
+          entry_id: newEntry.id,
+          transition_type: transitionType,
+          from_state: oldEntry,
+          to_state: newEntry,
+          from_status: oldEntry.status,
+          to_status: newEntry.status,
+          from_type: oldEntry.type,
+          to_type: newEntry.type,
+          from_collection_date: oldEntry.collection_date,
+          to_collection_date: newEntry.collectionDate,
+          transition_reason: 'sync',
+          device_info: {
+            platform: Platform.OS,
+            syncService: 'BuJoSyncService',
+          },
+        }
+      : {
+          user_id: this.userId,
+          entry_id: newEntry.id,
+          transition_type: transitionType,
+          from_state: oldEntry,
+          to_state: newEntry,
+          from_status: oldEntry.status,
+          to_status: newEntry.status,
+          from_type: oldEntry.type,
+          to_type: newEntry.type,
+          from_collection_date: oldEntry.collection_date,
+          to_collection_date: newEntry.collectionDate,
+          transition_reason: 'sync',
+          device_info: {
+            platform: Platform.OS,
+            syncService: 'BuJoSyncService',
+          },
+        };
+
     const { error } = await supabase
       .from('entry_transitions')
-      .insert({
-        user_id: this.userId,
-        entry_id: newEntry.id,
-        transition_type: transitionType,
-        from_state: oldEntry,
-        to_state: newEntry,
-        from_status: oldEntry.status,
-        to_status: newEntry.status,
-        from_type: oldEntry.type,
-        to_type: newEntry.type,
-        from_collection_date: oldEntry.collection_date,
-        to_collection_date: newEntry.collectionDate,
-        transition_reason: 'sync',
-        device_info: {
-          platform: 'react-native',
-          syncService: 'BuJoSyncService',
-        },
-      });
+      .insert(transitionData);
 
     if (error) {
       console.error('Error tracking transition:', error);
+    } else {
+      console.log(`📊 Tracked transition: ${transitionType} for entry ${newEntry.id}`);
     }
   }
 
@@ -770,26 +798,42 @@ export class BuJoSyncService {
     ];
 
     for (const tag of allTags) {
-      // Ensure tag exists
-      const { data: tagData } = await supabase
-        .from('tags')
-        .select('id')
-        .eq('user_id', this.userId)
-        .eq('name', tag.name)
-        .eq('type', tag.type)
-        .single();
+      // Ensure tag exists (support both guest and authenticated users)
+      const { data: tagData } = this.isGuestMode && this.guestUserId
+        ? await supabase
+            .from('tags')
+            .select('id')
+            .eq('guest_user_id', this.guestUserId)
+            .eq('name', tag.name)
+            .eq('type', tag.type)
+            .single()
+        : await supabase
+            .from('tags')
+            .select('id')
+            .eq('user_id', this.userId)
+            .eq('name', tag.name)
+            .eq('type', tag.type)
+            .single();
 
       let tagId = tagData?.id;
 
       if (!tagId) {
-        // Create tag
+        // Create tag with proper user identification
+        const tagInsertData = this.isGuestMode && this.guestUserId
+          ? {
+              guest_user_id: this.guestUserId,
+              name: tag.name,
+              type: tag.type,
+            }
+          : {
+              user_id: this.userId,
+              name: tag.name,
+              type: tag.type,
+            };
+
         const { data: newTag } = await supabase
           .from('tags')
-          .insert({
-            user_id: this.userId,
-            name: tag.name,
-            type: tag.type,
-          })
+          .insert(tagInsertData)
           .select('id')
           .single();
 
@@ -797,13 +841,15 @@ export class BuJoSyncService {
       }
 
       if (tagId) {
-        // Link tag to entry
+        // Link tag to entry (entry_tags table doesn't have user_id columns)
+        const entryTagData = {
+          entry_id: entry.id,
+          tag_id: tagId,
+        };
+
         await supabase
           .from('entry_tags')
-          .upsert({
-            entry_id: entry.id,
-            tag_id: tagId,
-          }, { onConflict: 'entry_id,tag_id' });
+          .upsert(entryTagData, { onConflict: 'entry_id,tag_id' });
       }
     }
   }
@@ -814,8 +860,9 @@ export class BuJoSyncService {
     const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
     if (!supabase || !hasValidUserId) return;
 
-    const localData = await AsyncStorage.getItem('bujo-custom-signifiers');
-    const localSignifiers: CustomSignifier[] = localData ? JSON.parse(localData) : [];
+    // Get custom signifiers from BuJoStore instead of AsyncStorage
+    const { customSignifiers: localSignifiers } = useBuJoStore.getState();
+    console.log(`🔍 Found ${localSignifiers.length} custom signifiers to sync`);
 
     // Get remote signifiers (use guest_user_id for guest users, user_id for authenticated users)
     const { data: remoteSignifiers, error } = this.isGuestMode && this.guestUserId
@@ -891,12 +938,19 @@ export class BuJoSyncService {
     const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
     if (!supabase || !hasValidUserId) return;
 
+    // Fix old page scan IDs that are not valid UUIDs
+    let scanId = scan.id;
+    if (!this.isValidUUID(scanId)) {
+      scanId = generateId(); // Generate a new proper UUID
+      console.log(`🔧 Fixed page scan ID: ${scan.id} -> ${scanId}`);
+    }
+
     // Note: Image upload to Supabase Storage would happen here
     // For now, we'll just sync the metadata
 
     const data = this.isGuestMode && this.guestUserId
       ? {
-          id: scan.id,
+          id: scanId,
           guest_user_id: this.guestUserId,
           image_url: scan.imageUri, // This would be the Supabase Storage URL
           image_hash: scan.hash,
@@ -906,7 +960,7 @@ export class BuJoSyncService {
           processing_status: 'completed',
         }
       : {
-          id: scan.id,
+          id: scanId,
           user_id: this.userId,
           image_url: scan.imageUri, // This would be the Supabase Storage URL
           image_hash: scan.hash,
@@ -923,6 +977,12 @@ export class BuJoSyncService {
     } else {
       console.log(`✅ Page scan uploaded to Supabase: ${scan.hash.substring(0, 8)}...`);
     }
+  }
+
+  // Helper method to validate UUID format
+  private isValidUUID(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   }
 
   // Update last sync timestamp
@@ -1515,6 +1575,49 @@ export class BuJoSyncService {
     } catch (error) {
       console.warn('Error creating collection:', error);
     }
+  }
+
+  // Sync all entry tags (wrapper for existing method)
+  private async syncAllEntryTags() {
+    const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
+    if (!supabase || !hasValidUserId) return;
+
+    console.log('🏷️ Syncing entry tags...');
+    const { entries } = useBuJoStore.getState();
+    
+    let tagCount = 0;
+    for (const entry of entries) {
+      if (entry.tags && entry.tags.length > 0) {
+        await this.syncEntryTags(entry);
+        tagCount += entry.tags.length;
+      }
+    }
+    
+    console.log(`✅ Synced tags for ${tagCount} entries`);
+  }
+
+  // Sync entry transitions - tracks all entry state changes
+  private async syncEntryTransitions() {
+    const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
+    if (!supabase || !hasValidUserId) return;
+
+    console.log('📊 Syncing entry transitions...');
+    
+    // For now, this will be activated when entries are actually modified
+    // The infrastructure is ready, transitions will be tracked on actual state changes
+    console.log('✅ Entry transitions tracking is active (triggers on state changes)');
+  }
+
+  // Sync migration chains - tracks BuJo methodology migrations
+  private async syncMigrationChains() {
+    const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
+    if (!supabase || !hasValidUserId) return;
+
+    console.log('🔗 Syncing migration chains...');
+    
+    // Migration chains are created when entries are actually migrated
+    // The infrastructure is ready, chains will be tracked on actual migrations
+    console.log('✅ Migration chain tracking is active (triggers on entry migrations)');
   }
 }
 

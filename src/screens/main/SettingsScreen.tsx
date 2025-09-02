@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '../../stores/SubscriptionStore';
 import { useProcessingStore, ProcessingSpeedPreference } from '../../stores/ProcessingStore';
 import { useTheme } from '../../theme';
+import { bujoSyncService } from '../../services/supabase/BuJoSyncService';
 import { 
   PaperBackground, 
   PaperButton, 
@@ -61,6 +62,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     } catch (error) {
       Alert.alert('Error', 'Failed to restore purchases');
     }
+  };
+
+  const handleManualSync = async () => {
+    Alert.alert(
+      'Sync Data',
+      'This will sync all local data including page scans to the cloud. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sync Now', 
+          onPress: async () => {
+            try {
+              console.log('🔄 Manual sync triggered from Settings');
+              await bujoSyncService.manualSync();
+              Alert.alert('Success', 'Data sync completed successfully!');
+            } catch (error) {
+              console.error('Manual sync error:', error);
+              Alert.alert('Error', 'Sync failed. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const SettingRow: React.FC<{
@@ -199,6 +223,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
               subtitle="Configure sync with Reminders & Calendar"
               icon="phone-portrait-outline"
               onPress={() => navigation.navigate('AppleSyncSettings')}
+            />
+          </NotebookCard>
+        </View>
+
+        {/* Cloud Data Section */}
+        <View style={styles.section}>
+          <Typography variant="caption" style={[styles.sectionHeader, { 
+            color: safeThemeAccess(theme, t => t.colors.textSecondary, '#8E8E93') 
+          }]}>Cloud Data</Typography>
+          <NotebookCard variant="page" showHoles={false} style={styles.card}>
+            <SettingRow
+              title="Sync All Data"
+              subtitle="Upload entries, collections, and page scans to cloud"
+              icon="cloud-upload-outline"
+              onPress={handleManualSync}
+            />
+            <View style={[styles.separator, {
+              backgroundColor: safeThemeAccess(theme, t => t.colors.border, '#E5E5E7')
+            }]} />
+            <SettingRow
+              title="Data Management"
+              subtitle="View sync status and manage cloud data"
+              icon="server-outline"
+              onPress={() => Alert.alert('Coming Soon', 'Data management dashboard will be available soon')}
             />
           </NotebookCard>
         </View>

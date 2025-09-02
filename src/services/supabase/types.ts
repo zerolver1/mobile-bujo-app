@@ -1,6 +1,3 @@
-// Generated types for Supabase database schema
-// Following BuJo methodology
-
 export type Json =
   | string
   | number
@@ -12,66 +9,101 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      profiles: {
+      guest_users: {
         Row: {
           id: string
-          username: string | null
-          full_name: string | null
-          avatar_url: string | null
-          bullet_style: 'classic' | 'modern' | 'handwritten'
-          paper_texture: 'dot' | 'grid' | 'lined' | 'blank'
-          theme_preference: 'light' | 'dark' | 'auto'
-          auto_sync: boolean
-          sync_reminders: boolean
-          sync_calendar: boolean
-          haptic_feedback: boolean
-          daily_notifications: boolean
+          device_id: string
           created_at: string
-          updated_at: string
-          last_sync_at: string | null
-          subscription_tier: 'free' | 'pro' | 'premium'
+          last_active: string
+          app_version: string | null
+          platform: string | null
         }
         Insert: {
-          id: string
-          username?: string | null
-          full_name?: string | null
-          avatar_url?: string | null
-          bullet_style?: 'classic' | 'modern' | 'handwritten'
-          paper_texture?: 'dot' | 'grid' | 'lined' | 'blank'
-          theme_preference?: 'light' | 'dark' | 'auto'
-          auto_sync?: boolean
-          sync_reminders?: boolean
-          sync_calendar?: boolean
-          haptic_feedback?: boolean
-          daily_notifications?: boolean
-          subscription_tier?: 'free' | 'pro' | 'premium'
+          id?: string
+          device_id: string
+          created_at?: string
+          last_active?: string
+          app_version?: string | null
+          platform?: string | null
         }
         Update: {
-          username?: string | null
-          full_name?: string | null
-          avatar_url?: string | null
-          bullet_style?: 'classic' | 'modern' | 'handwritten'
-          paper_texture?: 'dot' | 'grid' | 'lined' | 'blank'
-          theme_preference?: 'light' | 'dark' | 'auto'
-          auto_sync?: boolean
-          sync_reminders?: boolean
-          sync_calendar?: boolean
-          haptic_feedback?: boolean
-          daily_notifications?: boolean
-          last_sync_at?: string | null
-          subscription_tier?: 'free' | 'pro' | 'premium'
+          id?: string
+          device_id?: string
+          created_at?: string
+          last_active?: string
+          app_version?: string | null
+          platform?: string | null
+        }
+      }
+      entries: {
+        Row: {
+          id: string
+          user_id: string | null
+          guest_user_id: string | null
+          collection_id: string | null
+          type: 'task' | 'event' | 'note' | 'idea' | 'research' | 'memory' | 'custom'
+          content: string
+          status: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled'
+          priority: 'none' | 'low' | 'medium' | 'high'
+          is_priority: boolean
+          collection_date: string
+          due_date: string | null
+          scheduled_date: string | null
+          completed_at: string | null
+          source: string
+          ocr_confidence: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          collection_id?: string | null
+          type: 'task' | 'event' | 'note' | 'idea' | 'research' | 'memory' | 'custom'
+          content: string
+          status?: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled'
+          priority?: 'none' | 'low' | 'medium' | 'high'
+          is_priority?: boolean
+          collection_date: string
+          due_date?: string | null
+          scheduled_date?: string | null
+          completed_at?: string | null
+          source?: string
+          ocr_confidence?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          collection_id?: string | null
+          type?: 'task' | 'event' | 'note' | 'idea' | 'research' | 'memory' | 'custom'
+          content?: string
+          status?: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled'
+          priority?: 'none' | 'low' | 'medium' | 'high'
+          is_priority?: boolean
+          collection_date?: string
+          due_date?: string | null
+          scheduled_date?: string | null
+          completed_at?: string | null
+          source?: string
+          ocr_confidence?: number | null
+          created_at?: string
+          updated_at?: string
         }
       }
       collections: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
+          guest_user_id: string | null
           type: 'daily' | 'monthly' | 'future' | 'custom'
           collection_date: string
           name: string | null
           description: string | null
           color: string | null
-          icon: string | null
           smart_match: boolean
           is_archived: boolean
           created_at: string
@@ -79,115 +111,60 @@ export interface Database {
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
+          guest_user_id?: string | null
           type: 'daily' | 'monthly' | 'future' | 'custom'
           collection_date: string
           name?: string | null
           description?: string | null
           color?: string | null
-          icon?: string | null
           smart_match?: boolean
           is_archived?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Update: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
           type?: 'daily' | 'monthly' | 'future' | 'custom'
           collection_date?: string
           name?: string | null
           description?: string | null
           color?: string | null
-          icon?: string | null
           smart_match?: boolean
           is_archived?: boolean
-        }
-      }
-      entries: {
-        Row: {
-          id: string
-          user_id: string
-          collection_id: string | null
-          type: 'task' | 'event' | 'note' | 'idea' | 'research' | 'memory' | 'custom'
-          content: string
-          status: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled' | 'irrelevant'
-          priority: 'none' | 'low' | 'medium' | 'high'
-          is_priority: boolean
-          created_at: string
-          updated_at: string
-          collection_date: string
-          due_date: string | null
-          scheduled_date: string | null
-          completed_at: string | null
-          page_number: number | null
-          line_number: number | null
-          indent_level: number
-          parent_entry_id: string | null
-          source: 'manual' | 'scan' | 'import' | 'api' | 'migration' | null
-          ocr_confidence: number | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          collection_id?: string | null
-          type: 'task' | 'event' | 'note' | 'idea' | 'research' | 'memory' | 'custom'
-          content: string
-          status?: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled' | 'irrelevant'
-          priority?: 'none' | 'low' | 'medium' | 'high'
-          is_priority?: boolean
-          collection_date: string
-          due_date?: string | null
-          scheduled_date?: string | null
-          completed_at?: string | null
-          page_number?: number | null
-          line_number?: number | null
-          indent_level?: number
-          parent_entry_id?: string | null
-          source?: 'manual' | 'scan' | 'import' | 'api' | 'migration' | null
-          ocr_confidence?: number | null
-        }
-        Update: {
-          collection_id?: string | null
-          type?: 'task' | 'event' | 'note' | 'idea' | 'research' | 'memory' | 'custom'
-          content?: string
-          status?: 'incomplete' | 'complete' | 'migrated' | 'scheduled' | 'cancelled' | 'irrelevant'
-          priority?: 'none' | 'low' | 'medium' | 'high'
-          is_priority?: boolean
-          collection_date?: string
-          due_date?: string | null
-          scheduled_date?: string | null
-          completed_at?: string | null
-          page_number?: number | null
-          line_number?: number | null
-          indent_level?: number
-          parent_entry_id?: string | null
-          source?: 'manual' | 'scan' | 'import' | 'api' | 'migration' | null
-          ocr_confidence?: number | null
+          created_at?: string
+          updated_at?: string
         }
       }
       tags: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
+          guest_user_id: string | null
           name: string
           type: 'tag' | 'context'
           color: string | null
-          description: string | null
-          usage_count: number
           created_at: string
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
+          guest_user_id?: string | null
           name: string
-          type?: 'tag' | 'context'
+          type: 'tag' | 'context'
           color?: string | null
-          description?: string | null
-          usage_count?: number
+          created_at?: string
         }
         Update: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
           name?: string
           type?: 'tag' | 'context'
           color?: string | null
-          description?: string | null
-          usage_count?: number
+          created_at?: string
         }
       }
       entry_tags: {
@@ -199,297 +176,370 @@ export interface Database {
         Insert: {
           entry_id: string
           tag_id: string
+          created_at?: string
         }
-        Update: {}
+        Update: {
+          entry_id?: string
+          tag_id?: string
+          created_at?: string
+        }
       }
       custom_signifiers: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
+          guest_user_id: string | null
           symbol: string
           label: string
           description: string | null
           color: string | null
-          usage_count: number
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
+          guest_user_id?: string | null
           symbol: string
           label: string
           description?: string | null
           color?: string | null
-          usage_count?: number
+          created_at?: string
         }
         Update: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
           symbol?: string
           label?: string
           description?: string | null
           color?: string | null
-          usage_count?: number
+          created_at?: string
         }
       }
       page_scans: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
+          guest_user_id: string | null
           image_url: string
           image_hash: string
-          file_size: number | null
-          ocr_text: string | null
-          ocr_provider: 'openai' | 'mistral' | 'ocr_space' | 'manual' | null
-          ocr_confidence: number | null
-          ocr_metadata: Json | null
-          processed_at: string | null
-          processing_status: 'pending' | 'processing' | 'completed' | 'failed'
-          error_message: string | null
-          page_date: string | null
-          page_number: number | null
+          ocr_text: string
+          ocr_confidence: number
+          processed_at: string
+          processing_status: string
           created_at: string
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
+          guest_user_id?: string | null
           image_url: string
           image_hash: string
-          file_size?: number | null
-          ocr_text?: string | null
-          ocr_provider?: 'openai' | 'mistral' | 'ocr_space' | 'manual' | null
-          ocr_confidence?: number | null
-          ocr_metadata?: Json | null
-          processed_at?: string | null
-          processing_status?: 'pending' | 'processing' | 'completed' | 'failed'
-          error_message?: string | null
-          page_date?: string | null
-          page_number?: number | null
+          ocr_text: string
+          ocr_confidence: number
+          processed_at: string
+          processing_status: string
+          created_at?: string
         }
         Update: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
           image_url?: string
           image_hash?: string
-          file_size?: number | null
-          ocr_text?: string | null
-          ocr_provider?: 'openai' | 'mistral' | 'ocr_space' | 'manual' | null
-          ocr_confidence?: number | null
-          ocr_metadata?: Json | null
-          processed_at?: string | null
-          processing_status?: 'pending' | 'processing' | 'completed' | 'failed'
-          error_message?: string | null
-          page_date?: string | null
-          page_number?: number | null
+          ocr_text?: string
+          ocr_confidence?: number
+          processed_at?: string
+          processing_status?: string
+          created_at?: string
         }
       }
-      scan_entries: {
-        Row: {
-          scan_id: string
-          entry_id: string
-          bounding_box: Json | null
-          confidence: number | null
-        }
-        Insert: {
-          scan_id: string
-          entry_id: string
-          bounding_box?: Json | null
-          confidence?: number | null
-        }
-        Update: {
-          bounding_box?: Json | null
-          confidence?: number | null
-        }
-      }
-      entry_migrations: {
+      entry_transitions: {
         Row: {
           id: string
-          from_entry_id: string
-          to_entry_id: string
-          migration_type: 'migrate' | 'schedule' | 'reference'
-          migration_reason: string | null
+          user_id: string | null
+          guest_user_id: string | null
+          entry_id: string
+          parent_entry_id: string | null
+          transition_type: string
+          from_state: Json | null
+          to_state: Json | null
+          from_status: string | null
+          to_status: string | null
+          from_type: string | null
+          to_type: string | null
+          from_collection_date: string | null
+          to_collection_date: string | null
+          from_collection_id: string | null
+          to_collection_id: string | null
+          transition_reason: string | null
+          device_info: Json | null
+          sync_metadata: Json | null
           created_at: string
         }
         Insert: {
           id?: string
-          from_entry_id: string
-          to_entry_id: string
-          migration_type: 'migrate' | 'schedule' | 'reference'
-          migration_reason?: string | null
+          user_id?: string | null
+          guest_user_id?: string | null
+          entry_id: string
+          parent_entry_id?: string | null
+          transition_type: string
+          from_state?: Json | null
+          to_state?: Json | null
+          from_status?: string | null
+          to_status?: string | null
+          from_type?: string | null
+          to_type?: string | null
+          from_collection_date?: string | null
+          to_collection_date?: string | null
+          from_collection_id?: string | null
+          to_collection_id?: string | null
+          transition_reason?: string | null
+          device_info?: Json | null
+          sync_metadata?: Json | null
+          created_at?: string
         }
         Update: {
-          migration_type?: 'migrate' | 'schedule' | 'reference'
-          migration_reason?: string | null
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          entry_id?: string
+          parent_entry_id?: string | null
+          transition_type?: string
+          from_state?: Json | null
+          to_state?: Json | null
+          from_status?: string | null
+          to_status?: string | null
+          from_type?: string | null
+          to_type?: string | null
+          from_collection_date?: string | null
+          to_collection_date?: string | null
+          from_collection_id?: string | null
+          to_collection_id?: string | null
+          transition_reason?: string | null
+          device_info?: Json | null
+          sync_metadata?: Json | null
+          created_at?: string
         }
       }
-      indexes: {
+      migration_chains: {
         Row: {
           id: string
-          user_id: string
-          type: 'monthly' | 'future' | 'yearly' | 'custom'
-          period_start: string
-          period_end: string
-          title: string | null
+          user_id: string | null
+          guest_user_id: string | null
+          chain_id: string
+          original_entry_id: string
+          current_entry_id: string
+          migration_count: number
+          migration_path: string[] | null
+          migration_reasons: string[] | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          user_id: string
-          type: 'monthly' | 'future' | 'yearly' | 'custom'
-          period_start: string
-          period_end: string
-          title?: string | null
+          user_id?: string | null
+          guest_user_id?: string | null
+          chain_id: string
+          original_entry_id: string
+          current_entry_id: string
+          migration_count?: number
+          migration_path?: string[] | null
+          migration_reasons?: string[] | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          type?: 'monthly' | 'future' | 'yearly' | 'custom'
-          period_start?: string
-          period_end?: string
-          title?: string | null
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          chain_id?: string
+          original_entry_id?: string
+          current_entry_id?: string
+          migration_count?: number
+          migration_path?: string[] | null
+          migration_reasons?: string[] | null
+          created_at?: string
+          updated_at?: string
         }
       }
-      index_entries: {
-        Row: {
-          index_id: string
-          entry_id: string
-          position: number | null
-        }
-        Insert: {
-          index_id: string
-          entry_id: string
-          position?: number | null
-        }
-        Update: {
-          position?: number | null
-        }
-      }
-      habits: {
+      ios_sync_state: {
         Row: {
           id: string
-          user_id: string
-          name: string
-          description: string | null
-          frequency: 'daily' | 'weekly' | 'monthly' | null
-          target_count: number
-          color: string | null
-          icon: string | null
-          is_active: boolean
+          user_id: string | null
+          guest_user_id: string | null
+          entry_id: string
+          apple_reminder_id: string | null
+          apple_calendar_id: string | null
+          apple_note_id: string | null
+          last_synced_at: string | null
+          sync_direction: string | null
+          sync_status: string | null
+          conflict_data: Json | null
+          local_version: number
+          remote_version: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          user_id: string
-          name: string
-          description?: string | null
-          frequency?: 'daily' | 'weekly' | 'monthly' | null
-          target_count?: number
-          color?: string | null
-          icon?: string | null
-          is_active?: boolean
+          user_id?: string | null
+          guest_user_id?: string | null
+          entry_id: string
+          apple_reminder_id?: string | null
+          apple_calendar_id?: string | null
+          apple_note_id?: string | null
+          last_synced_at?: string | null
+          sync_direction?: string | null
+          sync_status?: string | null
+          conflict_data?: Json | null
+          local_version?: number
+          remote_version?: number
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          name?: string
-          description?: string | null
-          frequency?: 'daily' | 'weekly' | 'monthly' | null
-          target_count?: number
-          color?: string | null
-          icon?: string | null
-          is_active?: boolean
-        }
-      }
-      habit_logs: {
-        Row: {
-          id: string
-          habit_id: string
-          log_date: string
-          completed: boolean
-          count: number
-          notes: string | null
-          created_at: string
-        }
-        Insert: {
           id?: string
-          habit_id: string
-          log_date: string
-          completed?: boolean
-          count?: number
-          notes?: string | null
-        }
-        Update: {
-          completed?: boolean
-          count?: number
-          notes?: string | null
-        }
-      }
-      mood_logs: {
-        Row: {
-          id: string
-          user_id: string
-          entry_id: string | null
-          log_date: string
-          mood: 'excellent' | 'good' | 'neutral' | 'poor' | 'terrible' | null
-          energy_level: number | null
-          gratitude_items: string[] | null
-          notes: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          entry_id?: string | null
-          log_date: string
-          mood?: 'excellent' | 'good' | 'neutral' | 'poor' | 'terrible' | null
-          energy_level?: number | null
-          gratitude_items?: string[] | null
-          notes?: string | null
-        }
-        Update: {
-          entry_id?: string | null
-          log_date?: string
-          mood?: 'excellent' | 'good' | 'neutral' | 'poor' | 'terrible' | null
-          energy_level?: number | null
-          gratitude_items?: string[] | null
-          notes?: string | null
+          user_id?: string | null
+          guest_user_id?: string | null
+          entry_id?: string
+          apple_reminder_id?: string | null
+          apple_calendar_id?: string | null
+          apple_note_id?: string | null
+          last_synced_at?: string | null
+          sync_direction?: string | null
+          sync_status?: string | null
+          conflict_data?: Json | null
+          local_version?: number
+          remote_version?: number
+          created_at?: string
+          updated_at?: string
         }
       }
       sync_queue: {
         Row: {
           id: string
-          user_id: string
-          operation: 'create' | 'update' | 'delete'
+          user_id: string | null
+          guest_user_id: string | null
+          operation: string
           table_name: string
           record_id: string
           payload: Json
-          synced: boolean
-          sync_attempts: number
+          priority: number
+          sync_status: string
+          retry_count: number
+          max_retries: number
           error_message: string | null
           created_at: string
           synced_at: string | null
         }
         Insert: {
           id?: string
-          user_id: string
-          operation: 'create' | 'update' | 'delete'
+          user_id?: string | null
+          guest_user_id?: string | null
+          operation: string
           table_name: string
           record_id: string
           payload: Json
-          synced?: boolean
-          sync_attempts?: number
+          priority?: number
+          sync_status?: string
+          retry_count?: number
+          max_retries?: number
           error_message?: string | null
+          created_at?: string
           synced_at?: string | null
         }
         Update: {
-          operation?: 'create' | 'update' | 'delete'
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          operation?: string
           table_name?: string
           record_id?: string
           payload?: Json
-          synced?: boolean
-          sync_attempts?: number
+          priority?: number
+          sync_status?: string
+          retry_count?: number
+          max_retries?: number
           error_message?: string | null
+          created_at?: string
           synced_at?: string | null
+        }
+      }
+      sync_conflicts: {
+        Row: {
+          id: string
+          user_id: string | null
+          guest_user_id: string | null
+          record_id: string
+          table_name: string
+          local_version: Json
+          remote_version: Json
+          conflict_fields: string[] | null
+          resolution_strategy: string | null
+          resolved_version: Json | null
+          created_at: string
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          record_id: string
+          table_name: string
+          local_version: Json
+          remote_version: Json
+          conflict_fields?: string[] | null
+          resolution_strategy?: string | null
+          resolved_version?: Json | null
+          created_at?: string
+          resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          guest_user_id?: string | null
+          record_id?: string
+          table_name?: string
+          local_version?: Json
+          remote_version?: Json
+          conflict_fields?: string[] | null
+          resolution_strategy?: string | null
+          resolved_version?: Json | null
+          created_at?: string
+          resolved_at?: string | null
+        }
+      }
+      entry_snapshots: {
+        Row: {
+          id: string
+          entry_id: string
+          transition_id: string | null
+          snapshot: Json
+          snapshot_type: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          entry_id: string
+          transition_id?: string | null
+          snapshot: Json
+          snapshot_type?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          entry_id?: string
+          transition_id?: string | null
+          snapshot?: Json
+          snapshot_type?: string | null
+          created_at?: string
         }
       }
     }
     Views: {}
     Functions: {}
     Enums: {}
+    CompositeTypes: {}
   }
 }
