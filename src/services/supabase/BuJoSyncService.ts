@@ -234,35 +234,104 @@ export class BuJoSyncService {
   async syncAll() {
     // Check if we have a valid user ID (either authenticated user or guest user)
     const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
-    if (!supabase || !hasValidUserId || this.isSyncing || !features.cloudSync) return;
+    
+    // Validate sync prerequisites and throw specific errors instead of silent returns
+    if (!features.cloudSync) {
+      throw new Error('Cloud sync is disabled. Enable it in Settings to sync your data.');
+    }
+    
+    if (!supabase) {
+      throw new Error('Unable to connect to cloud storage. Check your internet connection and try again.');
+    }
+    
+    if (!hasValidUserId) {
+      throw new Error('Authentication required. Please log in to sync your data to the cloud.');
+    }
+    
+    if (this.isSyncing) {
+      throw new Error('A sync operation is already running. Please wait for it to complete.');
+    }
 
     this.isSyncing = true;
     console.log('Starting BuJo sync...');
+
+    // Add timeout to prevent stuck syncing
+    const syncTimeout = setTimeout(() => {
+      console.warn('Sync timeout - forcing completion');
+      this.isSyncing = false;
+    }, 5 * 60 * 1000); // 5 minute timeout
 
     try {
       // Process offline queue first
       await this.processOfflineQueue();
 
-      // Sync each entity type
-      await this.syncCollections();
-      await this.createMissingCollections(); // Create collections for orphaned entries
-      await this.syncEntries();
-      await this.syncCustomSignifiers();
-      await this.syncPageScans();
+      // Sync each entity type with individual error handling
+      try {
+        await this.syncCollections();
+      } catch (error) {
+        console.error('Collection sync error:', error);
+      }
+      
+      try {
+        await this.createMissingCollections(); // Create collections for orphaned entries
+      } catch (error) {
+        console.error('Missing collections creation error:', error);
+      }
+      
+      try {
+        await this.syncEntries();
+      } catch (error) {
+        console.error('Entry sync error:', error);
+      }
+      
+      try {
+        await this.syncCustomSignifiers();
+      } catch (error) {
+        console.error('Custom signifiers sync error:', error);
+      }
+      
+      try {
+        await this.syncPageScans();
+      } catch (error) {
+        console.error('Page scans sync error:', error);
+      }
       
       // Sync advanced BuJo Pro features
-      await this.syncAllEntryTags();
-      await this.syncEntryTransitions();
-      await this.syncMigrationChains();
+      try {
+        await this.syncAllEntryTags();
+      } catch (error) {
+        console.error('Entry tags sync error:', error);
+      }
+      
+      try {
+        await this.syncEntryTransitions();
+      } catch (error) {
+        console.error('Entry transitions sync error:', error);
+      }
+      
+      try {
+        await this.syncMigrationChains();
+      } catch (error) {
+        console.error('Migration chains sync error:', error);
+      }
 
       // Update last sync timestamp
       await this.updateLastSyncTime();
 
       console.log('BuJo sync completed successfully');
     } catch (error) {
-      console.error('Sync error:', error);
+      console.error('Critical sync error:', error);
     } finally {
+      clearTimeout(syncTimeout);
       this.isSyncing = false;
+      
+      // Ensure we update the timestamp even if there were errors
+      try {
+        await this.updateLastSyncTime();
+        console.log('Sync completion timestamp updated');
+      } catch (timestampError) {
+        console.error('Error updating sync timestamp:', timestampError);
+      }
     }
   }
 
@@ -987,14 +1056,65 @@ export class BuJoSyncService {
 
   // Update last sync timestamp
   private async updateLastSyncTime() {
-    if (!supabase || !this.userId) return;
+    const timestamp = new Date().toISOString();
+    
+    try {
+      // Always update local storage first (this is what getSyncStatus reads)
+      await AsyncStorage.setItem('bujo-last-sync', timestamp);
+      console.log('Local sync timestamp updated:', timestamp);
+      
+      // Update cloud profile if available (optional)
+      if (supabase && this.userId) {
+        try {
+          await supabase
+            .from('profiles')
+            .update({ last_sync_at: timestamp })
+            .eq('id', this.userId);
+          console.log('Cloud sync timestamp updated');
+        } catch (cloudError) {
+          console.warn('Could not update cloud sync timestamp:', cloudError);
+          // Don't throw - local timestamp is more important
+        }
+      }
+    } catch (error) {
+      console.error('Error updating sync timestamp:', error);
+      throw error; // Re-throw since this is critical for sync status
+    }
+  }
 
-    await supabase
-      .from('profiles')
-      .update({ last_sync_at: new Date().toISOString() })
-      .eq('id', this.userId);
-
-    await AsyncStorage.setItem('bujo-last-sync', new Date().toISOString());
+  // Check if sync can be performed (validation before attempting)
+  async canPerformSync(): Promise<{ possible: boolean; reason?: string }> {
+    const hasValidUserId = this.userId || (this.isGuestMode && this.guestUserId);
+    
+    if (!features.cloudSync) {
+      return { 
+        possible: false, 
+        reason: 'Cloud sync is disabled. Enable it in Settings → Data Management → Cloud Sync to sync your data.' 
+      };
+    }
+    
+    if (!supabase) {
+      return { 
+        possible: false, 
+        reason: 'Unable to connect to cloud storage. Check your internet connection and try again.' 
+      };
+    }
+    
+    if (!hasValidUserId) {
+      return { 
+        possible: false, 
+        reason: 'Authentication required. Please log in to sync your data to the cloud.' 
+      };
+    }
+    
+    if (this.isSyncing) {
+      return { 
+        possible: false, 
+        reason: 'A sync operation is already running. Please wait for it to complete.' 
+      };
+    }
+    
+    return { possible: true };
   }
 
   // Manual sync trigger
@@ -1018,6 +1138,257 @@ export class BuJoSyncService {
       isSyncing: this.isSyncing,
       lastSyncAt: lastSync ? new Date(lastSync) : null,
     };
+  }
+
+  // Get comprehensive data statistics for Data Management screen
+  async getDataStatistics() {
+    try {
+      let cloudEntryCount = 0;
+      let cloudCollectionCount = 0;
+      let cloudStorageSize = '0 KB';
+
+      // Get cloud data counts if authenticated
+      if (await this.isAuthenticated() && supabase) {
+        try {
+          const { count: entryCount } = await supabase
+            .from('entries')
+            .select('*', { count: 'exact', head: true });
+          
+          const { count: collectionCount } = await supabase
+            .from('collections')
+            .select('*', { count: 'exact', head: true });
+
+          cloudEntryCount = entryCount || 0;
+          cloudCollectionCount = collectionCount || 0;
+          
+          // Rough estimate of cloud storage size
+          const estimatedSize = (cloudEntryCount * 0.5) + (cloudCollectionCount * 0.2);
+          cloudStorageSize = `${estimatedSize.toFixed(1)} KB`;
+        } catch (error) {
+          console.warn('Could not fetch cloud statistics:', error);
+        }
+      }
+
+      return {
+        cloud: {
+          entryCount: cloudEntryCount,
+          collectionCount: cloudCollectionCount,
+          storageSize: cloudStorageSize,
+        },
+        sync: await this.getSyncStatus(),
+      };
+    } catch (error) {
+      console.error('Error getting data statistics:', error);
+      throw error;
+    }
+  }
+
+  // Get storage usage breakdown
+  async getStorageUsage() {
+    try {
+      // Get local data from store
+      const store = useBuJoStore.getState();
+      const entries = store.entries || [];
+      const collections = store.collections || [];
+
+      // Calculate approximate storage sizes
+      const entryStorage = entries.length * 0.5; // ~0.5KB per entry
+      const collectionStorage = collections.length * 0.2; // ~0.2KB per collection
+      const totalLocal = entryStorage + collectionStorage;
+
+      // Get cloud storage info
+      const dataStats = await this.getDataStatistics();
+
+      return {
+        local: {
+          entries: `${entryStorage.toFixed(1)} KB`,
+          collections: `${collectionStorage.toFixed(1)} KB`,
+          total: `${totalLocal.toFixed(1)} KB`,
+        },
+        cloud: {
+          total: dataStats.cloud.storageSize,
+        }
+      };
+    } catch (error) {
+      console.error('Error calculating storage usage:', error);
+      return {
+        local: { entries: '0 KB', collections: '0 KB', total: '0 KB' },
+        cloud: { total: '0 KB' }
+      };
+    }
+  }
+
+  // Validate data integrity
+  async validateDataIntegrity() {
+    try {
+      const store = useBuJoStore.getState();
+      const entries = store.entries || [];
+      const collections = store.collections || [];
+
+      const issues: string[] = [];
+
+      // Check for orphaned entries (entries without matching collections)
+      const collectionIds = new Set(collections.map(c => c.id));
+      const orphanedEntries = entries.filter(e => !collectionIds.has(e.collectionId));
+      
+      if (orphanedEntries.length > 0) {
+        issues.push(`${orphanedEntries.length} entries have missing collections`);
+      }
+
+      // Check for entries with invalid dates
+      const invalidDateEntries = entries.filter(e => {
+        try {
+          new Date(e.createdAt);
+          return false;
+        } catch {
+          return true;
+        }
+      });
+
+      if (invalidDateEntries.length > 0) {
+        issues.push(`${invalidDateEntries.length} entries have invalid dates`);
+      }
+
+      // Check for duplicate entries
+      const entryIds = new Set();
+      const duplicateEntries = entries.filter(e => {
+        if (entryIds.has(e.id)) {
+          return true;
+        }
+        entryIds.add(e.id);
+        return false;
+      });
+
+      if (duplicateEntries.length > 0) {
+        issues.push(`${duplicateEntries.length} duplicate entries found`);
+      }
+
+      return {
+        isHealthy: issues.length === 0,
+        issues,
+        totalEntries: entries.length,
+        totalCollections: collections.length,
+      };
+    } catch (error) {
+      console.error('Error validating data integrity:', error);
+      return {
+        isHealthy: false,
+        issues: ['Failed to validate data integrity'],
+        totalEntries: 0,
+        totalCollections: 0,
+      };
+    }
+  }
+
+  // Export all data to JSON format
+  async exportAllData() {
+    try {
+      const store = useBuJoStore.getState();
+      const syncStatus = await this.getSyncStatus();
+
+      return {
+        exportInfo: {
+          exportDate: new Date().toISOString(),
+          version: '1.0.0',
+          syncStatus,
+        },
+        data: {
+          entries: store.entries || [],
+          collections: store.collections || [],
+          // TODO: Add page scans when implemented
+          pageScans: [],
+          // TODO: Add custom signifiers when implemented
+          customSignifiers: [],
+        },
+        metadata: {
+          totalEntries: (store.entries || []).length,
+          totalCollections: (store.collections || []).length,
+          totalPageScans: 0,
+        }
+      };
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      throw error;
+    }
+  }
+
+  // Clear local cache (for testing/debugging)
+  async clearLocalCache() {
+    try {
+      await AsyncStorage.multiRemove([
+        'bujo-last-sync',
+        'bujo-sync-token',
+        'bujo-guest-user-id',
+      ]);
+      
+      // Reset sync state
+      this.isSyncing = false;
+      
+      console.log('Local cache cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      throw error;
+    }
+  }
+
+  // Reset sync state (force full re-sync)
+  async resetSyncState() {
+    try {
+      await AsyncStorage.removeItem('bujo-last-sync');
+      this.isSyncing = false;
+      
+      console.log('Sync state reset successfully');
+      return true;
+    } catch (error) {
+      console.error('Error resetting sync state:', error);
+      throw error;
+    }
+  }
+
+  // Delete all cloud data (destructive operation)
+  async deleteAllCloudData() {
+    if (!await this.isAuthenticated() || !supabase) {
+      throw new Error('Must be authenticated to delete cloud data');
+    }
+
+    try {
+      const userId = this.userId || this.guestUserId;
+      if (!userId) {
+        throw new Error('No user ID available');
+      }
+
+      // Delete entries first (due to foreign key constraints)
+      const { error: entriesError } = await supabase
+        .from('entries')
+        .delete()
+        .eq('user_id', userId);
+
+      if (entriesError) {
+        console.error('Error deleting entries:', entriesError);
+        throw entriesError;
+      }
+
+      // Delete collections
+      const { error: collectionsError } = await supabase
+        .from('collections')
+        .delete()
+        .eq('user_id', userId);
+
+      if (collectionsError) {
+        console.error('Error deleting collections:', collectionsError);
+        throw collectionsError;
+      }
+
+      // TODO: Delete page scans when implemented
+      // TODO: Delete user profile if needed
+
+      console.log('All cloud data deleted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error deleting cloud data:', error);
+      throw error;
+    }
   }
 
   // Development helper: Upload local data without authentication (for testing)

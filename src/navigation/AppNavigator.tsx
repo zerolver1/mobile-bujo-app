@@ -32,6 +32,7 @@ import { MemoryLogScreen } from '../screens/memory/MemoryLogScreen';
 import { DesignSystemScreen } from '../screens/design/DesignSystemScreen';
 import { SearchScreen } from '../screens/main/SearchScreen';
 import { MigrationScreen } from '../screens/main/MigrationScreen';
+import { DataManagementScreen } from '../screens/settings/DataManagementScreen';
 
 // Type definitions
 export type RootTabParamList = {
@@ -58,6 +59,7 @@ export type RootStackParamList = {
   TermsOfService: undefined;
   Search: undefined;
   Migration: undefined;
+  DataManagement: undefined;
   // Tutorial System Routes
   TutorialLaunch: { mode: 'quickStart' | 'complete' | 'practice' };
   TutorialLesson: { lessonId: string; mode: 'quickStart' | 'complete'; fromGuide?: boolean };
@@ -80,13 +82,13 @@ const MainTabNavigator: React.FC = () => {
           borderBottomWidth: 0.5,
           borderBottomColor: safeThemeAccess(theme, t => t.colors.border, '#E8E3D5'),
           elevation: 0,
-          shadowOpacity: 0.1,
-          shadowColor: 'rgba(139, 69, 19, 0.1)',
-          shadowOffset: { width: 0, height: 1 },
-          shadowRadius: 2,
+          shadowOpacity: 0,
+          height: 100, // Compromise: visible but compact
+          paddingTop: 0,
+          paddingBottom: 0,
         },
         headerTitleStyle: {
-          fontSize: 20,
+          fontSize: 17, // Readable but still compact
           fontWeight: '600',
           color: safeThemeAccess(theme, t => t.colors.text, '#2B2B2B'),
           fontFamily: Platform.select({
@@ -94,7 +96,9 @@ const MainTabNavigator: React.FC = () => {
             android: 'serif',
             default: 'System',
           }),
-          letterSpacing: 0.4,
+          letterSpacing: 0.3,
+          marginBottom: 0,
+          lineHeight: 20, // Proper text rendering
         },
         headerTintColor: safeThemeAccess(theme, t => t.colors.primary, '#0F2A44'),
       })}
@@ -286,6 +290,14 @@ const RootNavigator: React.FC = () => {
       <Stack.Screen 
         name="Migration" 
         component={MigrationScreen}
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen 
+        name="DataManagement" 
+        component={DataManagementScreen}
         options={{
           headerShown: false,
           presentation: 'card',
