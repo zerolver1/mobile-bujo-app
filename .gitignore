@@ -70,3 +70,6 @@ android/
 # Security - Test files with API keys
 test-mistral-ocr.js
 test-*.js
+
+# Claude Code: personal permissions ("don't ask again") can contain secrets
+**/.claude/settings.local.json
